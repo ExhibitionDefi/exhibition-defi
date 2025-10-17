@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens */
+:root {
+  --metallic-silver: #C0C0C0;
+  --silver-light: #E8E8E8;
+  --silver-dark: #A0A0A0;
+  --neon-blue: #15c6e6c0;
+  --neon-orange: #fa7e09cb;
+  --deep-black: #1A1A1A;
+  --charcoal: #0A0A0A;
+  --dark-black: #000000;
+}
+
+/* Reset body defaults */
+body {
+  @apply m-0 p-0 flex flex-col min-h-screen antialiased;
+  background: var(--deep-black);
+  color: var(--silver-light);
+}

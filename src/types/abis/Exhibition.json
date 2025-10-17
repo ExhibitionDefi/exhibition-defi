@@ -1,0 +1,2700 @@
+[
+    {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "AmmApprovedForToken",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "contributor",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "contributionTokenAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "totalRaised",
+                "type": "uint256"
+            }
+        ],
+        "name": "ContributionMade",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "tokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "ExhTokenAddressSet",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "oldAddress",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "newAddress",
+                "type": "address"
+            }
+        ],
+        "name": "ExhibitionAMMAddressSet",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "tokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "ExhibitionContributionTokenAdded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "tokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "ExhibitionContributionTokenRemoved",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "oldAddress",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "newAddress",
+                "type": "address"
+            }
+        ],
+        "name": "ExhibitionFactoryAddressSet",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "tokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "ExhibitionUSDTAddressSet",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "FaucetMinted",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "exhAmount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "usdtAmount",
+                "type": "uint256"
+            }
+        ],
+        "name": "FaucetRequested",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "tokenAddress",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "FeesWithdrawn",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "projectOwner",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amountReleased",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "enum ProjectStatus",
+                "name": "finalStatus",
+                "type": "uint8"
+            }
+        ],
+        "name": "FundsReleasedToProjectOwner",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "totalRaised",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "hardCap",
+                "type": "uint256"
+            }
+        ],
+        "name": "HardCapReached",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "projectOwner",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "projectTokensAdded",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "contributionTokensAdded",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "liquidityMinted",
+                "type": "uint256"
+            }
+        ],
+        "name": "LiquidityAdded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "depositor",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "LiquidityTokensDeposited",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "previousOwner",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "OwnershipTransferred",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "tokenAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            }
+        ],
+        "name": "PlatformFeeCollected",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "oldPercentage",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "newPercentage",
+                "type": "uint256"
+            }
+        ],
+        "name": "PlatformFeePercentageUpdated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "oldRecipient",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "newRecipient",
+                "type": "address"
+            }
+        ],
+        "name": "PlatformFeeRecipientUpdated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "projectOwner",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "projectToken",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "contributionTokenAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "fundingGoal",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "softCap",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "totalProjectTokenSupply",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "projectTokenLogoURI",
+                "type": "string"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amountTokensForSale",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "liquidityPercentage",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "lockDuration",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "startTime",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "endTime",
+                "type": "uint256"
+            }
+        ],
+        "name": "ProjectCreated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "enum ProjectStatus",
+                "name": "newStatus",
+                "type": "uint8"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "totalRaised",
+                "type": "uint256"
+            }
+        ],
+        "name": "ProjectFinalized",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "enum ProjectStatus",
+                "name": "newStatus",
+                "type": "uint8"
+            }
+        ],
+        "name": "ProjectStatusUpdated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "participant",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "refundedAmount",
+                "type": "uint256"
+            }
+        ],
+        "name": "RefundIssued",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "totalRaised",
+                "type": "uint256"
+            }
+        ],
+        "name": "SoftCapNotReach",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "totalRaised",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "softCap",
+                "type": "uint256"
+            }
+        ],
+        "name": "SoftCapReach",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "deployer",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "tokenAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "name",
+                "type": "string"
+            },
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "symbol",
+                "type": "string"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "initialSupply",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "logoURI",
+                "type": "string"
+            }
+        ],
+        "name": "StandaloneTokenDeployed",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "contributor",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amountClaimed",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "totalClaimedForContributor",
+                "type": "uint256"
+            }
+        ],
+        "name": "TokensClaimed",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "tokenAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "enum ProjectStatus",
+                "name": "Status",
+                "type": "uint8"
+            }
+        ],
+        "name": "TokensDepositedForProject",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "projectOwner",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "UnsoldTokensWithdrawn",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "VestingClaimed",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "ExhibitionContributionTokens",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MAX_PROJECT_DURATION",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MAX_TOKEN_DECIMALS",
+        "outputs": [
+            {
+                "internalType": "uint8",
+                "name": "",
+                "type": "uint8"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MAX_TOKEN_PRICE",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MIN_LOCK_DURATION",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MIN_START_DELAY",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MIN_TOKEN_PRICE",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "PRICE_DECIMALS",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "WITHDRAWAL_DELAY",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "accumulatedFees",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "addExhibitionContributionToken",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "approveAmmForContributionTokens",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256[]",
+                "name": "contributionAmounts",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokenPrice",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "contributionTokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "projectTokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "batchCalculateTokens",
+        "outputs": [
+            {
+                "internalType": "uint256[]",
+                "name": "",
+                "type": "uint256[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "contributorContribution",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokenPrice",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "contributionTokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "projectTokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "calculateTokensDue",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            }
+        ],
+        "name": "canAcceptContributions",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_projectId",
+                "type": "uint256"
+            }
+        ],
+        "name": "claimTokens",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_projectId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "contribute",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "contributions",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "_projectTokenName",
+                "type": "string"
+            },
+            {
+                "internalType": "string",
+                "name": "_projectTokenSymbol",
+                "type": "string"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_initialTotalSupply",
+                "type": "uint256"
+            },
+            {
+                "internalType": "string",
+                "name": "_projectTokenLogoURI",
+                "type": "string"
+            },
+            {
+                "internalType": "address",
+                "name": "_contributionTokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_fundingGoal",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_softCap",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_minContribution",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_maxContribution",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_tokenPrice",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_startTime",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_endTime",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amountTokensForSale",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_liquidityPercentage",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_lockDuration",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "_vestingEnabled",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_vestingCliff",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_vestingDuration",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_vestingInterval",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_vestingInitialRelease",
+                "type": "uint256"
+            }
+        ],
+        "name": "createLaunchpadProject",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "projectTokenAddress",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "_name",
+                "type": "string"
+            },
+            {
+                "internalType": "string",
+                "name": "_symbol",
+                "type": "string"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_initialSupply",
+                "type": "uint256"
+            },
+            {
+                "internalType": "string",
+                "name": "_logoURI",
+                "type": "string"
+            }
+        ],
+        "name": "deployStandaloneToken",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "newTokenAddress",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_projectId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "depositLiquidityTokens",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_projectId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "depositProjectTokens",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "exUSDTTokenAddress",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "exhTokenAddress",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "exhibitionAMM",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "exhibitionFactory",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "faucetAmountEXH",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "faucetAmountUSDT",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "faucetCooldownSeconds",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_projectId",
+                "type": "uint256"
+            }
+        ],
+        "name": "finalizeLiquidityAndReleaseFunds",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_projectId",
+                "type": "uint256"
+            }
+        ],
+        "name": "finalizeProject",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "contributorContribution",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokenPrice",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "contributionTokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "projectTokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "getCalculationPreview",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "tokensReceived",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "contributionIn18Decimals",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "effectivePrice",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "contributionDecimals",
+                        "type": "uint8"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "projectDecimals",
+                        "type": "uint8"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "minimumContribution",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isValid",
+                        "type": "bool"
+                    }
+                ],
+                "internalType": "struct ITokenCalculation.CalculationPreview",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getContractAddresses",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "factory",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "amm",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "exhToken",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "exUSDTToken",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getExNEXAddress",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getExhibitionContributionTokens",
+        "outputs": [
+            {
+                "internalType": "address[]",
+                "name": "",
+                "type": "address[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getFaucetSettings",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "exhAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "usdtAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "cooldownSeconds",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getMinLockDuration",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "pure",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "tokenPrice",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "contributionTokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "projectTokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "getMinimumContribution",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getPlatformSettings",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "feePercentage",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "feeRecipient",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "minStartDelay",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "maxProjectDuration",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "withdrawalDelay",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getProjectCount",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getProjectDetails",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "projectOwner",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "projectToken",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "contributionTokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "fundingGoal",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "softCap",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "minContribution",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "maxContribution",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenPrice",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "startTime",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "endTime",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalRaised",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalProjectTokenSupply",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "projectTokenLogoURI",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amountTokensForSale",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "liquidityPercentage",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "lockDuration",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "enum ProjectStatus",
+                        "name": "status",
+                        "type": "uint8"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "liquidityAdded",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "vestingEnabled",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "vestingCliff",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "vestingDuration",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "vestingInterval",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "vestingInitialRelease",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct Project",
+                "name": "project",
+                "type": "tuple"
+            },
+            {
+                "internalType": "uint256",
+                "name": "progressPercentage",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "timeRemaining",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "canContribute",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "requiredLiquidityTokens",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "depositedLiquidityTokens",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getProjectLiquidityDeposit",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getProjectProgress",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "progressPercentage",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getProjectTimeRemaining",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "timeRemaining",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "offset",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "limit",
+                "type": "uint256"
+            }
+        ],
+        "name": "getProjects",
+        "outputs": [
+            {
+                "internalType": "uint256[]",
+                "name": "",
+                "type": "uint256[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            }
+        ],
+        "name": "getProjectsByOwner",
+        "outputs": [
+            {
+                "internalType": "uint256[]",
+                "name": "",
+                "type": "uint256[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "enum ProjectStatus",
+                "name": "status",
+                "type": "uint8"
+            }
+        ],
+        "name": "getProjectsByStatus",
+        "outputs": [
+            {
+                "internalType": "uint256[]",
+                "name": "",
+                "type": "uint256[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getRequiredLiquidityTokens",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getSystemConstants",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "minTokenPrice",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "maxTokenPrice",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "maxTokenDecimals",
+                        "type": "uint8"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "priceDecimals",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct ITokenCalculation.SystemConstants",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "pure",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "tokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "getTokenInfo",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint8",
+                        "name": "decimals",
+                        "type": "uint8"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "symbol",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "name",
+                        "type": "string"
+                    }
+                ],
+                "internalType": "struct ITokenCalculation.TokenInfo",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            }
+        ],
+        "name": "getUserContribution",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            }
+        ],
+        "name": "getUserProjectSummary",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "contributionAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokensOwed",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokensVested",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokensClaimed",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokensAvailable",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "userHasRefunded",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "canClaim",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            }
+        ],
+        "name": "getUserVestingInfo",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "totalAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "releasedAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "startTime",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "lastClaimTime",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "nextClaimTime",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "availableAmount",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "hasRefunded",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "projectId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            }
+        ],
+        "name": "hasUserBeenRefunded",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "isExhibitionContributionToken",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_user",
+                "type": "address"
+            }
+        ],
+        "name": "lastFaucetRequest",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "platformFeePercentage",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "platformFeeRecipient",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "projectLiquidityTokenDeposits",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "projects",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "projectOwner",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "projectToken",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "contributionTokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "fundingGoal",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "softCap",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "minContribution",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "maxContribution",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokenPrice",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "startTime",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "endTime",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "totalRaised",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "totalProjectTokenSupply",
+                "type": "uint256"
+            },
+            {
+                "internalType": "string",
+                "name": "projectTokenLogoURI",
+                "type": "string"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amountTokensForSale",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "liquidityPercentage",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "lockDuration",
+                "type": "uint256"
+            },
+            {
+                "internalType": "enum ProjectStatus",
+                "name": "status",
+                "type": "uint8"
+            },
+            {
+                "internalType": "bool",
+                "name": "liquidityAdded",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "vestingEnabled",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "vestingCliff",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "vestingDuration",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "vestingInterval",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "vestingInitialRelease",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "removeExhibitionContributionToken",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "renounceOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "requestFaucetTokens",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_projectId",
+                "type": "uint256"
+            }
+        ],
+        "name": "requestRefund",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_exUSDTTokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "setExUSDTTokenAddress",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_exhTokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "setExhTokenAddress",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_exhibitionAMMAddress",
+                "type": "address"
+            }
+        ],
+        "name": "setExhibitionAMMAddress",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_exhibitionFactoryAddress",
+                "type": "address"
+            }
+        ],
+        "name": "setExhibitionFactoryAddress",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "setFaucetAmountEXH",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "setFaucetAmountUSDT",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_seconds",
+                "type": "uint256"
+            }
+        ],
+        "name": "setFaucetCooldown",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_newPercentage",
+                "type": "uint256"
+            }
+        ],
+        "name": "setPlatformFeePercentage",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_newRecipient",
+                "type": "address"
+            }
+        ],
+        "name": "setPlatformFeeRecipient",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "transferOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "contributorContribution",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokenPrice",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "contributionTokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "projectTokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "validateCalculation",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "bool",
+                        "name": "isValid",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "errorCode",
+                        "type": "uint8"
+                    }
+                ],
+                "internalType": "struct ITokenCalculation.ValidationResult",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "vestingInfo",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "totalAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "releasedAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "startTime",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "lastClaimTime",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "nextClaimTime",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_recipient",
+                "type": "address"
+            }
+        ],
+        "name": "withdrawAccumulatedFees",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_projectId",
+                "type": "uint256"
+            }
+        ],
+        "name": "withdrawUnsoldTokens",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]
