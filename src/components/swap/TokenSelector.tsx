@@ -84,7 +84,8 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
 
       filtered = filtered.filter(
         (t) =>
-          t.symbol.toLowerCase().includes(query) || t.name.toLowerCase().includes(query)
+          (t.symbol?.toLowerCase() || '').includes(query) ||
+          (t.name?.toLowerCase() || '').includes(query)
       );
     }
 

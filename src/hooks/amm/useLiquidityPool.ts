@@ -69,8 +69,8 @@ export const useLiquidityPool = () => {
   // Parsed amounts (for calculating approval requirements)
   const [amountABigInt, setAmountABigInt] = useState<bigint | undefined>();
   const [amountBBigInt, setAmountBBigInt] = useState<bigint | undefined>();
-  const [tokenAInfo, setTokenAInfo] = useState<{ symbol: string; decimals: number } | undefined>();
-  const [tokenBInfo, setTokenBInfo] = useState<{ symbol: string; decimals: number } | undefined>();
+  const [tokenAInfo, setTokenAInfo] = useState<{ address: Address; symbol: string; decimals: number } | undefined>();
+  const [tokenBInfo, setTokenBInfo] = useState<{ address: Address; symbol: string; decimals: number } | undefined>();
 
   // Write contract hooks
   const {
@@ -198,6 +198,7 @@ export const useLiquidityPool = () => {
 
     if (liquidityState.tokenA && symbols[0] && decimals[0] !== undefined) {
       setTokenAInfo({
+        address: liquidityState.tokenA,
         symbol: symbols[0],
         decimals: Number(decimals[0]),
       });
@@ -205,6 +206,7 @@ export const useLiquidityPool = () => {
 
     if (liquidityState.tokenB && symbols[1] && decimals[1] !== undefined) {
       setTokenBInfo({
+        address: liquidityState.tokenB,
         symbol: symbols[1],
         decimals: Number(decimals[1]),
       });

@@ -3,8 +3,7 @@ import { useAccount, useReadContract, useWriteContract, useWaitForTransactionRec
 import { parseEther, formatEther } from 'viem'
 import { exNeXAbi } from '@/generated/wagmi'
 
-// ✅ Update with your actual exNEX contract address
-const EXNEX_CONTRACT_ADDRESS = '0x...' as const // TODO: Replace with actual address
+const EXNEX_CONTRACT_ADDRESS: Readonly<string> = import.meta.env.VITE_EXNEX_ADDRESS;
 
 interface UseExNEXReturn {
   // State
@@ -56,7 +55,7 @@ export const useExNEX = (): UseExNEXReturn => {
     data: balanceData,
     refetch: refetchBalance,
   } = useReadContract({
-    address: EXNEX_CONTRACT_ADDRESS,
+    address: EXNEX_CONTRACT_ADDRESS  as `0x${string}`,
     abi: exNeXAbi,
     functionName: 'balanceOf',
     args: [address!],
@@ -65,28 +64,28 @@ export const useExNEX = (): UseExNEXReturn => {
 
   // Read total supply
   const { data: totalSupplyData } = useReadContract({
-    address: EXNEX_CONTRACT_ADDRESS,
+    address: EXNEX_CONTRACT_ADDRESS as `0x${string}`,
     abi: exNeXAbi,
     functionName: 'totalSupply',
   })
 
   // Read decimals
   const { data: decimalsData } = useReadContract({
-    address: EXNEX_CONTRACT_ADDRESS,
+    address: EXNEX_CONTRACT_ADDRESS as `0x${string}`,
     abi: exNeXAbi,
     functionName: 'decimals',
   })
 
   // Read name
   const { data: nameData } = useReadContract({
-    address: EXNEX_CONTRACT_ADDRESS,
+    address: EXNEX_CONTRACT_ADDRESS as `0x${string}`,
     abi: exNeXAbi,
     functionName: 'name',
   })
 
   // Read symbol
   const { data: symbolData } = useReadContract({
-    address: EXNEX_CONTRACT_ADDRESS,
+    address: EXNEX_CONTRACT_ADDRESS as `0x${string}`,
     abi: exNeXAbi,
     functionName: 'symbol',
   })
@@ -175,7 +174,7 @@ export const useExNEX = (): UseExNEXReturn => {
         resetState()
         
         const hash = await depositAsync({
-          address: EXNEX_CONTRACT_ADDRESS,
+          address: EXNEX_CONTRACT_ADDRESS as `0x${string}`,
           abi: exNeXAbi,
           functionName: 'deposit',
           value: parseEther(amountNEX), // ✅ Sending native token as value
@@ -206,7 +205,7 @@ export const useExNEX = (): UseExNEXReturn => {
         resetState()
 
         const hash = await withdrawAsync({
-          address: EXNEX_CONTRACT_ADDRESS,
+          address: EXNEX_CONTRACT_ADDRESS as `0x${string}`,
           abi: exNeXAbi,
           functionName: 'withdraw',
           args: [parseEther(amountExNEX)],
@@ -237,7 +236,7 @@ export const useExNEX = (): UseExNEXReturn => {
         resetState()
 
         const hash = await approveAsync({
-          address: EXNEX_CONTRACT_ADDRESS,
+          address: EXNEX_CONTRACT_ADDRESS as `0x${string}`,
           abi: exNeXAbi,
           functionName: 'approve',
           args: [spender as `0x${string}`, parseEther(amount)],
