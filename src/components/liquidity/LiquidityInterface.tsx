@@ -559,22 +559,28 @@ export const LiquidityInterface: React.FC<LiquidityInterfaceProps> = ({
         )}
       </div>
 
-      {/* Token Selector Modal */}
-      <TokenSelector
-        tokens={COMMON_TOKENS}
-        selectedToken={showTokenSelector === 'tokenA' ? liquidityLogic.liquidityState.tokenA : liquidityLogic.liquidityState.tokenB}
-        onSelectToken={(token) => {
-          if (showTokenSelector === 'tokenA') {
+      {/* Token Selector Modal - ✅ FIXED: Only render when modal is open */}
+      {showTokenSelector !== null && (
+        <TokenSelector
+          tokens={COMMON_TOKENS}
+          selectedToken={
+            showTokenSelector === 'tokenA' 
+              ? liquidityLogic.liquidityState.tokenA 
+              : liquidityLogic.liquidityState.tokenB
+          }
+          onSelectToken={(token) => {
+            if (showTokenSelector === 'tokenA') {
             liquidityLogic.updateLiquidityState({ tokenA: token.address });
           } else {
             liquidityLogic.updateLiquidityState({ tokenB: token.address });
           }
           setShowTokenSelector(null);
         }}
-        isOpen={showTokenSelector !== null}
+        isOpen={true}
         onClose={() => setShowTokenSelector(null)}
         contractAddress={AMM_ADDRESS}
-      />
+       />
+      )}
 
       {/* Settings Modal */}
       <Modal

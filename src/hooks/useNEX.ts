@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect } from 'react'
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useBalance } from 'wagmi'
 import { parseEther, formatEther } from 'viem'
 import { exNeXAbi } from '@/generated/wagmi'
 
-// Update with your actual exNEX contract address
-const EXNEX_CONTRACT_ADDRESS = '0x...' as const
+// ✅ Update with your actual exNEX contract address
+const EXNEX_CONTRACT_ADDRESS = '0x...' as const // TODO: Replace with actual address
 
 interface UseExNEXReturn {
   // State
@@ -16,7 +16,8 @@ interface UseExNEXReturn {
   isConfirming: boolean
 
   // Data
-  balance: string
+  balance: string // exNEX balance
+  nexBalance: string // ✅ NEW: Native NEX balance
   totalSupply: string
   decimals: number
   name: string
@@ -26,8 +27,11 @@ interface UseExNEXReturn {
   deposit: (amountNEX: string) => Promise<`0x${string}` | null>
   withdraw: (amountExNEX: string) => Promise<`0x${string}` | null>
   approve: (spender: string, amount: string) => Promise<`0x${string}` | null>
-  allowance: (owner: string, spender: string) => Promise<string>
   resetState: () => void
+  
+  // Refetch functions
+  refetchBalance: () => void
+  refetchNexBalance: () => void
 }
 
 export const useExNEX = (): UseExNEXReturn => {
@@ -38,8 +42,20 @@ export const useExNEX = (): UseExNEXReturn => {
   const [isPending, setIsPending] = useState(false)
   const [isConfirming, setIsConfirming] = useState(false)
 
-  // Read balance of exNEX
-  const { data: balanceData } = useReadContract({
+  // ✅ Read native NEX balance (native token balance)
+  const { 
+    data: nexBalanceData, 
+    refetch: refetchNexBalance 
+  } = useBalance({
+    address: address,
+    query: { enabled: isConnected && !!address },
+  })
+
+  // Read exNEX balance
+  const { 
+    data: balanceData,
+    refetch: refetchBalance,
+  } = useReadContract({
     address: EXNEX_CONTRACT_ADDRESS,
     abi: exNeXAbi,
     functionName: 'balanceOf',
@@ -95,22 +111,22 @@ export const useExNEX = (): UseExNEXReturn => {
   } = useWriteContract()
 
   // Wait for transaction receipts
-  const { isLoading: isDepositConfirming } = useWaitForTransactionReceipt({
+  const { isLoading: isDepositConfirming, isSuccess: isDepositSuccess } = useWaitForTransactionReceipt({
     hash: depositHash,
     query: { enabled: !!depositHash },
   })
 
-  const { isLoading: isWithdrawConfirming } = useWaitForTransactionReceipt({
+  const { isLoading: isWithdrawConfirming, isSuccess: isWithdrawSuccess } = useWaitForTransactionReceipt({
     hash: withdrawHash,
     query: { enabled: !!withdrawHash },
   })
 
-  const { isLoading: isApproveConfirming } = useWaitForTransactionReceipt({
+  const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({
     hash: approveHash,
     query: { enabled: !!approveHash },
   })
 
-  // Update pending and confirming states based on current operation
+  // Update pending and confirming states
   useEffect(() => {
     const currentPending = isDepositPending || isWithdrawPending || isApprovePending
     const currentConfirming = isDepositConfirming || isWithdrawConfirming || isApproveConfirming
@@ -118,6 +134,17 @@ export const useExNEX = (): UseExNEXReturn => {
     setIsPending(currentPending)
     setIsConfirming(currentConfirming)
   }, [isDepositPending, isWithdrawPending, isApprovePending, isDepositConfirming, isWithdrawConfirming, isApproveConfirming])
+
+  // Update success state
+  useEffect(() => {
+    if (isDepositSuccess || isWithdrawSuccess || isApproveSuccess) {
+      setIsSuccess(true)
+      
+      // Refetch balances after successful transaction
+      refetchBalance()
+      refetchNexBalance()
+    }
+  }, [isDepositSuccess, isWithdrawSuccess, isApproveSuccess, refetchBalance, refetchNexBalance])
 
   // Update current hash
   useEffect(() => {
@@ -135,7 +162,7 @@ export const useExNEX = (): UseExNEXReturn => {
     setIsConfirming(false)
   }, [])
 
-  // Deposit NEX to get exNEX
+  // Deposit NEX to get exNEX (payable function)
   const deposit = useCallback(
     async (amountNEX: string): Promise<`0x${string}` | null> => {
       if (!address || !isConnected) {
@@ -151,12 +178,11 @@ export const useExNEX = (): UseExNEXReturn => {
           address: EXNEX_CONTRACT_ADDRESS,
           abi: exNeXAbi,
           functionName: 'deposit',
-          value: parseEther(amountNEX),
+          value: parseEther(amountNEX), // ✅ Sending native token as value
           account: address,
         })
 
         setCurrentTxHash(hash as `0x${string}`)
-        setIsSuccess(true)
         return hash as `0x${string}`
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Deposit failed')
@@ -188,7 +214,6 @@ export const useExNEX = (): UseExNEXReturn => {
         })
 
         setCurrentTxHash(hash as `0x${string}`)
-        setIsSuccess(true)
         return hash as `0x${string}`
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Withdrawal failed')
@@ -220,7 +245,6 @@ export const useExNEX = (): UseExNEXReturn => {
         })
 
         setCurrentTxHash(hash as `0x${string}`)
-        setIsSuccess(true)
         return hash as `0x${string}`
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Approval failed')
@@ -231,22 +255,6 @@ export const useExNEX = (): UseExNEXReturn => {
     [address, isConnected, approveAsync, resetState]
   )
 
-  // Read allowance
-  const allowance = useCallback(
-    async (_owner: string, _spender: string): Promise<string> => {
-      try {
-        // This would need to be implemented with useReadContract in a separate call
-        // For now returning placeholder
-        return '0'
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error('Allowance query failed')
-        setError(error)
-        return '0'
-      }
-    },
-    []
-  )
-
   return {
     isLoading: isPending || isConfirming,
     isSuccess,
@@ -254,15 +262,23 @@ export const useExNEX = (): UseExNEXReturn => {
     txHash: currentTxHash,
     isPending,
     isConfirming,
+    
+    // Balances
     balance: balanceData ? formatEther(balanceData as bigint) : '0',
+    nexBalance: nexBalanceData ? formatEther(nexBalanceData.value) : '0', // ✅ NEX balance
     totalSupply: totalSupplyData ? formatEther(totalSupplyData as bigint) : '0',
+    
+    // Token info
     decimals: decimalsData ?? 18,
     name: nameData ?? 'exNEX',
     symbol: symbolData ?? 'exNEX',
+    
+    // Functions
     deposit,
     withdraw,
     approve,
-    allowance,
     resetState,
+    refetchBalance,
+    refetchNexBalance,
   }
 }

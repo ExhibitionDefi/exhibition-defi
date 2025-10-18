@@ -6,15 +6,15 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { MultiTransactionModal, useMultiTransactionModal } from '@/components/common/MultiTransactionModal'
+import { ExNEXInterface } from '@/components/faucet/ExNEXInterface'
 import { useFaucet } from '../hooks/useFaucet'
-import { useExNEX } from '../hooks/useNEX.ts'
+import { useExNEX } from '../hooks/useNEX'
 
-type PageView = 'faucet' | 'deposit'
+type PageView = 'faucet' | 'exnex'
 
 export const FaucetPage: React.FC = () => {
   const { isConnected, address } = useAccount()
   const [currentView, setCurrentView] = useState<PageView>('faucet')
-  const [depositAmount, setDepositAmount] = useState('')
 
   // Faucet hook
   const {
@@ -31,18 +31,12 @@ export const FaucetPage: React.FC = () => {
   } = useFaucet()
 
   // exNEX hook
-  const {
-    deposit,
-    balance: exnexBalance,
-    isLoading: isExNEXLoading,
-  } = useExNEX()
+  const exnexHook = useExNEX()
 
-  // Modal management
+  // Modal management for faucet only
   const modal = useMultiTransactionModal()
   const [faucetTxHash] = useState<`0x${string}`>()
-  const [depositTxHash] = useState<`0x${string}`>()
   const [faucetError, setFaucetError] = useState<Error | null>(null)
-  const [depositError, setDepositError] = useState<Error | null>(null)
 
   const formatCooldown = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600)
@@ -70,24 +64,6 @@ export const FaucetPage: React.FC = () => {
     }
   }
 
-  const handleDeposit = async () => {
-    if (!depositAmount || isNaN(parseFloat(depositAmount))) {
-      setDepositError(new Error('Please enter a valid amount'))
-      return
-    }
-
-    try {
-      setDepositError(null)
-      modal.show('deposit')
-      await deposit(depositAmount)
-      setDepositAmount('')
-      // Success will be handled by modal state
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Deposit failed')
-      setDepositError(error)
-    }
-  }
-
   if (!isConnected) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
@@ -102,7 +78,7 @@ export const FaucetPage: React.FC = () => {
                 Connect Your Wallet
               </h2>
               <p style={{ color: 'var(--metallic-silver)' }}>
-                Connect your wallet to claim free testnet tokens and deposit to exNEX
+                Connect your wallet to claim free testnet tokens and manage exNEX
               </p>
             </div>
             <div className="bg-gradient-to-r from-[var(--neon-blue)]/10 to-[var(--neon-orange)]/10 p-4 rounded-lg">
@@ -114,9 +90,9 @@ export const FaucetPage: React.FC = () => {
     )
   }
 
-  const isLoading = isFaucetLoading || isExNEXLoading
+  const isLoading = isFaucetLoading && currentView === 'faucet'
 
-  if (isLoading && currentView === 'faucet') {
+  if (isLoading) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
@@ -129,22 +105,18 @@ export const FaucetPage: React.FC = () => {
 
   return (
     <>
-      {/* Modal */}
+      {/* Faucet Modal */}
       <MultiTransactionModal
         isOpen={modal.isOpen}
         onClose={modal.hide}
         transactionType={modal.transactionType}
-        mainHash={modal.transactionType === 'request' ? faucetTxHash : depositTxHash}
-        isMainPending={modal.transactionType === 'request' ? isFaucetPending : false}
-        isMainConfirming={modal.transactionType === 'request' ? isFaucetConfirming : false}
-        isMainSuccess={modal.transactionType === 'request' ? isFaucetSuccess : false}
-        isError={!!(modal.transactionType === 'request' ? faucetError : depositError)}
-        error={modal.transactionType === 'request' ? faucetError : depositError}
-        message={
-          modal.transactionType === 'request'
-            ? 'Requesting testnet tokens from faucet...'
-            : 'Depositing NEX to get exNEX...'
-        }
+        mainHash={faucetTxHash}
+        isMainPending={isFaucetPending}
+        isMainConfirming={isFaucetConfirming}
+        isMainSuccess={isFaucetSuccess}
+        isError={!!faucetError}
+        error={faucetError}
+        message="Requesting testnet tokens from faucet..."
       />
 
       <div className="max-w-4xl mx-auto space-y-8">
@@ -162,15 +134,15 @@ export const FaucetPage: React.FC = () => {
             Faucet
           </Button>
           <Button
-            onClick={() => setCurrentView('deposit')}
+            onClick={() => setCurrentView('exnex')}
             className={`flex items-center gap-2 ${
-              currentView === 'deposit'
+              currentView === 'exnex'
                 ? 'bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)]'
                 : 'bg-[var(--charcoal)] hover:bg-[var(--charcoal)]/80 border border-[var(--metallic-silver)]/30'
             }`}
           >
             <Coins className="h-5 w-5" />
-            Deposit to exNEX
+            exNEX
           </Button>
         </div>
 
@@ -325,122 +297,33 @@ export const FaucetPage: React.FC = () => {
 
             {/* Next Step CTA */}
             <div className="bg-gradient-to-r from-[var(--neon-blue)]/10 to-[var(--neon-orange)]/10 border border-[var(--neon-blue)]/30 rounded-xl p-6 text-center">
-              <p className="mb-4" style={{ color: 'var(--silver-light)' }}>Ready to deposit and get exNEX?</p>
+              <p className="mb-4" style={{ color: 'var(--silver-light)' }}>Ready to manage your exNEX tokens?</p>
               <Button
-                onClick={() => setCurrentView('deposit')}
+                onClick={() => setCurrentView('exnex')}
                 className="bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)] flex items-center gap-2 mx-auto"
               >
-                Go to Deposit <ArrowRight className="h-4 w-4" />
+                Go to exNEX <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
           </>
         )}
 
-        {/* Deposit View */}
-        {currentView === 'deposit' && (
-          <>
-            {/* Header */}
-            <div className="text-center space-y-4">
-              <div className="relative inline-block">
-                <Coins 
-                  className="h-16 w-16 mx-auto drop-shadow-[0_0_16px_var(--neon-orange)]" 
-                  style={{ color: 'var(--neon-orange)' }}
-                />
-                <div className="absolute -inset-4 bg-gradient-to-r from-[var(--neon-blue)]/20 to-[var(--neon-orange)]/20 rounded-full blur-xl animate-pulse"></div>
-              </div>
-              <h1 className="text-4xl font-bold" style={{ color: 'var(--silver-light)' }}>
-                Deposit to exNEX
-              </h1>
-              <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--metallic-silver)' }}>
-                Convert your NEX tokens to exNEX with automatic liquidity and vesting
-              </p>
-            </div>
-
-            {/* Deposit Card */}
-            <Card className="bg-gradient-to-br from-[var(--charcoal)] to-[var(--deep-black)] border border-[var(--metallic-silver)]/30 p-8">
-              <div className="space-y-6">
-                {/* Current Balance */}
-                <div className="bg-[var(--charcoal)]/50 rounded-lg p-4 border border-[var(--metallic-silver)]/20">
-                  <p className="text-sm mb-2" style={{ color: 'var(--metallic-silver)' }}>
-                    Current exNEX Balance
-                  </p>
-                  <p className="text-3xl font-bold" style={{ color: 'var(--silver-light)' }}>
-                    {exnexBalance}
-                  </p>
-                </div>
-
-                {/* Amount Input */}
-                <div className="space-y-2">
-                  <label style={{ color: 'var(--silver-light)' }} className="block text-sm font-medium">
-                    NEX Amount to Deposit
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={depositAmount}
-                      onChange={(e) => {
-                        setDepositAmount(e.target.value)
-                        setDepositError(null)
-                      }}
-                      placeholder="Enter amount in NEX"
-                      className="w-full px-4 py-3 bg-[var(--charcoal)] border border-[var(--metallic-silver)]/30 rounded-lg text-[var(--silver-light)] placeholder-[var(--silver-dark)] focus:outline-none focus:border-[var(--neon-blue)]/50 focus:ring-1 focus:ring-[var(--neon-blue)]/30"
-                    />
-                    <span style={{ color: 'var(--metallic-silver)' }} className="absolute right-4 top-3 text-sm font-medium">
-                      NEX
-                    </span>
-                  </div>
-                </div>
-
-                {/* Error Message */}
-                {depositError && (
-                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start space-x-3">
-                    <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-red-400 text-sm">{depositError.message}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Success Message */}
-                {modal.transactionType === 'deposit' && modal.isOpen === false && (
-                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 flex items-start space-x-3">
-                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-green-400">Deposit Successful!</p>
-                      <p className="text-sm text-green-300/80 mt-1">
-                        You have received exNEX tokens in your wallet
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Deposit Button */}
-                <Button
-                  onClick={handleDeposit}
-                  disabled={!depositAmount || isExNEXLoading}
-                  isLoading={false}
-                  className="w-full h-14 text-lg bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)] hover:from-[var(--neon-blue)]/90 hover:to-[var(--neon-orange)]/90 border-0 shadow-lg shadow-[var(--neon-orange)]/30"
-                >
-                  <Coins className="h-5 w-5 mr-2" />
-                  Deposit NEX
-                </Button>
-
-                {/* Info Box */}
-                <div className="bg-[var(--neon-orange)]/5 border border-[var(--neon-orange)]/20 rounded-lg p-4 flex items-start space-x-3">
-                  <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--neon-orange)' }} />
-                  <div className="space-y-2 text-sm" style={{ color: 'var(--metallic-silver)' }}>
-                    <p className="font-semibold" style={{ color: 'var(--silver-light)' }}>Deposit Benefits:</p>
-                    <ul className="space-y-1 list-disc list-inside">
-                      <li>Automatic liquidity provision on AMM</li>
-                      <li>Smart contract-enforced vesting schedules</li>
-                      <li>Fair distribution with cliff periods</li>
-                      <li>Complete blockchain transparency</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </>
+        {/* exNEX View - Using the new component */}
+        {currentView === 'exnex' && (
+          <ExNEXInterface
+            balance={exnexHook.balance}
+            totalSupply={exnexHook.totalSupply}
+            nexBalance={exnexHook.nexBalance}
+            isLoading={exnexHook.isLoading}
+            isSuccess={exnexHook.isSuccess}
+            error={exnexHook.error}
+            txHash={exnexHook.txHash}
+            isPending={exnexHook.isPending}
+            isConfirming={exnexHook.isConfirming}
+            deposit={exnexHook.deposit}
+            withdraw={exnexHook.withdraw}
+            resetState={exnexHook.resetState}
+          />
         )}
       </div>
     </>
