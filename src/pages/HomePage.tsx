@@ -131,19 +131,19 @@ export const HomePage: React.FC = () => {
             </p>
           </Card>
 
-          <Card className="text-center hover:border-[var(--neon-blue)]/30 transition-all duration-300" hover>
-            <Zap className="h-12 w-12 text-[var(--neon-blue)] mx-auto mb-4 drop-shadow-[0_0_8px_var(--neon-blue)]" />
-            <h3 className="text-xl font-semibold text-[var(--silver-light)] mb-2">Automatic LP Creation</h3>
-            <p className="text-[var(--metallic-silver)]">
-              Initial liquidity is automatically added to our AMM and locked. Project owners can't touch it until the lock period expires.
-            </p>
-          </Card>
-
           <Card className="text-center hover:border-[var(--neon-orange)]/30 transition-all duration-300" hover>
             <Target className="h-12 w-12 text-[var(--neon-orange)] mx-auto mb-4 drop-shadow-[0_0_8px_var(--neon-orange)]" />
             <h3 className="text-xl font-semibold text-[var(--silver-light)] mb-2">Hard Cap Limits</h3>
             <p className="text-[var(--metallic-silver)]">
               Instant finalization when hard cap is reached. No over-funding, no whale manipulation - just fair launches for everyone.
+            </p>
+          </Card>
+
+          <Card className="text-center hover:border-[var(--neon-blue)]/30 transition-all duration-300" hover>
+            <Zap className="h-12 w-12 text-[var(--neon-blue)] mx-auto mb-4 drop-shadow-[0_0_8px_var(--neon-blue)]" />
+            <h3 className="text-xl font-semibold text-[var(--silver-light)] mb-2">Automatic LP Creation</h3>
+            <p className="text-[var(--metallic-silver)]">
+              Initial liquidity is automatically added to our AMM and locked. Project owners can't touch it until the lock period expires.
             </p>
           </Card>
 
