@@ -43,7 +43,7 @@ const COMMON_TOKENS: Token[] = [
 export const AddLiquidityForm: React.FC = () => {
   const addLiquidity = useAddLiquidity();
   const [showTokenSelector, setShowTokenSelector] = useState<'tokenA' | 'tokenB' | null>(null);
-  const [customTokens] = useState<Token[]>([]);
+  const [customTokens, setCustomTokens] = useState<Token[]>([]);
 
   const allTokens = useMemo(() => {
     const tokensWithDecimals: Token[] = COMMON_TOKENS.map((token) => ({
@@ -55,6 +55,14 @@ export const AddLiquidityForm: React.FC = () => {
     }));
     return [...tokensWithDecimals, ...customTokens];
   }, [customTokens, addLiquidity.tokenAInfo, addLiquidity.tokenBInfo]);
+
+  const handleAddCustomToken = (token: Token) => {
+    setCustomTokens((prev) => {
+      const exists = prev.some((t) => t.address.toLowerCase() === token.address.toLowerCase());
+      if (exists) return prev;
+      return [...prev, { ...token, isCustom: true }];
+    });
+  };
 
   const handleMaxBalance = (token: 'A' | 'B') => {
     if (token === 'A' && addLiquidity.balanceA?.value && addLiquidity.tokenAInfo) {
@@ -355,6 +363,8 @@ export const AddLiquidityForm: React.FC = () => {
           }
           setShowTokenSelector(null);
         }}
+        customTokens={customTokens}
+        onAddCustomToken={handleAddCustomToken}
         isOpen={showTokenSelector !== null}
         onClose={() => setShowTokenSelector(null)}
         contractAddress={AMM_ADDRESS}
