@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { type Address, parseUnits, formatUnits, erc20Abi } from 'viem';
+import { type Address, parseUnits, formatUnits, erc20Abi, isAddress } from 'viem';
 import { useAccount, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { exhibitionAmmAbi } from '@/generated/wagmi';
 import { useTokenApproval } from '@/hooks/useTokenApproval';
@@ -25,6 +25,11 @@ export interface LiquidityState {
   approvalBSuccess?: boolean;
   transactionSuccess?: boolean;
 }
+
+// ✅ Helper function to validate address
+const isValidAddress = (address: any): address is Address => {
+  return typeof address === 'string' && address.length > 0 && isAddress(address);
+};
 
 export const useLiquidityPool = () => {
   const { address } = useAccount();
@@ -80,9 +85,25 @@ export const useLiquidityPool = () => {
     hash: ammTxHash,
   });
 
-  // Get token information
+  // ✅ FIXED: More defensive token validation
   const tokensToQuery = useMemo(() => {
-    return [liquidityState.tokenA, liquidityState.tokenB].filter((t): t is Address => !!t);
+    const tokens = [liquidityState.tokenA, liquidityState.tokenB]
+      .filter((t): t is Address => isValidAddress(t));
+    
+    // Debug log for production
+    if (tokens.length === 0 && (liquidityState.tokenA || liquidityState.tokenB)) {
+      console.warn('⚠️ Invalid token addresses detected:', {
+        tokenA: liquidityState.tokenA,
+        tokenB: liquidityState.tokenB,
+      });
+    }
+    
+    return tokens;
+  }, [liquidityState.tokenA, liquidityState.tokenB]);
+
+  // ✅ FIXED: More defensive enabled check
+  const shouldFetchAMMData = useMemo(() => {
+    return isValidAddress(liquidityState.tokenA) && isValidAddress(liquidityState.tokenB);
   }, [liquidityState.tokenA, liquidityState.tokenB]);
 
   // Main data fetching - AMM reads
@@ -101,59 +122,53 @@ export const useLiquidityPool = () => {
         address: CONTRACT_ADDRESSES.AMM,
         abi: exhibitionAmmAbi,
         functionName: 'doesPoolExist',
-        args:
-          liquidityState.tokenA && liquidityState.tokenB
-            ? [liquidityState.tokenA, liquidityState.tokenB]
-            : undefined,
+        args: shouldFetchAMMData
+          ? [liquidityState.tokenA!, liquidityState.tokenB!]
+          : undefined,
       },
       {
         address: CONTRACT_ADDRESSES.AMM,
         abi: exhibitionAmmAbi,
         functionName: 'getPool',
-        args:
-          liquidityState.tokenA && liquidityState.tokenB
-            ? [liquidityState.tokenA, liquidityState.tokenB]
-            : undefined,
+        args: shouldFetchAMMData
+          ? [liquidityState.tokenA!, liquidityState.tokenB!]
+          : undefined,
       },
       {
         address: CONTRACT_ADDRESSES.AMM,
         abi: exhibitionAmmAbi,
         functionName: 'getReserves',
-        args:
-          liquidityState.tokenA && liquidityState.tokenB
-            ? [liquidityState.tokenA, liquidityState.tokenB]
-            : undefined,
+        args: shouldFetchAMMData
+          ? [liquidityState.tokenA!, liquidityState.tokenB!]
+          : undefined,
       },
       {
         address: CONTRACT_ADDRESSES.AMM,
         abi: exhibitionAmmAbi,
         functionName: 'getLPBalance',
-        args:
-          liquidityState.tokenA && liquidityState.tokenB && address
-            ? [liquidityState.tokenA, liquidityState.tokenB, address]
-            : undefined,
+        args: shouldFetchAMMData && address
+          ? [liquidityState.tokenA!, liquidityState.tokenB!, address]
+          : undefined,
       },
       {
         address: CONTRACT_ADDRESSES.AMM,
         abi: exhibitionAmmAbi,
         functionName: 'getWithdrawableLPAmount',
-        args:
-          liquidityState.tokenA && liquidityState.tokenB && address
-            ? [liquidityState.tokenA, liquidityState.tokenB, address]
-            : undefined,
+        args: shouldFetchAMMData && address
+          ? [liquidityState.tokenA!, liquidityState.tokenB!, address]
+          : undefined,
       },
       {
         address: CONTRACT_ADDRESSES.AMM,
         abi: exhibitionAmmAbi,
         functionName: 'isLiquidityLocked',
-        args:
-          liquidityState.tokenA && liquidityState.tokenB && address
-            ? [liquidityState.tokenA, liquidityState.tokenB, address]
-            : undefined,
+        args: shouldFetchAMMData && address
+          ? [liquidityState.tokenA!, liquidityState.tokenB!, address]
+          : undefined,
       },
     ],
     query: {
-      enabled: Boolean(liquidityState.tokenA && liquidityState.tokenB),
+      enabled: shouldFetchAMMData,
       refetchInterval: 30_000,
       staleTime: 15_000,
     },
@@ -196,6 +211,11 @@ export const useLiquidityPool = () => {
     }
   }, [tokensInfoArray, liquidityState.tokenA, liquidityState.tokenB]);
 
+  // ✅ FIXED: More defensive enabled check for balances
+  const shouldFetchBalances = useMemo(() => {
+    return Boolean(address && isValidAddress(liquidityState.tokenA) && isValidAddress(liquidityState.tokenB));
+  }, [address, liquidityState.tokenA, liquidityState.tokenB]);
+
   // Get user token balances and allowances
   const {
     data: tokenBalancesData,
@@ -228,7 +248,7 @@ export const useLiquidityPool = () => {
       },
     ],
     query: {
-      enabled: Boolean(address && liquidityState.tokenA && liquidityState.tokenB),
+      enabled: shouldFetchBalances,
       refetchInterval: 15_000,
       staleTime: 10_000,
     },
@@ -328,7 +348,7 @@ export const useLiquidityPool = () => {
     } catch (err) {
       console.error('Failed to format calculatedAmountB:', err);
     }
-  }, [amountABigInt, calculatedAmountB, tokenBInfo, poolExists, liquidityState.amountB]);
+  }, [amountABigInt, calculatedAmountB, tokenBInfo, poolExists, liquidityState.amountB, liquidityState.mode]);
 
   // Use token approval hooks
   const approvalA = useTokenApproval({
@@ -353,6 +373,15 @@ export const useLiquidityPool = () => {
     }
   }, [liquidityState.amountA]);
 
+  // ✅ FIXED: More defensive enabled check for remove quote
+  const shouldFetchRemoveQuote = useMemo(() => {
+    return Boolean(
+      lpAmountToRemove && 
+      isValidAddress(liquidityState.tokenA) && 
+      isValidAddress(liquidityState.tokenB)
+    );
+  }, [lpAmountToRemove, liquidityState.tokenA, liquidityState.tokenB]);
+
   // Get remove liquidity quote
   const { data: removeQuoteData } = useReadContracts({
     contracts: [
@@ -360,16 +389,13 @@ export const useLiquidityPool = () => {
         address: CONTRACT_ADDRESSES.AMM,
         abi: exhibitionAmmAbi,
         functionName: 'getRemoveLiquidityQuote',
-        args:
-          liquidityState.tokenA && liquidityState.tokenB && lpAmountToRemove
-            ? [liquidityState.tokenA, liquidityState.tokenB, lpAmountToRemove]
-            : undefined,
+        args: shouldFetchRemoveQuote
+          ? [liquidityState.tokenA!, liquidityState.tokenB!, lpAmountToRemove!]
+          : undefined,
       },
     ],
     query: {
-      enabled: Boolean(
-        lpAmountToRemove && liquidityState.tokenA && liquidityState.tokenB
-      ),
+      enabled: shouldFetchRemoveQuote,
     },
   });
 
@@ -718,7 +744,7 @@ export const useLiquidityPool = () => {
         amountB: '',
         isProcessing: false,
         txHash: undefined,
-        transactionSuccess: false,  // ✅ CORRECT FLAG
+        transactionSuccess: false,
       }));
 
       resetAMMWrite();

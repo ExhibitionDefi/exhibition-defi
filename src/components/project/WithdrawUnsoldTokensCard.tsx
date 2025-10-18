@@ -18,6 +18,8 @@ interface WithdrawUnsoldTokensCardProps {
   unsoldTokensAmount: bigint
   tokensForSale: bigint
   tokensAllocated: bigint
+  hasWithdrawn?: boolean // ✅ NEW: Flag to track if withdrawal was successful
+  txHash?: `0x${string}` // ✅ NEW: Optional transaction hash
   onWithdraw: () => void
 }
 
@@ -31,6 +33,8 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
   unsoldTokensAmount,
   tokensForSale,
   tokensAllocated,
+  hasWithdrawn = false, // ✅ Default to false
+  txHash,
   onWithdraw,
 }) => {
   const formattedUnsoldTokens = formatUnits(unsoldTokensAmount, tokenDecimals)
@@ -82,8 +86,33 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
 
         {/* Status Section */}
         <div className="space-y-3">
+          {/* ✅ Withdrawal Success Banner */}
+          {hasWithdrawn && (
+            <div className="flex items-start space-x-3 p-4 bg-[var(--charcoal)] rounded-lg border-2 border-[var(--neon-blue)]">
+              <CheckCircle2 className="h-5 w-5 text-[var(--neon-blue)] flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-[var(--neon-blue)] mb-1">
+                  Withdrawal Successful!
+                </p>
+                <p className="text-xs text-[var(--silver-dark)]">
+                  {parseFloat(formattedUnsoldTokens).toLocaleString(undefined, { 
+                    maximumFractionDigits: 2 
+                  })} {tokenSymbol} tokens have been returned to your wallet
+                </p>
+                {txHash && (
+                  <div className="mt-2 p-2 bg-[var(--deep-black)] rounded">
+                    <p className="text-xs text-[var(--silver-dark)] mb-1">Transaction Hash:</p>
+                    <p className="text-xs font-mono text-[var(--silver-light)] break-all">
+                      {txHash}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Withdrawal Lock Status */}
-          {!isWithdrawalUnlocked && (
+          {!hasWithdrawn && !isWithdrawalUnlocked && (
             <div className="flex items-start space-x-3 p-4 bg-[var(--charcoal)] rounded-lg border border-[var(--neon-orange)] border-opacity-30">
               <Clock className="h-5 w-5 text-[var(--neon-orange)] flex-shrink-0 mt-0.5" />
               <div className="flex-1">
@@ -101,7 +130,7 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
           )}
 
           {/* Withdrawal Unlocked */}
-          {isWithdrawalUnlocked && (
+          {!hasWithdrawn && isWithdrawalUnlocked && (
             <div className="flex items-start space-x-3 p-4 bg-[var(--charcoal)] rounded-lg border border-[var(--neon-blue)] border-opacity-30">
               <CheckCircle2 className="h-5 w-5 text-[var(--neon-blue)] flex-shrink-0 mt-0.5" />
               <div className="flex-1">
@@ -118,35 +147,48 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
           )}
 
           {/* Info Box */}
-          <div className="bg-gradient-to-r from-[var(--charcoal)] to-transparent p-4 rounded-lg border border-[var(--silver-dark)] border-opacity-20">
-            <div className="flex items-start space-x-3">
-              <AlertCircle className="h-5 w-5 text-[var(--neon-blue)] flex-shrink-0 mt-0.5" />
-              <div className="flex-1 space-y-2">
-                <p className="text-sm text-[var(--silver-light)]">
-                  <span className="font-semibold">Withdrawal conditions:</span>
-                </p>
-                <ul className="text-xs text-[var(--silver-dark)] space-y-1 pl-4 list-disc">
-                  <li>Project must have ended</li>
-                  <li>1-day timelock period must have passed</li>
-                  <li>Available for failed projects or when hard cap not reached</li>
-                  <li>Unsold tokens will be returned to your wallet</li>
-                </ul>
+          {!hasWithdrawn && (
+            <div className="bg-gradient-to-r from-[var(--charcoal)] to-transparent p-4 rounded-lg border border-[var(--silver-dark)] border-opacity-20">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="h-5 w-5 text-[var(--neon-blue)] flex-shrink-0 mt-0.5" />
+                <div className="flex-1 space-y-2">
+                  <p className="text-sm text-[var(--silver-light)]">
+                    <span className="font-semibold">Withdrawal conditions:</span>
+                  </p>
+                  <ul className="text-xs text-[var(--silver-dark)] space-y-1 pl-4 list-disc">
+                    <li>Project must have ended</li>
+                    <li>1-day timelock period must have passed</li>
+                    <li>Available for failed projects or when hard cap not reached</li>
+                    <li>Unsold tokens will be returned to your wallet</li>
+                  </ul>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Action Button */}
-        <div className="pt-2">
-          <Button
-            onClick={onWithdraw}
-            className="w-full"
-            disabled={buttonState.disabled}
-            isLoading={buttonState.loading}
-          >
-            {buttonState.text}
-          </Button>
-        </div>
+        {!hasWithdrawn && (
+          <div className="pt-2">
+            <Button
+              onClick={onWithdraw}
+              className="w-full"
+              disabled={buttonState.disabled}
+              isLoading={buttonState.loading}
+            >
+              {buttonState.text}
+            </Button>
+          </div>
+        )}
+
+        {/* Already Withdrawn Message */}
+        {hasWithdrawn && (
+          <div className="pt-2 text-center">
+            <p className="text-sm text-[var(--silver-dark)]">
+              All unsold tokens have been withdrawn
+            </p>
+          </div>
+        )}
 
         {/* Additional Info */}
         <div className="text-xs text-[var(--silver-dark)] text-center">

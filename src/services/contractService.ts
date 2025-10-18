@@ -43,7 +43,7 @@ export class ContractService {
     return options
   }
 
-  static async validateProjectCreation(formData: any) {
+  static async validateProjectCreation(_formData: any) {
     try {
 
       return true

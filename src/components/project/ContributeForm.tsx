@@ -8,6 +8,7 @@ import { type ProjectDisplayData, ProjectStatus, ProjectStatusLabels } from '../
 import { ExhibitionFormatters } from '../../utils/exFormatters'
 import { EXHIBITION_ADDRESS } from '../../config/contracts'
 import { Card } from '../ui/Card'
+import { CheckCircle2, TrendingUp } from 'lucide-react'
 
 interface ContributeFormProps {
   project: ProjectDisplayData
@@ -21,6 +22,9 @@ interface ContributeFormProps {
   isConnected: boolean
   canContribute: boolean
   isLoading?: boolean
+  contributionSuccess?: boolean // ✅ NEW: Flag for successful contribution
+  txHash?: `0x${string}` // ✅ NEW: Transaction hash
+  contributedAmount?: string // ✅ NEW: Amount that was contributed
   onSetMaxBalance: () => void
   onContributionChange: (amount: string) => void
   onContribute: () => void
@@ -38,6 +42,9 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
   isConnected,
   canContribute,
   isLoading,
+  contributionSuccess = false, // ✅ Default to false
+  txHash,
+  contributedAmount,
   onSetMaxBalance,
   onContributionChange,
   onContribute,
@@ -69,6 +76,33 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
       <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-4">
         Contribute to Project
       </h3>
+
+      {/* ✅ Contribution Success Banner */}
+      {contributionSuccess && contributedAmount && (
+        <div className="mb-4 p-4 bg-gradient-to-r from-[var(--charcoal)] to-transparent rounded-lg border-2 border-[var(--neon-blue)] relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-[var(--neon-blue)] to-transparent opacity-10"></div>
+          <div className="relative flex items-start space-x-3">
+            <CheckCircle2 className="h-6 w-6 text-[var(--neon-blue)] flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-[var(--neon-blue)] mb-1 flex items-center">
+                Contribution Successful! 
+                <TrendingUp className="h-4 w-4 ml-2" />
+              </p>
+              <p className="text-xs text-[var(--silver-dark)] mb-2">
+                You contributed {contributedAmount} {contributionTokenSymbol} to this project
+              </p>
+              {txHash && (
+                <div className="mt-2 p-2 bg-[var(--deep-black)] rounded">
+                  <p className="text-xs text-[var(--silver-dark)] mb-1">Transaction Hash:</p>
+                  <p className="text-xs font-mono text-[var(--silver-light)] break-all">
+                    {txHash}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-between items-center p-3 bg-[var(--charcoal)] rounded-lg border border-[var(--silver-dark)] border-opacity-20 hover:border-opacity-40 transition-all duration-300">
         <span className="text-sm text-[var(--metallic-silver)]">Your Balance:</span>
@@ -154,8 +188,12 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
               isLoading={isLoading}
               loadingText="Contributing..."
               onClick={onContribute}
+              disabled={isLoading || contributionSuccess} // ✅ Disable after success
             >
-              Contribute {contributionAmount} {contributionTokenSymbol}
+              {contributionSuccess 
+                ? '✓ Contribution Complete' 
+                : `Contribute ${contributionAmount} ${contributionTokenSymbol}`
+              }
             </Button>
           </TokenApproval>
         )}
@@ -166,10 +204,19 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
           </Button>
         )}
 
-        {isConnected && (!contributionAmount) && (
+        {isConnected && (!contributionAmount) && !contributionSuccess && (
           <div className="text-center py-4">
             <p className="text-[var(--metallic-silver)] text-sm">
               Enter an amount to continue with the contribution process
+            </p>
+          </div>
+        )}
+
+        {/* ✅ Additional success info */}
+        {contributionSuccess && (
+          <div className="text-center py-3 px-4 bg-[var(--charcoal)] rounded-lg">
+            <p className="text-xs text-[var(--silver-dark)]">
+              Your contribution has been recorded. Check "Your Participation" section above for details.
             </p>
           </div>
         )}

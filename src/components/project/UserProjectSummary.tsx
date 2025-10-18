@@ -1,9 +1,8 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { Wallet, Gift, CheckCircle } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { useClaimTokens } from '@/hooks/pad/useClaimTokens'
-import { useRequestRefund } from '@/hooks/pad/useRequestRefund'
 import type { ProjectDisplayData, UserProjectSummary as UserSummaryType } from '@/types/project'
 import { ProjectStatus } from '@/types/project'
 import { ExhibitionFormatters } from '@/utils/exFormatters'
@@ -19,7 +18,7 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
   userSummary, 
   onRefetch 
 }) => {
-  // Use individual hooks
+  // Only use claim tokens hook - refund is handled in separate component
   const {
     claimTokens,
     hash: claimHash,
@@ -33,31 +32,11 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
     showToast: true,
   })
 
-  const {
-    requestRefund,
-    hash: refundHash,
-    isLoading: isRefundLoading,
-    isConfirming: isRefundConfirming,
-    isConfirmed: isRefundConfirmed,
-    error: refundError,
-  } = useRequestRefund()
-
-  // Handle successful refund transaction
-  useEffect(() => {
-    if (isRefundConfirmed && refundHash) {
-      onRefetch?.()
-    }
-  }, [isRefundConfirmed, refundHash, onRefetch])
-
-  // Determine which action is active
-  const activeHash = claimHash || refundHash
-  const isTransactionPending = isClaimLoading || isRefundLoading
-  const isSuccess = isClaimConfirmed || isRefundConfirmed
-  const txError = claimError || refundError
-
-  const canRefund = (Number(project.status) === ProjectStatus.Failed || Number(project.status) === ProjectStatus.Refundable) 
-    && !userSummary.userHasRefunded 
-    && userSummary.contributionAmount > 0n
+  // Determine refund eligibility (for display only)
+  const isRefundEligible = (
+    Number(project.status) === ProjectStatus.Failed || 
+    Number(project.status) === ProjectStatus.Refundable
+  ) && !userSummary.userHasRefunded && userSummary.contributionAmount > 0n
 
   const canClaim = userSummary.canClaim && userSummary.tokensAvailable > 0n
 
@@ -127,37 +106,62 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
           </div>
         )}
 
-        {/* Actions */}
+        {/* Status Information */}
         <div className="border-t pt-4 space-y-2" style={{ borderColor: 'var(--charcoal)' }}>
-          {/* Transaction Status Messages */}
-          {isSuccess && (
-            <div className="flex items-center space-x-2 p-3 rounded-lg" style={{ color: 'var(--neon-blue)', backgroundColor: 'rgba(21, 198, 230, 0.1)' }}>
-              <CheckCircle className="h-5 w-5" />
-              <span className="font-medium">Transaction Successful!</span>
-            </div>
-          )}
-
-          {txError && (
-            <div className="p-3 border rounded-lg" style={{ backgroundColor: 'rgba(250, 126, 9, 0.1)', borderColor: 'var(--neon-orange)' }}>
-              <p className="text-sm" style={{ color: 'var(--neon-orange)' }}>
-                {txError.message || 'Transaction failed'}
-              </p>
-            </div>
-          )}
-
+          {/* Refund Status (Display Only) */}
           {userSummary.userHasRefunded && (
-            <div className="flex items-center space-x-2" style={{ color: 'var(--neon-blue)' }}>
+            <div className="flex items-center space-x-2 p-3 rounded-lg" style={{ 
+              color: 'var(--neon-blue)', 
+              backgroundColor: 'rgba(21, 198, 230, 0.1)' 
+            }}>
               <CheckCircle className="h-5 w-5" />
               <span className="font-medium">Refund Processed</span>
             </div>
           )}
 
+          {/* Refund Eligible Notice (Display Only) */}
+          {isRefundEligible && (
+            <div className="p-3 rounded-lg border" style={{ 
+              backgroundColor: 'rgba(250, 126, 9, 0.1)', 
+              borderColor: 'var(--neon-orange)',
+              color: 'var(--neon-orange)'
+            }}>
+              <p className="text-sm font-medium">
+                ⚠️ Refund Available - Use the dedicated refund section below to request your refund
+              </p>
+            </div>
+          )}
+
+          {/* Claim Success Message */}
+          {isClaimConfirmed && (
+            <div className="flex items-center space-x-2 p-3 rounded-lg" style={{ 
+              color: 'var(--neon-blue)', 
+              backgroundColor: 'rgba(21, 198, 230, 0.1)' 
+            }}>
+              <CheckCircle className="h-5 w-5" />
+              <span className="font-medium">Tokens Claimed Successfully!</span>
+            </div>
+          )}
+
+          {/* Claim Error */}
+          {claimError && (
+            <div className="p-3 border rounded-lg" style={{ 
+              backgroundColor: 'rgba(250, 126, 9, 0.1)', 
+              borderColor: 'var(--neon-orange)' 
+            }}>
+              <p className="text-sm" style={{ color: 'var(--neon-orange)' }}>
+                {claimError.message || 'Transaction failed'}
+              </p>
+            </div>
+          )}
+
+          {/* Claim Button */}
           {canClaim && (
             <Button
               onClick={claimTokens}
               className="w-full"
               isLoading={isClaimLoading}
-              disabled={isTransactionPending}
+              disabled={isClaimLoading || isClaimConfirming}
             >
               <Gift className="h-4 w-4 mr-2" />
               {isClaimConfirming 
@@ -167,23 +171,11 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
             </Button>
           )}
 
-          {canRefund && (
-            <Button
-              onClick={() => requestRefund(project.id)}
-              variant="default"
-              className="w-full"
-              isLoading={isRefundLoading}
-              disabled={isTransactionPending}
-            >
-              {isRefundConfirming ? 'Processing...' : 'Request Refund'}
-            </Button>
-          )}
-
           {/* Transaction Hash Display */}
-          {activeHash && (
+          {claimHash && (
             <div className="mt-2 p-2 rounded text-xs" style={{ backgroundColor: 'var(--charcoal)' }}>
               <p style={{ color: 'var(--silver-dark)' }}>Transaction Hash:</p>
-              <p className="font-mono break-all" style={{ color: 'var(--silver-light)' }}>{activeHash}</p>
+              <p className="font-mono break-all" style={{ color: 'var(--silver-light)' }}>{claimHash}</p>
             </div>
           )}
         </div>

@@ -7,7 +7,7 @@ import { MultiTransactionModal } from '@/components/common/MultiTransactionModal
 import { useCreateProject } from '@/hooks/pad/useCreateProject'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Rocket, ArrowLeft, CheckCircle2, Wallet } from 'lucide-react'
+import { Rocket, ArrowLeft, CheckCircle2, Wallet, ArrowRight } from 'lucide-react'
 
 /**
  * Create Project Page
@@ -33,11 +33,21 @@ export const CreateProjectPage: React.FC = () => {
 
   const [formKey, setFormKey] = React.useState(0)
 
+  // ✅ FIXED: Redirect to project details page
   useEffect(() => {
-    if (isSuccess && projectId) {
+    if (isSuccess && projectId !== null && projectId !== undefined) {
+      console.log('🎯 Redirecting to project:', projectId)
+      
+      // Convert bigint to string for URL
+      const projectIdStr = projectId.toString()
+      
       const timer = setTimeout(() => {
-        navigate(`/projects/${projectId}`)
+        const route = `/projects/${projectIdStr}` // ✅ Matches your route: /projects/:projectId
+        
+        console.log('📍 Navigating to:', route)
+        navigate(route)
       }, 3000)
+      
       return () => clearTimeout(timer)
     }
   }, [isSuccess, projectId, navigate])
@@ -55,6 +65,16 @@ export const CreateProjectPage: React.FC = () => {
       if (error) {
         setFormKey(prev => prev + 1)
       }
+    }
+  }
+
+  // ✅ Manual navigation to project details
+  const handleViewProject = () => {
+    if (projectId !== null && projectId !== undefined) {
+      const projectIdStr = projectId.toString()
+      const route = `/projects/${projectIdStr}` // ✅ Matches your route
+      console.log('🔗 Manual navigation to:', route)
+      navigate(route)
     }
   }
 
@@ -175,7 +195,7 @@ export const CreateProjectPage: React.FC = () => {
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-5xl mx-auto">
           {/* Success Message */}
-          {isSuccess && projectId !== null && (
+          {isSuccess && projectId !== null && projectId !== undefined && (
             <div className="mb-8">
               <div className="bg-gradient-to-r from-[var(--neon-blue)]/10 to-[var(--neon-purple)]/10 border-2 border-[var(--neon-blue)]/30 rounded-2xl p-8">
                 <div className="flex items-start gap-4">
@@ -188,7 +208,7 @@ export const CreateProjectPage: React.FC = () => {
                     <h3 className="text-2xl font-bold text-[var(--silver-light)] mb-2">
                       🎉 Project Created Successfully!
                     </h3>
-                    <div className="space-y-2 text-[var(--metallic-silver)]">
+                    <div className="space-y-3 text-[var(--metallic-silver)]">
                       <p className="flex items-center gap-2">
                         <span className="font-semibold text-[var(--silver-light)]">Project ID:</span>
                         <span className="font-mono text-[var(--neon-blue)]">{projectId.toString()}</span>
@@ -201,10 +221,36 @@ export const CreateProjectPage: React.FC = () => {
                           </code>
                         </p>
                       )}
-                      <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[var(--silver-dark)]/20">
+                      
+                      {/* ✅ Next Steps Info */}
+                      <div className="mt-4 pt-4 border-t border-[var(--silver-dark)]/20">
+                        <p className="text-sm font-medium text-[var(--silver-light)] mb-2">
+                          🚀 Next Steps:
+                        </p>
+                        <ul className="text-sm text-[var(--metallic-silver)] space-y-1 pl-5 list-disc">
+                          <li>Deposit your project tokens</li>
+                          <li>Configure liquidity settings</li>
+                          <li>Review and launch your project</li>
+                        </ul>
+                      </div>
+
+                      {/* ✅ Action Button */}
+                      <div className="flex items-center gap-3 mt-6">
+                        <Button
+                          onClick={handleViewProject}
+                          variant="primary"
+                          className="flex items-center gap-2"
+                        >
+                          <span>Continue to Project</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+
+                      {/* ✅ Auto-redirect indicator */}
+                      <div className="flex items-center gap-2 mt-4">
                         <div className="w-2 h-2 rounded-full bg-[var(--neon-blue)] animate-pulse"></div>
                         <p className="text-sm font-medium text-[var(--neon-blue)]">
-                          Redirecting to your project page...
+                          Auto-redirecting to project page in 3 seconds...
                         </p>
                       </div>
                     </div>
@@ -261,7 +307,7 @@ export const CreateProjectPage: React.FC = () => {
         error={error}
         message={
           isSuccess
-            ? 'Project created successfully! Redirecting to your project page...'
+            ? 'Project created successfully! Redirecting to your project...'
             : isConfirming
             ? 'Confirming project creation on the blockchain...'
             : 'Creating your launchpad project and deploying smart contracts...'
