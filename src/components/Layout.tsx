@@ -107,7 +107,10 @@ export const Layout: React.FC<LayoutProps> = ({
                 <div className="w-8 h-8 bg-gradient-to-br from-[var(--neon-blue)] to-[var(--neon-orange)] rounded-lg flex items-center justify-center shadow-[0_0_8px_var(--neon-blue)]/40">
                   <span className="font-bold text-sm text-[var(--deep-black)]">EXH</span>
                 </div>
-                <span className="hidden sm:inline text-xl font-bold text-[var(--neon-blue)]">EXHIBITION</span>
+                <span className={clsx(
+                  'text-xl font-bold text-[var(--neon-blue)]',
+                  isConnected && 'hidden sm:inline'
+                )}>EXHIBITION</span>
               </Link>
             </div>
 
@@ -134,9 +137,9 @@ export const Layout: React.FC<LayoutProps> = ({
             </nav>
 
             {/* Right Side - Flex layout to prevent overlap */}
-            <div className="flex items-center justify-end gap-1"> 
-              {/* Wallet Button - Trimmed */}
-              <div className="flex items-center scale-75 origin-right">
+            <div className="flex items-center justify-end gap-1 md:gap-3"> 
+              {/* Wallet Button */}
+              <div className="flex items-center">
                 <w3m-button />
               </div>
 
