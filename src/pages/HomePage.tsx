@@ -140,7 +140,7 @@ export const HomePage: React.FC = () => {
           </Card>
 
           <Card className="text-center hover:border-[var(--neon-blue)]/30 transition-all duration-300" hover>
-            <Zap className="h-12 w-12 text-[var(--neon-blue)] mx-auto mb-4 drop-shadow-[0_0_8px_var(--neon-blue)]" />
+            <link className="h-12 w-12 text-[var(--neon-blue)] mx-auto mb-4 drop-shadow-[0_0_8px_var(--neon-blue)]" />
             <h3 className="text-xl font-semibold text-[var(--silver-light)] mb-2">Automatic LP Creation</h3>
             <p className="text-[var(--metallic-silver)]">
               Initial liquidity is automatically added to our AMM and locked. Project owners can't touch it until the lock period expires.
@@ -151,7 +151,7 @@ export const HomePage: React.FC = () => {
             <Bot className="h-12 w-12 text-[var(--neon-orange)] mx-auto mb-4 drop-shadow-[0_0_8px_var(--neon-orange)]" />
             <h3 className="text-xl font-semibold text-[var(--silver-light)] mb-2">Built for AI Era</h3>
             <p className="text-[var(--metallic-silver)]">
-              Deployed on Nexus Verifiable Layer Network -- the blockchain designed for verifiable AI computations and next-gen applications.
+              Deployed on Nexus Verifiable Layer Network - the blockchain designed for verifiable AI computations and next-gen applications.
             </p>
           </Card>
         </div>
