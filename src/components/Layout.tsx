@@ -15,7 +15,7 @@ import { clsx } from 'clsx'
 import { useAccount } from 'wagmi'
 import { useMultiTransactionModal } from '@/components/common/MultiTransactionModal'
 import { MultiTransactionModal } from '@/components/common/MultiTransactionModal'
-import type { TransactionType } from '@/components/common/MultiTransactionModal' // Import type to satisfy TS
+import type { TransactionType } from '@/components/common/MultiTransactionModal'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -64,7 +64,6 @@ export const Layout: React.FC<LayoutProps> = ({
     mainClassName
   )
 
-  // Verification check
   React.useEffect(() => {
     if (isConnected && address) {
       const stored = localStorage.getItem(`walletVerified_${address}`)
@@ -75,14 +74,12 @@ export const Layout: React.FC<LayoutProps> = ({
           return
         }
       }
-      // Trigger verify modal with custom message - cast type if needed, but better import
       show('verify-wallet' as TransactionType)
     } else {
       setVerified(false)
     }
   }, [isConnected, address, show])
 
-  // Handle modal success
   React.useEffect(() => {
     if (isConnected && address) {
       const stored = localStorage.getItem(`walletVerified_${address}`)
@@ -136,15 +133,16 @@ export const Layout: React.FC<LayoutProps> = ({
               })}
             </nav>
 
-            {/* Right Side */}
-            <div className="flex items-center space-x-3"> 
-              <div className="flex items-center space-x-2">
+            {/* Right Side - Flex layout to prevent overlap */}
+            <div className="flex items-center justify-end gap-1 md:gap-3"> 
+              {/* Wallet Button - Trimmed display */}
+              <div className="flex items-center">
                 <w3m-button />
               </div>
 
-              {/* Mobile Menu Button */}
+              {/* Mobile Menu Button - Always visible */}
               <button
-                className="md:hidden p-2 rounded-lg text-[var(--metallic-silver)] hover:text-[var(--silver-light)] hover:bg-[var(--silver-dark)]/20"
+                className="md:hidden p-2 rounded-lg text-[var(--metallic-silver)] hover:text-[var(--silver-light)] hover:bg-[var(--silver-dark)]/20 flex-shrink-0"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               >
                 {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -177,6 +175,11 @@ export const Layout: React.FC<LayoutProps> = ({
                 )
               })}
             </div>
+            
+            {/* Mobile Wallet Button - Show in menu when on small screens */}
+            <div className="sm:hidden border-t border-[var(--silver-dark)] px-4 py-3">
+              <w3m-button />
+            </div>
           </div>
         )}
       </header>
@@ -190,7 +193,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 isOpen={isOpen}
                 onClose={() => { hide(); setVerified(true); }}
                 transactionType={transactionType}
-                message={customMessage} // Use 'message' prop for custom text in modal (adjusted from signMessageText)
+                message={customMessage}
               />
             </div>
           ) : (
