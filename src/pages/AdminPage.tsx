@@ -4,11 +4,12 @@ import { useAdminSettings } from '../hooks/admin/useAdminSettings';
 import { useUpdatePlatformFee } from '../hooks/admin/useUpdatePlatformFee';
 import { useUpdateFeeRecipient } from '../hooks/admin/useUpdateFeeRecipient';
 import { useManageContributionTokens } from '../hooks/admin/useManageContributionTokens';
+import { useFaucetSettings } from '../hooks/admin/useFaucetSettings';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
-import { Shield, AlertTriangle, Settings, Plus, Minus, Lock, Key, Database, Server } from 'lucide-react';
+import { Shield, AlertTriangle, Settings, Plus, Minus, Lock, Key, Database, Server, Droplets, Clock } from 'lucide-react';
 import { EXHIBITION_ADDRESS } from '../config/contracts';
 import { clsx } from 'clsx';
 import type { Address } from 'viem';
@@ -29,11 +30,17 @@ const AdminPage: React.FC<AdminPageProps> = ({
   const updateFee = useUpdatePlatformFee();
   const updateRecipient = useUpdateFeeRecipient();
   const manageTokens = useManageContributionTokens();
+  const faucetSettings = useFaucetSettings();
 
   // Form states
   const [feePercentage, setFeePercentage] = useState('');
   const [feeRecipient, setFeeRecipient] = useState('');
   const [newTokenAddress, setNewTokenAddress] = useState('');
+  
+  // Faucet form states
+  const [exhFaucetAmount, setExhFaucetAmount] = useState('');
+  const [usdtFaucetAmount, setUsdtFaucetAmount] = useState('');
+  const [faucetCooldown, setFaucetCooldown] = useState('');
 
   // Enhanced loading state
   if (adminSettings.isLoading) {
@@ -110,10 +117,9 @@ const AdminPage: React.FC<AdminPageProps> = ({
   const handleUpdateFeePercentage = async () => {
     if (!feePercentage) return;
     try {
-      const percentage = Math.floor(parseFloat(feePercentage) * 100); // Convert to basis points
+      const percentage = Math.floor(parseFloat(feePercentage) * 100);
       updateFee.updateFee(percentage);
       
-      // Clear input on success
       if (updateFee.isConfirmed) {
         setFeePercentage('');
         await adminSettings.refetch.feeSettings();
@@ -128,7 +134,6 @@ const AdminPage: React.FC<AdminPageProps> = ({
     try {
       updateRecipient.updateRecipient(feeRecipient as Address);
       
-      // Clear input on success
       if (updateRecipient.isConfirmed) {
         setFeeRecipient('');
         await adminSettings.refetch.feeSettings();
@@ -143,7 +148,6 @@ const AdminPage: React.FC<AdminPageProps> = ({
     try {
       manageTokens.add(newTokenAddress as Address);
       
-      // Clear input on success
       if (manageTokens.isAddConfirmed) {
         setNewTokenAddress('');
         await adminSettings.refetch.contributionTokens();
@@ -157,7 +161,6 @@ const AdminPage: React.FC<AdminPageProps> = ({
     try {
       manageTokens.remove(tokenAddress);
       
-      // Refetch on success
       if (manageTokens.isRemoveConfirmed) {
         await adminSettings.refetch.contributionTokens();
       }
@@ -166,7 +169,58 @@ const AdminPage: React.FC<AdminPageProps> = ({
     }
   };
 
-  const isActionPending = updateFee.isLoading || updateRecipient.isLoading || manageTokens.isAddLoading || manageTokens.isRemoveLoading;
+  // Faucet handlers
+  const handleUpdateEXHAmount = async () => {
+    if (!exhFaucetAmount) return;
+    try {
+      faucetSettings.setEXHAmount(exhFaucetAmount);
+      
+      if (faucetSettings.isEXHAmountConfirmed) {
+        setExhFaucetAmount('');
+        await adminSettings.refetch.faucetSettings();
+      }
+    } catch (error) {
+      console.error('Failed to update EXH faucet amount:', error);
+    }
+  };
+
+  const handleUpdateUSDTAmount = async () => {
+    if (!usdtFaucetAmount) return;
+    try {
+      faucetSettings.setUSDTAmount(usdtFaucetAmount);
+      
+      if (faucetSettings.isUSDTAmountConfirmed) {
+        setUsdtFaucetAmount('');
+        await adminSettings.refetch.faucetSettings();
+      }
+    } catch (error) {
+      console.error('Failed to update USDT faucet amount:', error);
+    }
+  };
+
+  const handleUpdateCooldown = async () => {
+    if (!faucetCooldown) return;
+    try {
+      const seconds = parseInt(faucetCooldown);
+      faucetSettings.setCooldown(seconds);
+      
+      if (faucetSettings.isCooldownConfirmed) {
+        setFaucetCooldown('');
+        await adminSettings.refetch.faucetSettings();
+      }
+    } catch (error) {
+      console.error('Failed to update faucet cooldown:', error);
+    }
+  };
+
+  const isActionPending = 
+    updateFee.isLoading || 
+    updateRecipient.isLoading || 
+    manageTokens.isAddLoading || 
+    manageTokens.isRemoveLoading ||
+    faucetSettings.isEXHAmountLoading ||
+    faucetSettings.isUSDTAmountLoading ||
+    faucetSettings.isCooldownLoading;
 
   // Enhanced admin dashboard
   return (
@@ -265,6 +319,118 @@ const AdminPage: React.FC<AdminPageProps> = ({
                   className="w-full bg-gradient-to-r from-[var(--neon-blue)]/80 to-[var(--neon-blue)] hover:from-[var(--neon-blue)] hover:to-[var(--neon-blue)]/80"
                 >
                   Update Fee Recipient
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Faucet Settings */}
+        <Card className="bg-gradient-to-br from-[var(--charcoal)] to-[var(--deep-black)] border border-[var(--neon-blue)]/40 transition-all duration-300 hover:border-[var(--neon-blue)]/60 hover:shadow-lg hover:shadow-[var(--neon-blue)]/20">
+          <div className="p-6">
+            <div className="flex items-center mb-6">
+              <Droplets 
+                className="h-6 w-6 mr-3 drop-shadow-[0_0_6px_var(--neon-blue)]" 
+                style={{ color: 'var(--neon-blue)' }}
+              />
+              <h3 className="text-xl font-semibold" style={{ color: 'var(--silver-light)' }}>
+                Faucet Settings
+              </h3>
+            </div>
+            <div className="space-y-6">
+              {/* EXH Amount */}
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--silver-light)' }}>
+                  EXH Faucet Amount
+                </label>
+                <div className="flex items-center space-x-3">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={exhFaucetAmount}
+                    onChange={(e) => setExhFaucetAmount(e.target.value)}
+                    placeholder={adminSettings.faucetSettings?.exhAmount || '0'}
+                    className="flex-1 bg-[var(--charcoal)] border-[var(--metallic-silver)]/30 text-white focus:border-[var(--neon-blue)]/50"
+                  />
+                  <span className="text-sm px-3 py-2 bg-[var(--neon-blue)]/20 rounded-lg border border-[var(--neon-blue)]/30" style={{ color: 'var(--neon-blue)' }}>
+                    EXH
+                  </span>
+                </div>
+                <p className="text-xs mt-1" style={{ color: 'var(--metallic-silver)' }}>
+                  Current: {adminSettings.faucetSettings?.exhAmount || '0'} EXH
+                </p>
+                <Button 
+                  onClick={handleUpdateEXHAmount}
+                  disabled={!exhFaucetAmount || isActionPending}
+                  isLoading={faucetSettings.isEXHAmountLoading}
+                  className="w-full mt-3 bg-gradient-to-r from-[var(--neon-blue)]/80 to-[var(--neon-blue)] hover:from-[var(--neon-blue)] hover:to-[var(--neon-blue)]/80"
+                >
+                  Update EXH Amount
+                </Button>
+              </div>
+
+              {/* USDT Amount */}
+              <div className="pt-4 border-t border-[var(--metallic-silver)]/20">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--silver-light)' }}>
+                  USDT Faucet Amount
+                </label>
+                <div className="flex items-center space-x-3">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={usdtFaucetAmount}
+                    onChange={(e) => setUsdtFaucetAmount(e.target.value)}
+                    placeholder={adminSettings.faucetSettings?.usdtAmount || '0'}
+                    className="flex-1 bg-[var(--charcoal)] border-[var(--metallic-silver)]/30 text-white focus:border-[var(--neon-blue)]/50"
+                  />
+                  <span className="text-sm px-3 py-2 bg-[var(--neon-blue)]/20 rounded-lg border border-[var(--neon-blue)]/30" style={{ color: 'var(--neon-blue)' }}>
+                    USDT
+                  </span>
+                </div>
+                <p className="text-xs mt-1" style={{ color: 'var(--metallic-silver)' }}>
+                  Current: {adminSettings.faucetSettings?.usdtAmount || '0'} USDT
+                </p>
+                <Button 
+                  onClick={handleUpdateUSDTAmount}
+                  disabled={!usdtFaucetAmount || isActionPending}
+                  isLoading={faucetSettings.isUSDTAmountLoading}
+                  className="w-full mt-3 bg-gradient-to-r from-[var(--neon-blue)]/80 to-[var(--neon-blue)] hover:from-[var(--neon-blue)] hover:to-[var(--neon-blue)]/80"
+                >
+                  Update USDT Amount
+                </Button>
+              </div>
+
+              {/* Cooldown */}
+              <div className="pt-4 border-t border-[var(--metallic-silver)]/20">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--silver-light)' }}>
+                  Faucet Cooldown
+                </label>
+                <div className="flex items-center space-x-3">
+                  <Input
+                    type="number"
+                    min="0"
+                    value={faucetCooldown}
+                    onChange={(e) => setFaucetCooldown(e.target.value)}
+                    placeholder={adminSettings.faucetSettings?.cooldown?.toString() || '0'}
+                    className="flex-1 bg-[var(--charcoal)] border-[var(--metallic-silver)]/30 text-white focus:border-[var(--neon-blue)]/50"
+                  />
+                  <span className="text-sm px-3 py-2 bg-[var(--neon-blue)]/20 rounded-lg border border-[var(--neon-blue)]/30 flex items-center" style={{ color: 'var(--neon-blue)' }}>
+                    <Clock className="h-4 w-4 mr-1" />
+                    sec
+                  </span>
+                </div>
+                <p className="text-xs mt-1" style={{ color: 'var(--metallic-silver)' }}>
+                  Current: {adminSettings.faucetSettings?.cooldown || '0'} seconds ({Math.floor((adminSettings.faucetSettings?.cooldown || 0) / 3600)}h {Math.floor(((adminSettings.faucetSettings?.cooldown || 0) % 3600) / 60)}m)
+                </p>
+                <Button 
+                  onClick={handleUpdateCooldown}
+                  disabled={!faucetCooldown || isActionPending}
+                  isLoading={faucetSettings.isCooldownLoading}
+                  className="w-full mt-3 bg-gradient-to-r from-[var(--neon-blue)]/80 to-[var(--neon-blue)] hover:from-[var(--neon-blue)] hover:to-[var(--neon-blue)]/80"
+                >
+                  Update Cooldown
                 </Button>
               </div>
             </div>

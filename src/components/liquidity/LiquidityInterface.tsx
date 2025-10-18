@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { Address } from 'viem';
 import { MultiTransactionModal } from '@/components/common/MultiTransactionModal';
 import { Plus, Minus, ArrowLeftRight, Settings, ChevronDown } from 'lucide-react';
@@ -63,6 +63,23 @@ export const LiquidityInterface: React.FC<LiquidityInterfaceProps> = ({
   // Modal states
   const [showTokenSelector, setShowTokenSelector] = useState<'tokenA' | 'tokenB' | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+
+  // ✅ Mirror swap's token handling with useMemo
+  const [customTokens] = useState<Token[]>([]);
+  
+  const allTokens = useMemo(() => {
+    const tokensWithDecimals: Token[] = COMMON_TOKENS.map((token) => ({
+      ...token,
+      decimals:
+        liquidityLogic.tokenAInfo?.address === token.address
+          ? liquidityLogic.tokenAInfo.decimals
+          : liquidityLogic.tokenBInfo?.address === token.address
+          ? liquidityLogic.tokenBInfo.decimals
+          : 18,
+    }));
+
+    return [...tokensWithDecimals, ...customTokens];
+  }, [customTokens, liquidityLogic.tokenAInfo, liquidityLogic.tokenBInfo]);
 
   useEffect(() => {
     if (selectedPosition && mode === 'remove') {
@@ -563,7 +580,7 @@ export const LiquidityInterface: React.FC<LiquidityInterfaceProps> = ({
 
       {/* Token Selector Modal */}
       <TokenSelector
-        tokens={COMMON_TOKENS}
+        tokens={allTokens}
         selectedToken={showTokenSelector === 'tokenA' ? liquidityLogic.liquidityState.tokenA : liquidityLogic.liquidityState.tokenB}
         onSelectToken={(token) => {
           if (showTokenSelector === 'tokenA') {
