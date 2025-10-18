@@ -140,7 +140,7 @@ export const HomePage: React.FC = () => {
           </Card>
 
           <Card className="text-center hover:border-[var(--neon-blue)]/30 transition-all duration-300" hover>
-            <link className="h-12 w-12 text-[var(--neon-blue)] mx-auto mb-4 drop-shadow-[0_0_8px_var(--neon-blue)]" />
+            <Zap className="h-12 w-12 text-[var(--neon-blue)] mx-auto mb-4 drop-shadow-[0_0_8px_var(--neon-blue)]" />
             <h3 className="text-xl font-semibold text-[var(--silver-light)] mb-2">Automatic LP Creation</h3>
             <p className="text-[var(--metallic-silver)]">
               Initial liquidity is automatically added to our AMM and locked. Project owners can't touch it until the lock period expires.
