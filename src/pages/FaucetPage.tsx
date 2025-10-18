@@ -225,8 +225,11 @@ export const FaucetPage: React.FC = () => {
                   <p className="text-sm mb-1" style={{ color: 'var(--metallic-silver)' }}>
                     Connected Wallet
                   </p>
-                  <p className="font-mono text-sm" style={{ color: 'var(--silver-light)' }}>
-                    {address}
+                  <p
+                    className="font-mono text-sm max-w-[180px] md:max-w-full overflow-hidden text-ellipsis whitespace-nowrap"
+                    style={{ color: 'var(--silver-light)' }}
+                    title={address}
+                  >
                   </p>
                 </div>
 
