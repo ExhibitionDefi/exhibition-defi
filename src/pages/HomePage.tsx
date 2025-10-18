@@ -151,7 +151,7 @@ export const HomePage: React.FC = () => {
             <Bot className="h-12 w-12 text-[var(--neon-orange)] mx-auto mb-4 drop-shadow-[0_0_8px_var(--neon-orange)]" />
             <h3 className="text-xl font-semibold text-[var(--silver-light)] mb-2">Built for AI Era</h3>
             <p className="text-[var(--metallic-silver)]">
-              Deployed on Nexus Verifiable Layer Network - the blockchain designed for verifiable AI computations and next-gen applications.
+              Deployed on Nexus Verifiable Layer Network -- the blockchain designed for verifiable AI computations and next-gen applications.
             </p>
           </Card>
         </div>
