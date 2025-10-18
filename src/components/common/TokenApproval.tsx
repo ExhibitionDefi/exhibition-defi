@@ -50,7 +50,7 @@ export const TokenApproval: React.FC<TokenApprovalProps> = ({
   const handleApprove = async () => {
     try {
       await submitApproval();
-      toast.success('Approval confirmed!');
+      // Toast is handled by useEffect above when isApproved becomes true
     } catch (err) {
       console.error('Approval failed:', err);
       toast.error(err instanceof Error ? err.message : 'Failed to submit approval');
@@ -95,7 +95,6 @@ export const TokenApproval: React.FC<TokenApprovalProps> = ({
             </p>
           </div>
         </div>
-
         <Button
           onClick={handleApprove}
           isLoading={Boolean(writeState.isPending || isSubmitting || isConfirming)}

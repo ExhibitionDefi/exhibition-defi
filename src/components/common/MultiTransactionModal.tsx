@@ -16,6 +16,7 @@ export type TransactionType =
   | 'create'
   | 'request'
   | 'verify-wallet'
+  | 'adding'
   | null
 
 const TRANSACTION_TITLES: Record<Exclude<TransactionType, null>, string> = {
@@ -30,6 +31,7 @@ const TRANSACTION_TITLES: Record<Exclude<TransactionType, null>, string> = {
   deposit: 'Depositing Tokens',
   create:  'Creating Project',
   request: 'Requesting Faucet Tokens',
+  adding: 'Adding Liquidity',
   'verify-wallet': 'Verifying Wallet Ownership',
 }
 

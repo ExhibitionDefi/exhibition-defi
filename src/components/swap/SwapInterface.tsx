@@ -23,22 +23,19 @@ interface Token {
 // Common tokens
 const COMMON_TOKENS: Omit<Token, 'decimals'>[] = [
   {
-    address: (import.meta.env.VITE_EXH_ADDRESS ||
-      '0x2923faaDe9cc4b1fe2881eBbAcE8EC821ad80dB4') as Address,
+    address: (import.meta.env.VITE_EXH_ADDRESS ) as Address,
     symbol: 'EXH',
     name: 'Exhibition Token',
     logoURI: '/tokens/EXH.png',
   },
   {
-    address: (import.meta.env.VITE_EXUSDT_ADDRESS ||
-      '0x3F9bEf1d5e1A23B95bC69B2E99F57534971aD56D') as Address,
+    address: (import.meta.env.VITE_EXUSDT_ADDRESS ) as Address,
     symbol: 'exUSDT',
     name: 'Exhibition USDT',
     logoURI: '/tokens/exusdt.png',
   },
   {
-    address: (import.meta.env.VITE_EXNEX_ADDRESS ||
-      '0x28fC7752e06A66b0219E78Dee00537E620cE9573') as Address,
+    address: (import.meta.env.VITE_EXNEX_ADDRESS ) as Address,
     symbol: 'exNEX',
     name: 'Exhibition Nexus',
     logoURI: '/tokens/exNEX.png',

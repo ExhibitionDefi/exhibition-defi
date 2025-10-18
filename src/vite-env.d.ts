@@ -30,8 +30,6 @@ interface ImportMetaEnv {
 
   // Contract Addresses
   readonly VITE_EXHIBITION_ADDRESS: string
-  readonly VITE_FACTORY_ADDRESS: string
-  readonly VITE_LP_TOKENS_ADDRESS: string
   readonly VITE_AMM_ADDRESS: string
 
   // Contribution Tokens Addresses
