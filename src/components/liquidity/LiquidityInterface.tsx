@@ -31,12 +31,12 @@ export const LiquidityInterface: React.FC<LiquidityInterfaceProps> = ({
   const currentHook = mode === 'add' ? addLiquidity : removeLiquidity;
 
   return (
-    <div className={`max-w-md mx-auto ${className}`}>
+    <div className={`w-full max-w-md mx-auto px-4 sm:px-0 ${className}`}>
       {/* Main Liquidity Card */}
-      <div className="bg-[var(--deep-black)] border border-[var(--charcoal)] rounded-2xl p-6 shadow-2xl">
+      <div className="bg-[var(--deep-black)] border border-[var(--charcoal)] rounded-2xl p-4 sm:p-6 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-[var(--silver-light)]">Liquidity</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-[var(--silver-light)]">Liquidity</h2>
           <div className="flex items-center space-x-2">
             <Button
               variant="ghost"
@@ -44,38 +44,38 @@ export const LiquidityInterface: React.FC<LiquidityInterfaceProps> = ({
               onClick={() => setShowSettings(true)}
               className="text-[var(--metallic-silver)] hover:text-[var(--neon-blue)] p-2 h-auto border-0 bg-transparent hover:bg-[var(--charcoal)] transition-all duration-300"
             >
-              <Settings className="w-5 h-5" />
+              <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </div>
         </div>
 
-        {/* Mode Switch */}
-        <div className="flex space-x-1 bg-[var(--charcoal)] p-2 rounded-lg border border-[var(--silver-dark)] border-opacity-30 mb-6">
+        {/* Mode Switch - Stacked on very small screens */}
+        <div className="flex flex-col xs:flex-row xs:space-x-1 gap-2 xs:gap-1 bg-[var(--charcoal)] p-2 rounded-lg border border-[var(--silver-dark)] border-opacity-30 mb-6">
           <Button
             variant={mode === 'add' ? 'default' : 'ghost'}
             onClick={() => setMode('add')}
             disabled={currentHook.state.isProcessing}
-            className={`flex-1 transition-all duration-300 ${
+            className={`flex-1 transition-all duration-300 text-xs sm:text-sm ${
               mode === 'add'
                 ? 'bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-blue)] text-[var(--deep-black)] shadow-lg'
                 : 'text-[var(--metallic-silver)] hover:text-[var(--neon-blue)] hover:bg-[var(--deep-black)]'
             }`}
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Liquidity
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+            <span className="truncate">Add</span>
           </Button>
           <Button
             variant={mode === 'remove' ? 'default' : 'ghost'}
             onClick={() => setMode('remove')}
             disabled={currentHook.state.isProcessing}
-            className={`flex-1 transition-all duration-300 ${
+            className={`flex-1 transition-all duration-300 text-xs sm:text-sm ${
               mode === 'remove'
                 ? 'bg-gradient-to-r from-[var(--neon-orange)] to-[var(--neon-orange)] text-[var(--deep-black)] shadow-lg'
                 : 'text-[var(--metallic-silver)] hover:text-[var(--neon-orange)] hover:bg-[var(--deep-black)]'
             }`}
           >
-            <Minus className="h-4 w-4 mr-2" />
-            Remove Liquidity
+            <Minus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+            <span className="truncate">Remove</span>
           </Button>
         </div>
 
@@ -93,15 +93,17 @@ export const LiquidityInterface: React.FC<LiquidityInterfaceProps> = ({
 
       {/* Settings Modal */}
       <Modal isOpen={showSettings} onClose={() => setShowSettings(false)} title="Liquidity Settings">
-        <div className="space-y-4">
+        <div className="space-y-4 p-4 sm:p-6">
           <div>
-            <label className="text-sm font-medium text-[var(--silver-light)] mb-2 block">Slippage Tolerance</label>
-            <div className="flex space-x-2">
+            <label className="text-xs sm:text-sm font-medium text-[var(--silver-light)] mb-2 block">
+              Slippage Tolerance
+            </label>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {[0.1, 0.5, 1.0].map((value) => (
                 <button
                   key={value}
                   onClick={() => currentHook.updateState({ slippage: value })}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 flex-1 sm:flex-none ${
                     currentHook.state.slippage === value
                       ? 'bg-[var(--neon-blue)] text-[var(--deep-black)]'
                       : 'bg-[var(--charcoal)] text-[var(--silver-light)] hover:bg-[var(--silver-dark)] hover:bg-opacity-20'
@@ -122,15 +124,17 @@ export const LiquidityInterface: React.FC<LiquidityInterfaceProps> = ({
                     currentHook.updateState({ slippage: value });
                   }
                 }}
-                className="px-3 py-2 bg-[var(--charcoal)] border border-[var(--silver-dark)] border-opacity-30 rounded-lg text-[var(--silver-light)] text-sm w-20"
+                className="px-2 sm:px-3 py-1.5 sm:py-2 bg-[var(--charcoal)] border border-[var(--silver-dark)] border-opacity-30 rounded-lg text-[var(--silver-light)] text-xs sm:text-sm w-16 sm:w-20"
                 placeholder="Custom"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-sm font-medium text-[var(--silver-light)] mb-2 block">Transaction Deadline</label>
-            <div className="flex items-center space-x-2">
+            <label className="text-xs sm:text-sm font-medium text-[var(--silver-light)] mb-2 block">
+              Transaction Deadline
+            </label>
+            <div className="flex items-center gap-2">
               <input
                 type="number"
                 min="1"
@@ -142,9 +146,9 @@ export const LiquidityInterface: React.FC<LiquidityInterfaceProps> = ({
                     currentHook.updateState({ deadline: value });
                   }
                 }}
-                className="px-3 py-2 bg-[var(--charcoal)] border border-[var(--silver-dark)] border-opacity-30 rounded-lg text-[var(--silver-light)] text-sm w-20"
+                className="px-2 sm:px-3 py-1.5 sm:py-2 bg-[var(--charcoal)] border border-[var(--silver-dark)] border-opacity-30 rounded-lg text-[var(--silver-light)] text-xs sm:text-sm w-16 sm:w-20"
               />
-              <span className="text-sm text-[var(--metallic-silver)]">minutes</span>
+              <span className="text-xs sm:text-sm text-[var(--metallic-silver)] whitespace-nowrap">minutes</span>
             </div>
           </div>
         </div>
