@@ -1,5 +1,5 @@
 src/
-├── main.tsx                    # App entry point
+├── main.tsx                     
 ├── App.tsx                     # Main app component 
 ├── index.css                   # Global tailwindcss directive
 ├── vite-env.d.ts              # env types 
