@@ -11,8 +11,8 @@ Exhibition’s Launchpad offers a secure and reliable solution for token launche
 - **Automated Finalization:**
   - Projects are automatically finalized once the hardcap is reached, eliminating oversubscription and manipulation by large investors (whales).
 - **Softcap Protection:**
-  - If a project fails to reach its surprises or delays.
-  - The smart contract enforces the vesting schedule for full transparency and fairness.
+  - If a project fails to reach its softcap contributor will have full refund of their contributions our smart contract enforced it.
+  - The smart contract enforces the vesting schedule for full transparency and fairness, contributors would see their exact cliff, day, time no surprise no delay.
 - **Withdrawal of Unsold Tokens:**
   - For projects that fail to meet the softcap, creators can withdraw the unsold tokens after contributors have been refunded, ensuring no tokens are stuck in the contract.
 
