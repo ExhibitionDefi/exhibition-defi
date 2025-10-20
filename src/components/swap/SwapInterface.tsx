@@ -118,21 +118,21 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
   };
 
   return (
-    <div className={`w-full max-w-md mx-auto px-4 sm:px-0 ${className}`}>
+    <div className={`max-w-md mx-auto ${className}`}>
       {/* Main Card */}
-      <div className="bg-[var(--deep-black)] border border-[var(--charcoal)] rounded-2xl p-4 sm:p-6 shadow-2xl">
+      <div className="bg-[var(--deep-black)] border border-[var(--charcoal)] rounded-2xl p-6 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 gap-2">
-          <h2 className="text-xl sm:text-2xl font-bold text-[var(--silver-light)]">Swap</h2>
-          <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-[var(--silver-light)]">Swap</h2>
+          <div className="flex items-center space-x-2">
             {swapLogic.shouldShowSlippageRecommendation && (
               <button
                 onClick={swapLogic.handleUseRecommendedSlippage}
-                className="flex items-center gap-1 text-xs bg-[var(--neon-blue)] bg-opacity-20 text-[var(--neon-blue)] px-2 py-1 rounded-lg hover:bg-opacity-30 border border-[var(--neon-blue)] border-opacity-40 transition-all duration-300 whitespace-nowrap"
+                className="flex items-center space-x-1 text-xs bg-[var(--neon-blue)] bg-opacity-20 text-[var(--neon-blue)] px-2 py-1 rounded-lg hover:bg-opacity-30 border border-[var(--neon-blue)] border-opacity-40 transition-all duration-300"
                 title={`Use recommended slippage: ${swapLogic.recommendedSlippage.toFixed(1)}%`}
               >
-                <ChevronDown className="w-3 h-3 flex-shrink-0" />
-                <span className="hidden xs:inline">Smart</span>
+                <ChevronDown className="w-3 h-3" />
+                <span>Smart</span>
               </button>
             )}
             <Button
@@ -141,94 +141,94 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
               onClick={() => setShowSettings(true)}
               className="text-[var(--metallic-silver)] hover:text-[var(--neon-blue)] p-2 h-auto border-0 bg-transparent hover:bg-[var(--charcoal)] transition-all duration-300"
             >
-              <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Settings className="w-5 h-5" />
             </Button>
           </div>
         </div>
 
         {/* Token In */}
         <div className="mb-4">
-          <div className="flex flex-col xs:flex-row xs:justify-between xs:items-center mb-2 gap-1 xs:gap-0">
-            <span className="text-xs sm:text-sm text-[var(--silver-dark)]">From</span>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-[var(--silver-dark)]">From</span>
             {swapLogic.balanceIn && swapLogic.tokenInInfo && (
               <button
                 onClick={swapLogic.handleMaxBalance}
-                className="text-xs text-[var(--neon-blue)] hover:underline truncate text-left xs:text-right"
+                className="text-xs text-[var(--neon-blue)] hover:underline"
               >
                 Max: {swapLogic.formatBalance(swapLogic.balanceIn.value, swapLogic.tokenInInfo)}
               </button>
             )}
           </div>
-          <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-0 bg-[var(--charcoal)] rounded-xl px-3 xs:px-4 py-2 xs:py-3">
+          <div className="flex items-center bg-[var(--charcoal)] rounded-xl px-4 py-3">
             <input
               type="number"
               value={swapLogic.amountIn}
               onChange={(e) => swapLogic.setAmountIn(e.target.value)}
               placeholder="0.0"
-              className="flex-1 bg-transparent text-base xs:text-lg text-[var(--silver-light)] outline-none w-full xs:w-auto"
+              className="flex-1 bg-transparent text-lg text-[var(--silver-light)] outline-none"
             />
             <button
               onClick={() => setShowTokenSelector('in')}
-              className="flex items-center gap-1 xs:gap-2 ml-0 xs:ml-3 w-full xs:w-auto justify-center xs:justify-end flex-shrink-0"
+              className="flex items-center space-x-2 ml-3"
             >
-              <span className="font-semibold text-xs xs:text-sm text-[var(--silver-light)] truncate">
+              <span className="font-semibold text-[var(--silver-light)]">
                 {swapLogic.tokenInInfo?.symbol || 'Select'}
               </span>
-              <ChevronDown className="w-3 h-3 xs:w-4 xs:h-4 text-[var(--silver-dark)] flex-shrink-0" />
+              <ChevronDown className="w-4 h-4 text-[var(--silver-dark)]" />
             </button>
           </div>
         </div>
 
         {/* Flip toggle */}
-        <div className="flex justify-center my-3">
+        <div className="flex justify-center my-2">
           <button
             onClick={handleFlipTokens}
             className="p-2 rounded-full bg-[var(--charcoal)] hover:bg-[var(--neon-blue)] hover:text-[var(--deep-black)] transition-all duration-300"
             title="Flip tokens"
           >
-            <ArrowUpDown className="w-4 h-4 xs:w-5 xs:h-5" />
+            <ArrowUpDown className="w-5 h-5" />
           </button>
         </div>
 
         {/* Token Out */}
         <div className="mb-4">
-          <div className="flex flex-col xs:flex-row xs:justify-between xs:items-center mb-2 gap-1 xs:gap-0">
-            <span className="text-xs sm:text-sm text-[var(--silver-dark)]">To</span>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-[var(--silver-dark)]">To</span>
             {swapLogic.balanceOut && swapLogic.tokenOutInfo && (
-              <span className="text-xs text-[var(--silver-dark)] truncate text-left xs:text-right">
+              <span className="text-xs text-[var(--silver-dark)]">
                 Bal: {swapLogic.formatBalance(swapLogic.balanceOut.value, swapLogic.tokenOutInfo)}
               </span>
             )}
           </div>
-          <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-0 bg-[var(--charcoal)] rounded-xl px-3 xs:px-4 py-2 xs:py-3">
+          <div className="flex items-center bg-[var(--charcoal)] rounded-xl px-4 py-3">
             <input
               type="text"
               value={swapLogic.formattedAmountOut || ''}
               readOnly
               placeholder="0.0"
-              className="flex-1 bg-transparent text-base xs:text-lg text-[var(--silver-light)] outline-none w-full xs:w-auto"
+              className="flex-1 bg-transparent text-lg text-[var(--silver-light)] outline-none"
             />
             <button
               onClick={() => setShowTokenSelector('out')}
-              className="flex items-center gap-1 xs:gap-2 ml-0 xs:ml-3 w-full xs:w-auto justify-center xs:justify-end flex-shrink-0"
+              className="flex items-center space-x-2 ml-3"
             >
-              <span className="font-semibold text-xs xs:text-sm text-[var(--silver-light)] truncate">
+              <span className="font-semibold text-[var(--silver-light)]">
                 {swapLogic.tokenOutInfo?.symbol || 'Select'}
               </span>
-              <ChevronDown className="w-3 h-3 xs:w-4 xs:h-4 text-[var(--silver-dark)] flex-shrink-0" />
+              <ChevronDown className="w-4 h-4 text-[var(--silver-dark)]" />
             </button>
           </div>
         </div>
 
         {/* Swap Details */}
-        <div className="mt-4 text-xs sm:text-sm text-[var(--metallic-silver)] space-y-1">
-          <div className="flex flex-col xs:flex-row xs:justify-between gap-1 xs:gap-2">
-            <span className="whitespace-nowrap">Slippage Tolerance</span>
-            <span className="truncate text-right xs:text-left">{swapLogic.formatSlippage(swapLogic.slippage)}</span>
+        <div className="mt-4 text-sm text-[var(--metallic-silver)] space-y-1">
+          <div className="flex justify-between">
+            <span>Slippage Tolerance</span>
+            <span>{swapLogic.formatSlippage(swapLogic.slippage)}</span>
           </div>
-          <div className="flex flex-col xs:flex-row xs:justify-between gap-1 xs:gap-2">
-            <span className="whitespace-nowrap">Price Impact</span>
-            <span className={`truncate text-right xs:text-left ${swapLogic.priceImpactLevel === 'high' ? 'text-[var(--neon-orange)]' : ''}`}>
+          <div className="flex justify-between">
+            <span>Price Impact</span>
+            <span className={swapLogic.priceImpactLevel === 'high' ? 'text-[var(--neon-orange)]' : ''}>
               {swapLogic.priceImpact.toFixed(2)}%
             </span>
           </div>
@@ -239,7 +239,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
           <button
             onClick={handleSwap}
             disabled={swapLogic.buttonState.disabled}
-            className={`w-full py-3 xs:py-4 text-base xs:text-lg font-semibold rounded-xl transition-all duration-300 relative ${
+            className={`w-full py-4 text-lg font-semibold rounded-xl transition-all duration-300 relative ${
               swapLogic.buttonState.disabled
                 ? 'bg-[var(--silver-dark)] text-[var(--charcoal)] cursor-not-allowed'
                 : swapLogic.currentStep === 'approving'
@@ -252,11 +252,11 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
             }`}
           >
             {swapLogic.buttonState.loading && (
-              <div className="absolute left-3 xs:left-4 top-1/2 transform -translate-y-1/2">
-                <div className="w-4 h-4 xs:w-5 xs:h-5 border-2 border-current border-t-transparent rounded-full animate-spin opacity-70" />
+              <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin opacity-70" />
               </div>
             )}
-            <span className={swapLogic.buttonState.loading ? 'ml-4 xs:ml-6' : ''}>
+            <span className={swapLogic.buttonState.loading ? 'ml-6' : ''}>
               {swapLogic.buttonState.text}
             </span>
           </button>
@@ -265,43 +265,43 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
         {/* Step Progress Indicator */}
         {swapLogic.isProcessing && (
           <div className="mt-4 p-3 rounded-lg bg-[var(--charcoal)] border border-[var(--silver-dark)] border-opacity-30">
-            <div className="flex flex-col xs:flex-row xs:items-center xs:justify-center gap-2 xs:gap-4">
+            <div className="flex items-center justify-center space-x-4">
               {/* Approval Step */}
               {swapLogic.approval.needsApproval && (
                 <>
-                  <div className={`flex items-center gap-2 text-xs xs:text-sm ${
+                  <div className={`flex items-center space-x-2 ${
                     swapLogic.currentStep === 'approving' ? 'text-[var(--neon-orange)]' :
                     swapLogic.currentStep === 'swapping' ? 'text-[var(--neon-orange)]' :
                     'text-[var(--silver-dark)]'
                   }`}>
                     {swapLogic.currentStep === 'approving' ? (
-                      <div className="w-3 h-3 xs:w-4 xs:h-4 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                     ) : swapLogic.currentStep === 'swapping' ? (
-                      <div className="w-3 h-3 xs:w-4 xs:h-4 rounded-full bg-current flex-shrink-0" />
+                      <div className="w-4 h-4 rounded-full bg-current" />
                     ) : (
-                      <div className="w-3 h-3 xs:w-4 xs:h-4 rounded-full border-2 border-current flex-shrink-0" />
+                      <div className="w-4 h-4 rounded-full border-2 border-current" />
                     )}
-                    <span className="font-medium whitespace-nowrap">
+                    <span className="text-sm font-medium">
                       Approve {swapLogic.tokenInInfo?.symbol || 'Token'}
                     </span>
                   </div>
-                  <svg className="w-3 h-3 xs:w-4 xs:h-4 text-[var(--silver-dark)] hidden xs:block flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-[var(--silver-dark)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </>
               )}
               
               {/* Swap Step */}
-              <div className={`flex items-center gap-2 text-xs xs:text-sm ${
+              <div className={`flex items-center space-x-2 ${
                 swapLogic.currentStep === 'swapping' ? 'text-[var(--neon-blue)]' :
                 'text-[var(--silver-dark)]'
               }`}>
                 {swapLogic.currentStep === 'swapping' ? (
-                  <div className="w-3 h-3 xs:w-4 xs:h-4 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <div className="w-3 h-3 xs:w-4 xs:h-4 rounded-full border-2 border-current flex-shrink-0" />
+                  <div className="w-4 h-4 rounded-full border-2 border-current" />
                 )}
-                <span className="font-medium whitespace-nowrap">Swap Tokens</span>
+                <span className="text-sm font-medium">Swap Tokens</span>
               </div>
             </div>
           </div>
@@ -310,7 +310,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
         {/* Status Messages */}
         {swapLogic.isProcessing && (
           <div className="mt-3 text-center">
-            <div className="text-xs xs:text-sm text-[var(--metallic-silver)]">
+            <div className="text-sm text-[var(--metallic-silver)]">
               {swapLogic.currentStep === 'approving' && 
                 'Please approve token spending in your wallet...'
               }
@@ -356,7 +356,9 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
       <MultiTransactionModal
         isOpen={swapLogic.isProcessing}
         onClose={() => {
+          // Only allow manual close during success or error states
           if (swapLogic.swapSuccess || swapLogic.approvalSuccess || swapLogic.error) {
+            // Reset all states
             swapLogic.setAmountIn('');
           }
         }}
