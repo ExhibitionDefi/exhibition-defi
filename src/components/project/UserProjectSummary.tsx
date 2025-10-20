@@ -12,7 +12,7 @@ interface UserProjectSummaryProps {
   project: ProjectDisplayData
   userSummary: UserSummaryType
   onRefetch?: () => void
-  // 🆕 Finalize props
+  // Finalize props
   canFinalize?: boolean
   finalizeButtonState?: {
     text: string
@@ -31,6 +31,7 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
   onFinalize,
 }) => {
   const { address } = useAccount()
+  
   // Only use claim tokens hook - refund is handled in separate component
   const {
     claimTokens,
@@ -45,6 +46,9 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
     showToast: true,
   })
 
+  // Calculate shouldShowFinalize BEFORE the early return
+  const shouldShowFinalize = canFinalize && onFinalize && finalizeButtonState
+
   // Determine refund eligibility (for display only)
   const isRefundEligible = (
     Number(project.status) === ProjectStatus.Failed || 
@@ -52,18 +56,17 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
   ) && !userSummary.userHasRefunded && userSummary.contributionAmount > 0n
 
   const canClaim = userSummary.canClaim && userSummary.tokensAvailable > 0n
-  const shouldShowFinalize = canFinalize && onFinalize && finalizeButtonState
 
-
+  // Modified early return: Allow rendering if finalize button should show
   if (userSummary.contributionAmount === 0n && !userSummary.userHasRefunded && !shouldShowFinalize) {
-    return null // Don't show summary if user hasn't participated
+    return null // Don't show summary if user hasn't participated AND finalize isn't available
   }
 
   return (
     <Card>
       <h3 className="text-lg font-semibold mb-4 flex items-center" style={{ color: 'var(--silver-light)' }}>
         <Wallet className="h-5 w-5 mr-2" />
-        Your Participation
+        {userSummary.contributionAmount > 0n ? 'Your Participation' : 'Project Actions'}
       </h3>
 
       <div className="space-y-4">
@@ -127,7 +130,7 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
         )}
 
         {/* Status Information & Actions */}
-        <div className={`border-t pt-4 space-y-2 ${userSummary.contributionAmount > 0n ? '' : ''}`} style={{ borderColor: 'var(--charcoal)' }}>
+        <div className={`${userSummary.contributionAmount > 0n ? 'border-t pt-4' : ''} space-y-2`} style={{ borderColor: 'var(--charcoal)' }}>
           {/* Refund Status (Display Only) */}
           {userSummary.userHasRefunded && (
             <div className="flex items-center space-x-2 p-3 rounded-lg" style={{ 
@@ -199,9 +202,9 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
             </div>
           )}
 
-          {/* 🆕 FINALIZE PROJECT BUTTON */}
+          {/* FINALIZE PROJECT BUTTON */}
           {shouldShowFinalize && (
-            <div className="border-t pt-4" style={{ borderColor: 'var(--charcoal)' }}>
+            <div className={`${userSummary.contributionAmount > 0n ? 'border-t' : ''} pt-4`} style={{ borderColor: 'var(--charcoal)' }}>
               <div className="flex items-center space-x-2 mb-3 p-3 rounded-lg" style={{ 
                 backgroundColor: 'rgba(250, 126, 9, 0.1)', 
                 borderLeft: '3px solid var(--neon-orange)'
@@ -209,7 +212,11 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
                 <Clock className="h-5 w-5" style={{ color: 'var(--neon-orange)' }} />
                 <div>
                   <p className="font-medium" style={{ color: 'var(--neon-orange)' }}>Funding Period Ended</p>
-                  <p className="text-xs" style={{ color: 'var(--silver-dark)' }}>Help finalize this project</p>
+                  <p className="text-xs" style={{ color: 'var(--silver-dark)' }}>
+                    {userSummary.contributionAmount === 0n 
+                      ? 'Anyone can help finalize this project'
+                      : 'Help finalize this project'}
+                  </p>
                 </div>
               </div>
               
