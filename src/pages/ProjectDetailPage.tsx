@@ -11,7 +11,6 @@ import { UserProjectSummary } from '../components/project/UserProjectSummary'
 import { DepositLiquidityCard } from '../components/project/DepositLiquidityCard'
 import { DepositProjectTokenCard } from '../components/project/DepositProjectTokenCard'
 import { FinalizeLiquidityPreviewCard } from '@/components/project/FinalizeLiquidityPreviewCard'
-import { FinalizeProjectCard } from '../components/project/FinalizeProjectCard'
 import { WithdrawUnsoldTokensCard } from '../components/project/WithdrawUnsoldTokensCard'
 import { MultiTransactionModal } from '../components/common/MultiTransactionModal'
 import { useProject } from '../hooks/useProject'
@@ -127,17 +126,15 @@ export const ProjectDetailPage: React.FC = () => {
     )
   }
 
-  const isProjectOwner =
-    address && project.projectOwner.toLowerCase() === address.toLowerCase()
+  const isProjectOwner = address && project.projectOwner.toLowerCase() === address.toLowerCase()
 
   // Check if liquidity tokens are deposited (for button state)
   const hasDepositedLiquidity = project.depositedLiquidityTokens >= project.requiredLiquidityTokens
 
-  // Determine if project can be finalized (Active but time has ended)
-  const currentTime = Math.floor(Date.now() / 1000) // Current time in seconds
-  const hasTimeEnded = currentTime >= Number(project.endTime)
-  const hasReachedGoal = project.totalRaised >= project.softCap
-  const canFinalize = project.status === ProjectStatus.Active && hasTimeEnded && hasReachedGoal
+  // Calculate if finalize should show
+  const now = Math.floor(Date.now() / 1000)
+  const projectHasEnded = now >= Number(project.endTime)
+  const canFinalize = project.status === ProjectStatus.Active && projectHasEnded
   
   return (
     <div className="space-y-8">
@@ -180,16 +177,6 @@ export const ProjectDetailPage: React.FC = () => {
 
       {/* Project Details */}
       <ProjectDetails project={project} />
-
-      {/* FINALIZE PROJECT CARD - Show when FundingEnded and goal reached (PUBLIC ACTION) */}
-      {canFinalize && (
-        <FinalizeProjectCard
-          projectId={BigInt(project.id)}
-          isProjectOwner={!!isProjectOwner}
-          buttonState={finalize.buttonState}
-          onFinalize={finalize.executeFinalize}
-        />
-      )}
 
       {/* DEPOSIT PROJECT TOKENS CARD - Show when Upcoming and tokens NOT deposited */}
       {isProjectOwner && 
@@ -325,11 +312,12 @@ export const ProjectDetailPage: React.FC = () => {
             </div>
           )}
           
-          {(project.status === ProjectStatus.Successful) && 
-            !requestRefund.canRefund && !canFinalize && (
+          {(project.status === ProjectStatus.FundingEnded || 
+            project.status === ProjectStatus.Successful) && 
+            !requestRefund.canRefund && (
             <div className="bg-[var(--charcoal)] border border-[var(--silver-dark)]/30 rounded-2xl p-6 text-center">
               <p className="text-[var(--silver-light)]">
-                Project successfully funded! Status: {project.formattedStatus}
+                Funding period has ended. Status: {project.formattedStatus}
               </p>
             </div>
           )}
@@ -338,13 +326,14 @@ export const ProjectDetailPage: React.FC = () => {
         {/* Right Column - User Summary & Actions */}
         <div className="space-y-6">
           {address && userSummary && (
-            <>
-              <UserProjectSummary
-                project={project}
-                userSummary={userSummary}
-                onRefetch={refetch}
-              />
-            </>
+            <UserProjectSummary
+              project={project}
+              userSummary={userSummary}
+              onRefetch={refetch}
+              canFinalize={canFinalize}
+              finalizeButtonState={finalize.buttonState}
+              onFinalize={finalize.executeFinalize}
+            />
           )}
         </div>
       </div>
