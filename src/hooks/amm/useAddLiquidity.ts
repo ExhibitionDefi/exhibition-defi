@@ -31,13 +31,21 @@ const isValidAddress = (address: any): address is Address => {
 export const useAddLiquidity = () => {
   const { address } = useAccount();
 
-  const [state, setState] = useState<AddLiquidityState>({
-    amountA: '',
-    amountB: '',
-    slippage: 0.5,
-    deadline: 20,
-    isProcessing: false,
-    currentStep: 'idle',
+  // Initialize with default tokens from environment variables
+  const [state, setState] = useState<AddLiquidityState>(() => {
+    const defaultTokenA = import.meta.env.VITE_EXH_ADDRESS as Address;
+    const defaultTokenB = import.meta.env.VITE_EXUSDT_ADDRESS as Address;
+    
+    return {
+      tokenA: isValidAddress(defaultTokenA) ? defaultTokenA : undefined,
+      tokenB: isValidAddress(defaultTokenB) ? defaultTokenB : undefined,
+      amountA: '',
+      amountB: '',
+      slippage: 0.5,
+      deadline: 20,
+      isProcessing: false,
+      currentStep: 'idle',
+    };
   });
 
   const [amountABigInt, setAmountABigInt] = useState<bigint | undefined>();
@@ -241,8 +249,50 @@ export const useAddLiquidity = () => {
     return publicClient.waitForTransactionReceipt({ hash });
   }, []);
 
+  // Enhanced updateState with validation to prevent same token selection
   const updateState = useCallback((updates: Partial<AddLiquidityState>) => {
-    setState((prev) => ({ ...prev, ...updates }));
+    setState((prev) => {
+      const newState = { ...prev, ...updates };
+      
+      // Validate that tokenA and tokenB are different
+      if (updates.tokenA !== undefined && newState.tokenB) {
+        const tokenALower = updates.tokenA.toLowerCase();
+        const tokenBLower = newState.tokenB.toLowerCase();
+        
+        if (tokenALower === tokenBLower) {
+          // Swap tokens if trying to select the same token
+          console.log('Same token detected, swapping tokens');
+          return {
+            ...prev,
+            tokenA: updates.tokenA,
+            tokenB: prev.tokenA,
+            // Reset amounts when swapping
+            amountA: prev.amountB || '',
+            amountB: prev.amountA || '',
+          };
+        }
+      }
+      
+      if (updates.tokenB !== undefined && newState.tokenA) {
+        const tokenALower = newState.tokenA.toLowerCase();
+        const tokenBLower = updates.tokenB.toLowerCase();
+        
+        if (tokenALower === tokenBLower) {
+          // Swap tokens if trying to select the same token
+          console.log('Same token detected, swapping tokens');
+          return {
+            ...prev,
+            tokenA: prev.tokenB,
+            tokenB: updates.tokenB,
+            // Reset amounts when swapping
+            amountA: prev.amountB || '',
+            amountB: prev.amountA || '',
+          };
+        }
+      }
+      
+      return newState;
+    });
   }, []);
 
   const executeAddLiquidity = useCallback(async () => {

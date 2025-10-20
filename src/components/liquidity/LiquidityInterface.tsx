@@ -31,12 +31,13 @@ export const LiquidityInterface: React.FC<LiquidityInterfaceProps> = ({
   const currentHook = mode === 'add' ? addLiquidity : removeLiquidity;
 
   return (
-    <div className={`max-w-md mx-auto ${className}`}>
+    // MOBILE FIX: Changed max-w-md to responsive width
+    <div className={`w-full max-w-[95vw] sm:max-w-lg md:max-w-md mx-auto px-2 sm:px-0 ${className}`}>
       {/* Main Liquidity Card */}
-      <div className="bg-[var(--deep-black)] border border-[var(--charcoal)] rounded-2xl p-6 shadow-2xl">
+      <div className="bg-[var(--deep-black)] border border-[var(--charcoal)] rounded-2xl p-4 sm:p-6 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-[var(--silver-light)]">Liquidity</h2>
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-[var(--silver-light)]">Liquidity</h2>
           <div className="flex items-center space-x-2">
             <Button
               variant="ghost"
@@ -44,38 +45,40 @@ export const LiquidityInterface: React.FC<LiquidityInterfaceProps> = ({
               onClick={() => setShowSettings(true)}
               className="text-[var(--metallic-silver)] hover:text-[var(--neon-blue)] p-2 h-auto border-0 bg-transparent hover:bg-[var(--charcoal)] transition-all duration-300"
             >
-              <Settings className="w-5 h-5" />
+              <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </div>
         </div>
 
-        {/* Mode Switch */}
-        <div className="flex space-x-1 bg-[var(--charcoal)] p-2 rounded-lg border border-[var(--silver-dark)] border-opacity-30 mb-6">
+        {/* Mode Switch - MOBILE FIX: Better mobile sizing */}
+        <div className="flex space-x-1 bg-[var(--charcoal)] p-1.5 sm:p-2 rounded-lg border border-[var(--silver-dark)] border-opacity-30 mb-4 sm:mb-6">
           <Button
             variant={mode === 'add' ? 'default' : 'ghost'}
             onClick={() => setMode('add')}
             disabled={currentHook.state.isProcessing}
-            className={`flex-1 transition-all duration-300 ${
+            className={`flex-1 transition-all duration-300 text-sm sm:text-base py-2 sm:py-2.5 ${
               mode === 'add'
                 ? 'bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-blue)] text-[var(--deep-black)] shadow-lg'
                 : 'text-[var(--metallic-silver)] hover:text-[var(--neon-blue)] hover:bg-[var(--deep-black)]'
             }`}
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Liquidity
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden xs:inline">Add Liquidity</span>
+            <span className="xs:hidden">Add</span>
           </Button>
           <Button
             variant={mode === 'remove' ? 'default' : 'ghost'}
             onClick={() => setMode('remove')}
             disabled={currentHook.state.isProcessing}
-            className={`flex-1 transition-all duration-300 ${
+            className={`flex-1 transition-all duration-300 text-sm sm:text-base py-2 sm:py-2.5 ${
               mode === 'remove'
                 ? 'bg-gradient-to-r from-[var(--neon-orange)] to-[var(--neon-orange)] text-[var(--deep-black)] shadow-lg'
                 : 'text-[var(--metallic-silver)] hover:text-[var(--neon-orange)] hover:bg-[var(--deep-black)]'
             }`}
           >
-            <Minus className="h-4 w-4 mr-2" />
-            Remove Liquidity
+            <Minus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden xs:inline">Remove Liquidity</span>
+            <span className="xs:hidden">Remove</span>
           </Button>
         </div>
 

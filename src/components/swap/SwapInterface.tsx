@@ -118,9 +118,9 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
   };
 
   return (
-    <div className={`max-w-md mx-auto ${className}`}>
+    <div className={`w-full max-w-[95vw] sm:max-w-md mx-auto ${className}`}>
       {/* Main Card */}
-      <div className="bg-[var(--deep-black)] border border-[var(--charcoal)] rounded-2xl p-6 shadow-2xl">
+      <div className="bg-[var(--deep-black)] border border-[var(--charcoal)] rounded-2xl p-4 sm:p-6 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-[var(--silver-light)]">Swap</h2>
@@ -159,19 +159,19 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
               </button>
             )}
           </div>
-          <div className="flex items-center bg-[var(--charcoal)] rounded-xl px-4 py-3">
+          <div className="flex items-center bg-[var(--charcoal)] rounded-xl px-3 sm:px-4 py-3 gap-2">
             <input
               type="number"
               value={swapLogic.amountIn}
               onChange={(e) => swapLogic.setAmountIn(e.target.value)}
               placeholder="0.0"
-              className="flex-1 bg-transparent text-lg text-[var(--silver-light)] outline-none"
+              className="flex-1 min-w-0 bg-transparent text-lg text-[var(--silver-light)] outline-none"
             />
             <button
               onClick={() => setShowTokenSelector('in')}
-              className="flex items-center space-x-2 ml-3"
+              className="flex items-center space-x-1.5 shrink-0"
             >
-              <span className="font-semibold text-[var(--silver-light)]">
+              <span className="font-semibold text-[var(--silver-light)] text-sm sm:text-base">
                 {swapLogic.tokenInInfo?.symbol || 'Select'}
               </span>
               <ChevronDown className="w-4 h-4 text-[var(--silver-dark)]" />
@@ -200,19 +200,19 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
               </span>
             )}
           </div>
-          <div className="flex items-center bg-[var(--charcoal)] rounded-xl px-4 py-3">
+          <div className="flex items-center bg-[var(--charcoal)] rounded-xl px-3 sm:px-4 py-3 gap-2">
             <input
               type="text"
               value={swapLogic.formattedAmountOut || ''}
               readOnly
               placeholder="0.0"
-              className="flex-1 bg-transparent text-lg text-[var(--silver-light)] outline-none"
+              className="flex-1 min-w-0 bg-transparent text-lg text-[var(--silver-light)] outline-none"
             />
             <button
               onClick={() => setShowTokenSelector('out')}
-              className="flex items-center space-x-2 ml-3"
+              className="flex items-center space-x-1.5 shrink-0"
             >
-              <span className="font-semibold text-[var(--silver-light)]">
+              <span className="font-semibold text-[var(--silver-light)] text-sm sm:text-base">
                 {swapLogic.tokenOutInfo?.symbol || 'Select'}
               </span>
               <ChevronDown className="w-4 h-4 text-[var(--silver-dark)]" />

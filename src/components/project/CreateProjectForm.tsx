@@ -9,11 +9,7 @@ import { Label } from '../ui/Label'
 import { Checkbox } from '../ui/Checkbox'
 import { Alert } from '../ui/Alert'
 import type { CreateProjectFormData } from '@/hooks/pad/useCreateProject'
-import { 
-  SUPPORTED_EXH, 
-  SUPPORTED_EXUSDT, 
-  SUPPORTED_EXNEX 
-} from '@/config/contracts'
+import { SUPPORTED_EXH, SUPPORTED_EXUSDT, SUPPORTED_EXNEX } from '@/config/contracts'
 
 interface CreateProjectFormProps {
   onSubmit: (data: CreateProjectFormData) => void
@@ -165,7 +161,8 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
         if (formData.startTime >= formData.endTime) {
           errors.endTime = 'End time must be after start time'
         }
-        const duration = (formData.endTime.getTime() - formData.startTime.getTime()) / (24 * 60 * 60 * 1000)
+        const duration =
+          (formData.endTime.getTime() - formData.startTime.getTime()) / (24 * 60 * 60 * 1000)
         if (duration > 7) {
           errors.endTime = 'Project duration cannot exceed 7 days'
         }
@@ -1035,24 +1032,37 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-3xl mx-auto">
+    <form
+      onSubmit={handleSubmit}
+      className="
+        space-y-8 
+        w-full 
+        max-w-full 
+        sm:max-w-lg 
+        md:max-w-xl 
+        lg:max-w-2xl 
+        xl:max-w-3xl 
+        mx-auto 
+        px-4
+      "
+    >
       {error && (
         <Alert variant="error" title="Transaction Failed">
           {error.message || 'Failed to create project. Please try again.'}
         </Alert>
       )}
 
-      <div className="bg-[var(--charcoal)] border border-[var(--silver-dark)]/20 rounded-2xl p-8 md:p-10">
+      <div className="bg-[var(--charcoal)] border border-[var(--silver-dark)]/20 rounded-2xl p-6 sm:p-8 md:p-10">
         {renderStepContent()}
       </div>
 
-      <div className="flex justify-between items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <Button
           type="button"
           variant="secondary"
           onClick={handleBack}
           disabled={currentStep === 1 || isSubmitting}
-          className="px-6 py-3"
+          className="w-full sm:w-auto px-6 py-3"
         >
           <ChevronLeft className="w-5 h-5 mr-2" />
           Back
@@ -1063,22 +1073,22 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
         </div>
 
         {currentStep < 6 ? (
-          <Button 
-            type="button" 
-            variant="primary" 
-            onClick={handleNext} 
+          <Button
+            type="button"
+            variant="primary"
+            onClick={handleNext}
             disabled={isSubmitting}
-            className="px-6 py-3"
+            className="w-full sm:w-auto px-6 py-3"
           >
             Next
             <ChevronRight className="w-5 h-5 ml-2" />
           </Button>
         ) : (
-          <Button 
-            type="submit" 
-            variant="primary" 
+          <Button
+            type="submit"
+            variant="primary"
             disabled={isSubmitting}
-            className="px-8 py-3 font-bold"
+            className="w-full sm:w-auto px-8 py-3 font-bold"
           >
             {isSubmitting ? (
               <>

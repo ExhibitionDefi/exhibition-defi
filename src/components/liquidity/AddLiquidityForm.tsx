@@ -106,7 +106,7 @@ export const AddLiquidityForm: React.FC = () => {
                 {addLiquidity.balanceA.value > 0 && (
                   <button
                     onClick={() => handleMaxBalance('A')}
-                    className="text-xs text-[var(--neon-blue)] hover:text-[var(--neon-orange)] px-2 py-1 bg-transparent border-0 hover:bg-[var(--deep-black)] rounded transition-all duration-300 whitespace-nowrap"
+                    className="text-xs text-[var(--neon-blue)] hover:text-[var(--neon-orange)] px-2 py-1 bg-transparent border-0 hover:bg-[var(--deep-black)] rounded transition-all duration-300 whitespace-nowrap self-start sm:self-auto"
                   >
                     MAX
                   </button>
@@ -119,7 +119,7 @@ export const AddLiquidityForm: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <button
               onClick={() => setShowTokenSelector('tokenA')}
-              className="border-opacity-50 rounded-xl p-2 sm:p-3 hover:border-[var(--neon-blue)] hover:border-opacity-80 transition-all duration-300 group flex-shrink-0 w-full sm:w-auto"
+              className="border-opacity-50 rounded-xl p-2 sm:p-3 hover:border-[var(--neon-blue)] hover:border-opacity-80 transition-all duration-300 group flex-shrink-0 w-full sm:w-auto border border-[var(--silver-dark)]"
             >
               <div className="flex items-center space-x-2 justify-center sm:justify-start">
                 {addLiquidity.tokenAInfo ? (
@@ -192,7 +192,7 @@ export const AddLiquidityForm: React.FC = () => {
                 {addLiquidity.balanceB.value > 0 && (
                   <button
                     onClick={() => handleMaxBalance('B')}
-                    className="text-xs text-[var(--neon-orange)] hover:text-[var(--neon-blue)] px-2 py-1 bg-transparent border-0 hover:bg-[var(--deep-black)] rounded transition-all duration-300 whitespace-nowrap"
+                    className="text-xs text-[var(--neon-orange)] hover:text-[var(--neon-blue)] px-2 py-1 bg-transparent border-0 hover:bg-[var(--deep-black)] rounded transition-all duration-300 whitespace-nowrap self-start sm:self-auto"
                   >
                     MAX
                   </button>
@@ -205,7 +205,7 @@ export const AddLiquidityForm: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <button
               onClick={() => setShowTokenSelector('tokenB')}
-              className="border-opacity-50 rounded-xl p-2 sm:p-3 hover:border-[var(--neon-orange)] hover:border-opacity-80 transition-all duration-300 group flex-shrink-0 w-full sm:w-auto"
+              className="border-opacity-50 rounded-xl p-2 sm:p-3 hover:border-[var(--neon-orange)] hover:border-opacity-80 transition-all duration-300 group flex-shrink-0 w-full sm:w-auto border border-[var(--silver-dark)]"
             >
               <div className="flex items-center space-x-2 justify-center sm:justify-start">
                 {addLiquidity.tokenBInfo ? (

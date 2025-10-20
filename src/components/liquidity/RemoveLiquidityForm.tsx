@@ -23,7 +23,7 @@ export const RemoveLiquidityForm: React.FC<RemoveLiquidityFormProps> = ({
   }, [selectedPosition, removeLiquidity]);
 
   return (
-    <>
+    <div className="w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl mx-auto px-4">
       <div className="space-y-1">
         {/* Remove Liquidity LP Token Input */}
         <div className="bg-[var(--charcoal)] rounded-xl p-4 border border-[var(--silver-dark)] border-opacity-30 hover:border-opacity-50 transition-all duration-300">
@@ -52,6 +52,7 @@ export const RemoveLiquidityForm: React.FC<RemoveLiquidityFormProps> = ({
               </div>
             )}
           </div>
+
           <select
             onChange={(e) => {
               const selected = positions.find((p) => `${p.tokenA}-${p.tokenB}` === e.target.value);
@@ -70,6 +71,7 @@ export const RemoveLiquidityForm: React.FC<RemoveLiquidityFormProps> = ({
               </option>
             ))}
           </select>
+
           <input
             type="text"
             placeholder="0.0"
@@ -217,6 +219,6 @@ export const RemoveLiquidityForm: React.FC<RemoveLiquidityFormProps> = ({
         isError={!!removeLiquidity.state.error}
         error={removeLiquidity.state.error ? new Error(removeLiquidity.state.error) : null}
       />
-    </>
+    </div>
   );
 };
