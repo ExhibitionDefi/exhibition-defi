@@ -1,4 +1,21 @@
 // src/hooks/projects/useFinalizeProject.ts
+/**
+ * Hook for finalizing a project after its funding period has ended.
+ * 
+ * IMPORTANT: This is a PUBLIC function - anyone can call it, not just the project owner.
+ * 
+ * When to use:
+ * - Project status is still "Active" (blockchain doesn't auto-update state)
+ * - Current time has passed the project's endTime
+ * - Project has reached its softCap goal
+ * 
+ * What it does:
+ * - Transitions project from "Active" to "Successful" status
+ * - Enables token claims for contributors
+ * - Allows owner to deposit liquidity tokens
+ * - Single transaction, no approval needed
+ */
+
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
@@ -35,7 +52,7 @@ interface UseFinalizeProjectOptions {
 export function useFinalizeProject(options: UseFinalizeProjectOptions = {}) {
   const { onSuccess, onConfirmed, onError, showToast = true } = options
 
-  // low-level wagmi write hook
+  // Low-level wagmi write hook for contract interaction
   const {
     writeContract,
     data: hash, // tx hash (if available)
@@ -44,7 +61,7 @@ export function useFinalizeProject(options: UseFinalizeProjectOptions = {}) {
     error: wagmiError,
   } = useWriteContract()
 
-  // Wait for confirmation / receipt
+  // Wait for transaction confirmation on blockchain
   const {
     isLoading: isConfirming,
     isSuccess: isConfirmed,
@@ -53,13 +70,13 @@ export function useFinalizeProject(options: UseFinalizeProjectOptions = {}) {
     hash,
   })
 
-  // Local lifecycle & UI state
+  // Local lifecycle & UI state management
   const [step, setStep] = useState<Step>('idle')
   const [txHash, setTxHash] = useState<Hash | undefined>(undefined)
   const [txError, setTxError] = useState<Error | null>(null)
   const [showStatus, setShowStatus] = useState(false)
 
-  // Compose transactionStatus object for TransactionStatus component
+  // Compose transactionStatus object for MultiTransactionModal component
   const transactionStatus: TxStatus = useMemo(() => {
     return {
       show: showStatus,
@@ -82,7 +99,7 @@ export function useFinalizeProject(options: UseFinalizeProjectOptions = {}) {
     }
   }, [showStatus, txHash, step, wagmiIsPending, isConfirming, isConfirmed, wagmiIsError, receiptError, txError, wagmiError])
 
-  // Button state derived from lifecycle
+  // Button state derived from current transaction lifecycle step
   const buttonState: ButtonState = useMemo(() => {
     switch (step) {
       case 'submitting':
@@ -98,17 +115,26 @@ export function useFinalizeProject(options: UseFinalizeProjectOptions = {}) {
     }
   }, [step])
 
-  // Execute finalize (single public method)
+  /**
+   * Execute finalize - PUBLIC METHOD (anyone can call)
+   * 
+   * This function transitions a project from Active to Successful/Failed status base on Softcap protection
+   * after Project time duration is over.
+   * 
+   * @param projectId - The project ID to finalize (as bigint)
+   * @returns Promise that resolves when transaction is submitted
+   */
   const executeFinalize = useCallback(
     async (projectId: bigint) => {
-      // reset state
+      // Reset state for new transaction
       setTxError(null)
       setTxHash(undefined)
       setShowStatus(true)
       setStep('submitting')
 
       try {
-        // call contract
+        // Call smart contract finalizeProject function
+        // NO APPROVAL NEEDED - single transaction only
         await writeContract({
           address: EXHIBITION_ADDRESS,
           abi: exhibitionAbi,
@@ -116,33 +142,35 @@ export function useFinalizeProject(options: UseFinalizeProjectOptions = {}) {
           args: [projectId],
         })
 
-        // writeContract sets `data` (hash) asynchronously; we'll react to `hash` via useEffect below
+        // Show user feedback
         if (showToast) {
           toast.dismiss()
           toast.loading('Finalize transaction submitted — confirm in wallet')
         }
 
-        // call onSuccess immediately if needed (note: hash may be undefined here; onSuccess receives hash when available via effect)
+        // Call success callback (hash available via useEffect below)
         onSuccess?.(txHash)
-        // move to confirming — actual confirming will be inferred when hash is seen and useWaitForTransactionReceipt signals
+        
+        // Move to confirming state
         setStep('confirming')
       } catch (err) {
         const e = err as Error
         setTxError(e)
         setStep('error')
+        
         if (showToast) {
           toast.dismiss()
           toast.error(e.message || 'Failed to send transaction')
         }
+        
         onError?.(e)
-        // surface error to consumer
         return Promise.reject(e)
       }
     },
     [writeContract, onSuccess, onError, showToast, txHash]
   )
 
-  // react to wagmi-provided hash (transaction submitted)
+  // React to wagmi-provided hash (transaction submitted to network)
   useEffect(() => {
     if (!hash) return
     setTxHash(hash as Hash)
@@ -156,50 +184,56 @@ export function useFinalizeProject(options: UseFinalizeProjectOptions = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hash])
 
-  // react to receipt confirmation
+  // React to transaction confirmation (mined in block)
   useEffect(() => {
     if (isConfirmed) {
       setStep('confirmed')
       setShowStatus(true)
+      
       if (showToast) {
         toast.dismiss()
         toast.success('Project finalized successfully')
       }
+      
       onConfirmed?.(txHash)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConfirmed, txHash])
 
-  // handle receipt / wagmi errors
+  // Handle transaction errors (receipt or wagmi errors)
   useEffect(() => {
     if (receiptError || wagmiIsError) {
       const errorObj = (wagmiError as Error) ?? new Error('Transaction failed')
       setTxError(errorObj)
       setStep('error')
       setShowStatus(true)
+      
       if (showToast) {
         toast.dismiss()
         toast.error(errorObj.message || 'Transaction failed')
       }
+      
       onError?.(errorObj)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [receiptError, wagmiIsError, wagmiError])
 
-  // auto-reset UX after success/error (optional)
+  // Auto-hide modal after 8 seconds on success/error
   useEffect(() => {
     if (step === 'confirmed' || step === 'error') {
       const t = setTimeout(() => {
-        // keep modal visible a short time to let user click explorer, then auto-close
         setShowStatus(false)
-        // keep step to confirmed/error so buttonState can reflect it; consumer can call reset if needed
+        // Keep step state for button display
       }, 8_000)
       return () => clearTimeout(t)
     }
     return
   }, [step])
 
-  // manual reset util
+  /**
+   * Manual reset utility - clears all transaction state
+   * Useful for closing modal or resetting after error
+   */
   const reset = useCallback(() => {
     setStep('idle')
     setTxHash(undefined)
@@ -208,19 +242,19 @@ export function useFinalizeProject(options: UseFinalizeProjectOptions = {}) {
   }, [])
 
   return {
-    // action
+    // Main action method - PUBLIC (anyone can call)
     executeFinalize,
 
-    // button state for UI
+    // Button state for UI rendering
     buttonState,
 
-    // transaction status for TransactionStatus component
+    // Transaction status for MultiTransactionModal
     transactionStatus: transactionStatus as TxStatus,
 
-    // Transaction type for MultiTransactionModal
+    // Transaction type identifier
     transactionType: 'finalize' as const,
 
-    // raw fields if you prefer
+    // Raw state fields for custom UI implementations
     hash: txHash,
     isPending: step === 'submitting' || wagmiIsPending,
     isConfirming: step === 'confirming' || isConfirming,
@@ -229,7 +263,7 @@ export function useFinalizeProject(options: UseFinalizeProjectOptions = {}) {
     error: txError ?? (wagmiError as Error | undefined) ?? null,
     isLoading: step === 'submitting' || step === 'confirming' || wagmiIsPending,
 
-    // utilities
+    // Utility functions
     reset,
     explorerUrl: EXPLORER_URL,
   }

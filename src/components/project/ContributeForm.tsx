@@ -22,9 +22,9 @@ interface ContributeFormProps {
   isConnected: boolean
   canContribute: boolean
   isLoading?: boolean
-  contributionSuccess?: boolean // ✅ NEW: Flag for successful contribution
-  txHash?: `0x${string}` // ✅ NEW: Transaction hash
-  contributedAmount?: string // ✅ NEW: Amount that was contributed
+  contributionSuccess?: boolean
+  txHash?: `0x${string}` 
+  contributedAmount?: string 
   onSetMaxBalance: () => void
   onContributionChange: (amount: string) => void
   onContribute: () => void
