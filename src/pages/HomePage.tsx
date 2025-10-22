@@ -41,7 +41,7 @@ export const HomePage: React.FC = () => {
           Launch Your Token On Exhibition
         </h1>
         <p className="text-xl text-[var(--metallic-silver)] max-w-3xl mx-auto">
-          The most advanced decentralized launchpad on Nexus. Launch your token with guaranteed security—blockchain-enforced liquidity locks, protected funding, and transparent vesting. No rug pulls. No surprises.
+          The first verifiable fair token launchpad on Nexus. Launch your token with guaranteed security—blockchain-enforced liquidity locks, protected funding, and transparent vesting. No surprises.No games
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link to="/create">
