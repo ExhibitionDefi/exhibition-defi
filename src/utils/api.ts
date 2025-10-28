@@ -5,7 +5,7 @@
  * Location: src/utils/api.ts
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 interface ApiResponse<T = any> {
   success: boolean
@@ -77,7 +77,7 @@ export async function verifyWallet(
   signature: string,
   message: string
 ): Promise<ApiResponse<{ address: string; csrfToken: string }>> {
-  return apiClient('/auth/verify', {
+  return apiClient('/api/auth/verify', {
     method: 'POST',
     body: JSON.stringify({ address, signature, message }),
   })
@@ -87,7 +87,7 @@ export async function verifyWallet(
  * Logout and clear auth cookies
  */
 export async function logout(): Promise<ApiResponse> {
-  return apiClient('/auth/logout', {
+  return apiClient('/api/auth/logout', {
     method: 'POST',
   })
 }
@@ -96,12 +96,12 @@ export async function logout(): Promise<ApiResponse> {
  * Get current authenticated user
  */
 export async function getCurrentUser(): Promise<ApiResponse<{ address: string; expiresAt: number }>> {
-  return apiClient('/auth/me')
+  return apiClient('/api/auth/me')
 }
 
 /**
  * Get the message that should be signed
  */
 export async function getSigningMessage(): Promise<ApiResponse<{ message: string }>> {
-  return apiClient('/auth/message')
+  return apiClient('/api/auth/message')
 }
