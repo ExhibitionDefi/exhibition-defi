@@ -1,3 +1,4 @@
+// src/components/amm/SwapInterface.tsx
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Address } from 'viem';
 import { Settings, ChevronDown, ArrowUpDown } from 'lucide-react';
@@ -9,6 +10,8 @@ import { MultiTransactionModal } from '@/components/common/MultiTransactionModal
 import { useSwapLogic } from '@/hooks/amm/useSwapLogic';
 import { AMMFormatters } from '@/utils/ammFormatters';
 import { AMM_ADDRESS } from '@/config/contracts';
+import { SafeHtml } from '../SafeHtml';
+import { sanitizeText } from '@/utils/sanitization';
 
 // Token interface
 interface Token {
@@ -58,10 +61,37 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
     defaultTokenOut: defaultTokenOut || COMMON_TOKENS[1]?.address,
   });
 
+  // ✅ Safe localStorage handling with validation
   const [customTokens, setCustomTokens] = useState<Token[]>(() => {
     try {
       const saved = localStorage.getItem('customTokens');
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      
+      const parsed = JSON.parse(saved);
+      
+      // ✅ Validate parsed data is an array
+      if (!Array.isArray(parsed)) return [];
+      
+      // ✅ Validate and sanitize each token
+      return parsed
+        .filter((token): token is Token => {
+          return (
+            token &&
+            typeof token.address === 'string' &&
+            typeof token.symbol === 'string' &&
+            typeof token.decimals === 'number' &&
+            /^0x[a-fA-F0-9]{40}$/.test(token.address) &&
+            token.decimals >= 0 &&
+            token.decimals <= 18
+          );
+        })
+        .map((token) => ({
+          ...token,
+          symbol: sanitizeText(token.symbol).slice(0, 20),
+          name: sanitizeText(token.name || token.symbol).slice(0, 100),
+          decimals: Math.min(Math.max(Number(token.decimals), 0), 18),
+        }))
+        .slice(0, 50); // ✅ Limit to 50 custom tokens max
     } catch {
       return [];
     }
@@ -70,11 +100,21 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
   const [showTokenSelector, setShowTokenSelector] = useState<'in' | 'out' | null>(null);
   const [showSettings, setShowSettings] = useState(false);
 
+  // ✅ Safe localStorage save with error handling
   useEffect(() => {
     try {
-      localStorage.setItem('customTokens', JSON.stringify(customTokens));
-    } catch {
-      // ignore
+      // Only save valid tokens
+      const validTokens = customTokens.filter(
+        (token) =>
+          token.address &&
+          /^0x[a-fA-F0-9]{40}$/.test(token.address) &&
+          token.symbol &&
+          typeof token.decimals === 'number'
+      );
+      
+      localStorage.setItem('customTokens', JSON.stringify(validTokens));
+    } catch (error) {
+      console.warn('Failed to save custom tokens:', error);
     }
   }, [customTokens]);
 
@@ -92,12 +132,51 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
     return [...tokensWithDecimals, ...customTokens];
   }, [customTokens, swapLogic.tokenInInfo, swapLogic.tokenOutInfo]);
 
+  // ✅ Validate custom token before adding
   const handleAddCustomToken = (token: Token) => {
     setCustomTokens((prev) => {
+      // Check if already exists
       const exists = prev.some((t) => t.address.toLowerCase() === token.address.toLowerCase());
       if (exists) return prev;
-      return [...prev, { ...token, isCustom: true }];
+      
+      // ✅ Validate token data
+      if (!token.address || !token.symbol || typeof token.decimals !== 'number') {
+        console.warn('Invalid token data');
+        return prev;
+      }
+      
+      // ✅ Sanitize token data
+      const sanitizedToken: Token = {
+        ...token,
+        symbol: sanitizeText(token.symbol).slice(0, 20),
+        name: sanitizeText(token.name || token.symbol).slice(0, 100),
+        decimals: Math.min(Math.max(Number(token.decimals), 0), 18),
+        isCustom: true,
+      };
+      
+      // ✅ Limit to 50 custom tokens
+      const newTokens = [...prev, sanitizedToken];
+      return newTokens.slice(0, 50);
     });
+  };
+
+  // ✅ Sanitize amount input
+  const handleAmountInChange = (value: string) => {
+    // Remove any non-numeric characters except decimal point
+    const cleaned = value.replace(/[^\d.]/g, '');
+    
+    // Prevent multiple decimal points
+    const parts = cleaned.split('.');
+    const sanitized = parts.length > 2 
+      ? parts[0] + '.' + parts.slice(1).join('') 
+      : cleaned;
+    
+    // Limit decimal places based on token decimals
+    if (swapLogic.tokenInInfo && parts[1] && parts[1].length > swapLogic.tokenInInfo.decimals) {
+      return; // Don't update if exceeds decimals
+    }
+    
+    swapLogic.setAmountIn(sanitized);
   };
 
   const handleSwap = async () => {
@@ -116,6 +195,17 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
     swapLogic.setTokenIn(currentOut);
     swapLogic.setTokenOut(currentIn);
   };
+
+  // ✅ Safe token symbol display
+  const safeTokenInSymbol = useMemo(
+    () => sanitizeText(swapLogic.tokenInInfo?.symbol || 'Select'),
+    [swapLogic.tokenInInfo?.symbol]
+  );
+
+  const safeTokenOutSymbol = useMemo(
+    () => sanitizeText(swapLogic.tokenOutInfo?.symbol || 'Select'),
+    [swapLogic.tokenOutInfo?.symbol]
+  );
 
   return (
     <div className={`w-full max-w-[95vw] sm:max-w-md mx-auto ${className}`}>
@@ -140,6 +230,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
               size="sm"
               onClick={() => setShowSettings(true)}
               className="text-[var(--metallic-silver)] hover:text-[var(--neon-blue)] p-2 h-auto border-0 bg-transparent hover:bg-[var(--charcoal)] transition-all duration-300"
+              aria-label="Open swap settings"
             >
               <Settings className="w-5 h-5" />
             </Button>
@@ -155,25 +246,32 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
                 onClick={swapLogic.handleMaxBalance}
                 className="text-xs text-[var(--neon-blue)] hover:underline"
               >
-                Max: {swapLogic.formatBalance(swapLogic.balanceIn.value, swapLogic.tokenInInfo)}
+                <SafeHtml 
+                  content={`Max: ${swapLogic.formatBalance(swapLogic.balanceIn.value, swapLogic.tokenInInfo)}`}
+                  as="span"
+                />
               </button>
             )}
           </div>
           <div className="flex items-center bg-[var(--charcoal)] rounded-xl px-3 sm:px-4 py-3 gap-2">
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={swapLogic.amountIn}
-              onChange={(e) => swapLogic.setAmountIn(e.target.value)}
+              onChange={(e) => handleAmountInChange(e.target.value)}
               placeholder="0.0"
+              maxLength={30} // ✅ Prevent DoS
               className="flex-1 min-w-0 bg-transparent text-lg text-[var(--silver-light)] outline-none"
             />
             <button
               onClick={() => setShowTokenSelector('in')}
               className="flex items-center space-x-1.5 shrink-0"
             >
-              <span className="font-semibold text-[var(--silver-light)] text-sm sm:text-base">
-                {swapLogic.tokenInInfo?.symbol || 'Select'}
-              </span>
+              <SafeHtml 
+                content={safeTokenInSymbol}
+                as="span"
+                className="font-semibold text-[var(--silver-light)] text-sm sm:text-base"
+              />
               <ChevronDown className="w-4 h-4 text-[var(--silver-dark)]" />
             </button>
           </div>
@@ -185,6 +283,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
             onClick={handleFlipTokens}
             className="p-2 rounded-full bg-[var(--charcoal)] hover:bg-[var(--neon-blue)] hover:text-[var(--deep-black)] transition-all duration-300"
             title="Flip tokens"
+            aria-label="Flip token positions"
           >
             <ArrowUpDown className="w-5 h-5" />
           </button>
@@ -195,9 +294,11 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-[var(--silver-dark)]">To</span>
             {swapLogic.balanceOut && swapLogic.tokenOutInfo && (
-              <span className="text-xs text-[var(--silver-dark)]">
-                Bal: {swapLogic.formatBalance(swapLogic.balanceOut.value, swapLogic.tokenOutInfo)}
-              </span>
+              <SafeHtml 
+                content={`Bal: ${swapLogic.formatBalance(swapLogic.balanceOut.value, swapLogic.tokenOutInfo)}`}
+                as="span"
+                className="text-xs text-[var(--silver-dark)]"
+              />
             )}
           </div>
           <div className="flex items-center bg-[var(--charcoal)] rounded-xl px-3 sm:px-4 py-3 gap-2">
@@ -212,9 +313,11 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
               onClick={() => setShowTokenSelector('out')}
               className="flex items-center space-x-1.5 shrink-0"
             >
-              <span className="font-semibold text-[var(--silver-light)] text-sm sm:text-base">
-                {swapLogic.tokenOutInfo?.symbol || 'Select'}
-              </span>
+              <SafeHtml 
+                content={safeTokenOutSymbol}
+                as="span"
+                className="font-semibold text-[var(--silver-light)] text-sm sm:text-base"
+              />
               <ChevronDown className="w-4 h-4 text-[var(--silver-dark)]" />
             </button>
           </div>
@@ -281,9 +384,11 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
                     ) : (
                       <div className="w-4 h-4 rounded-full border-2 border-current" />
                     )}
-                    <span className="text-sm font-medium">
-                      Approve {swapLogic.tokenInInfo?.symbol || 'Token'}
-                    </span>
+                    <SafeHtml 
+                      content={`Approve ${safeTokenInSymbol}`}
+                      as="span"
+                      className="text-sm font-medium"
+                    />
                   </div>
                   <svg className="w-4 h-4 text-[var(--silver-dark)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

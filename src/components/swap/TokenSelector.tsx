@@ -1,3 +1,4 @@
+// src/components/amm/TokenSelector.tsx
 import React, { useState, useMemo, useCallback } from 'react';
 import type { Address } from 'viem';
 import { useReadContract } from 'wagmi';
@@ -5,6 +6,8 @@ import { Search, AlertCircle, CheckCircle, X, Star, Plus } from 'lucide-react';
 import { useTokenBalance } from '../../hooks/useTokenBalance';
 import { exhibitionAmmAbi } from '../../generated/wagmi';
 import { AMMFormatters } from '../../utils/ammFormatters';
+import { SafeHtml, SafeImage } from '../SafeHtml';
+import { sanitizeText, sanitizeAddress } from '../../utils/sanitization';
 
 interface Token {
   address: Address;
@@ -27,9 +30,10 @@ interface TokenSelectorProps {
   contractAddress: Address;
 }
 
-// Helper function to validate EVM address
+// ✅ Helper function to validate EVM address with sanitization
 const isValidAddress = (address: string): address is Address => {
-  return /^0x[a-fA-F0-9]{40}$/.test(address);
+  const sanitized = sanitizeAddress(address);
+  return sanitized !== null && /^0x[a-fA-F0-9]{40}$/.test(sanitized);
 };
 
 export const TokenSelector: React.FC<TokenSelectorProps> = ({
@@ -47,6 +51,13 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
   const [starredTokens, setStarredTokens] = useState<Set<Address>>(new Set());
 
   const allTokens = useMemo(() => [...tokens, ...customTokens], [tokens, customTokens]);
+
+  // ✅ Sanitize search query input
+  const handleSearchChange = useCallback((value: string) => {
+    // Remove any potentially dangerous characters but allow alphanumeric and 0x prefix
+    const cleaned = value.replace(/[<>'"]/g, '').slice(0, 100); // Limit length
+    setSearchQuery(cleaned);
+  }, []);
 
   // Detect if search query is a potential token address
   const isAddressQuery = searchQuery.startsWith('0x') && searchQuery.length >= 42;
@@ -74,7 +85,7 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
     let filtered = allTokens;
 
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+      const query = searchQuery.toLowerCase().trim();
 
       if (query.startsWith('0x')) {
         const exactMatch = filtered.find((t) => t.address.toLowerCase() === query);
@@ -92,6 +103,7 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
     return filtered;
   }, [allTokens, searchQuery, activeFilter, starredTokens]);
 
+  // ✅ Sanitize token data before adding
   const handleAddCustomToken = useCallback(async () => {
     if (!isValidAddress(searchQuery) || isExistingToken) {
       return;
@@ -103,11 +115,20 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
         const [symbols, decimals] = tokenInfo as [readonly string[], readonly number[], readonly bigint[]];
         
         if (Array.isArray(symbols) && Array.isArray(decimals) && symbols.length > 0) {
+          // ✅ Sanitize all token data
+          const sanitizedSymbol = sanitizeText(symbols[0]).slice(0, 20); // Limit symbol length
+          const sanitizedDecimals = Math.min(Math.max(Number(decimals[0]), 0), 18); // Limit decimals 0-18
+          
+          if (!sanitizedSymbol) {
+            console.error('Invalid token symbol');
+            return;
+          }
+
           const newToken: Token = {
             address: searchQuery as Address,
-            symbol: symbols[0],
-            name: symbols[0],
-            decimals: Number(decimals[0]),
+            symbol: sanitizedSymbol,
+            name: sanitizedSymbol, // Use symbol as name for safety
+            decimals: sanitizedDecimals,
             logoURI: '/tokens/default.png',
             isCustom: true,
           };
@@ -147,6 +168,7 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
             <button
               onClick={onClose}
               className="text-silver-dark hover:text-silver-light p-2 h-auto bg-transparent border-0 hover:bg-transparent transition-colors"
+              aria-label="Close token selector"
             >
               <X className="w-5 h-5" />
             </button>
@@ -156,12 +178,13 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
         {/* Search */}
         <div className="p-6 pb-4">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-silver-dark" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-silver-dark pointer-events-none" />
             <input
               type="text"
               placeholder="Search name, symbol or paste address (0x...)"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              maxLength={100} // ✅ Prevent DoS
               className={`w-full bg-charcoal text-silver-light placeholder-silver-dark rounded-xl pl-12 pr-4 py-3 border ${
                 showTokenError || showInvalidAddress ? 'border-neon-orange' : 'border-silver-dark'
               } focus:border-neon-blue focus:outline-none transition-colors`}
@@ -192,6 +215,7 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
 
           {showAddTokenPrompt && (() => {
             const [symbols, decimals] = tokenInfo as [readonly string[], readonly number[], readonly bigint[]];
+            const safeSymbol = sanitizeText(symbols[0]);
             
             return (
               <div className="mt-3 p-3 bg-charcoal rounded-lg border border-neon-blue/40 animate-[fadeIn_0.2s_ease-out]">
@@ -200,9 +224,11 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
                     <CheckCircle className="w-5 h-5 text-neon-blue mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
                       <div className="text-silver-light font-medium">Token Found</div>
-                      <div className="text-sm text-silver-dark mt-1">
-                        {symbols[0]} • {Number(decimals[0])} decimals
-                      </div>
+                      <SafeHtml 
+                        content={`${safeSymbol} • ${Number(decimals[0])} decimals`}
+                        as="div"
+                        className="text-sm text-silver-dark mt-1"
+                      />
                     </div>
                   </div>
                   <button
@@ -276,6 +302,10 @@ interface TokenRowProps {
 const TokenRow: React.FC<TokenRowProps> = ({ token, isSelected, isStarred, onSelect, onToggleStar }) => {
   const { data: balance } = useTokenBalance(token.address);
 
+  // ✅ Sanitize token display data
+  const safeSymbol = useMemo(() => sanitizeText(token.symbol), [token.symbol]);
+  const safeName = useMemo(() => sanitizeText(token.name), [token.name]);
+
   return (
     <div
       onClick={onSelect}
@@ -289,17 +319,19 @@ const TokenRow: React.FC<TokenRowProps> = ({ token, isSelected, isStarred, onSel
         <div className="relative">
           <div className="w-10 h-10 rounded-full bg-silver-dark flex items-center justify-center overflow-hidden">
             {token.logoURI && token.logoURI !== '/tokens/default.png' ? (
-              <img
+              <SafeImage
                 src={token.logoURI}
-                alt={token.symbol}
+                alt={safeSymbol}
                 className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
+                fallback={
+                  <span className="text-deep-black text-sm font-bold">
+                    {safeSymbol.slice(0, 2).toUpperCase()}
+                  </span>
+                }
               />
             ) : (
               <span className="text-deep-black text-sm font-bold">
-                {token.symbol.slice(0, 2).toUpperCase()}
+                {safeSymbol.slice(0, 2).toUpperCase()}
               </span>
             )}
           </div>
@@ -310,12 +342,20 @@ const TokenRow: React.FC<TokenRowProps> = ({ token, isSelected, isStarred, onSel
           )}
         </div>
 
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-2">
-            <span className="font-semibold text-silver-light">{token.symbol}</span>
+            <SafeHtml 
+              content={safeSymbol}
+              as="span"
+              className="font-semibold text-silver-light"
+            />
             {token.isCustom && <CheckCircle className="w-4 h-4 text-neon-blue" />}
           </div>
-          <div className="text-sm text-silver-dark truncate">{token.name}</div>
+          <SafeHtml 
+            content={safeName}
+            as="div"
+            className="text-sm text-silver-dark truncate"
+          />
         </div>
       </div>
 
@@ -340,6 +380,7 @@ const TokenRow: React.FC<TokenRowProps> = ({ token, isSelected, isStarred, onSel
               ? 'text-neon-orange hover:text-neon-blue'
               : 'text-silver-dark hover:text-silver-light'
           }`}
+          aria-label={isStarred ? 'Unstar token' : 'Star token'}
         >
           <Star className={`w-4 h-4 ${isStarred ? 'fill-current' : ''}`} />
         </button>

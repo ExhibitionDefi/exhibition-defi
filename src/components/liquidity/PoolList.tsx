@@ -12,6 +12,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { exhibitionAmmAbi } from '@/generated/wagmi';
 import { CONTRACT_ADDRESSES } from '../../config/contracts';
 import { AMMFormatters } from '../../utils/ammFormatters';
+import { SafeHtml } from '../SafeHtml';
 
 export interface Pool {
   tokenA: Address;
@@ -297,7 +298,7 @@ const PoolRow: React.FC<PoolRowProps> = ({ pool, onSelect }) => {
       <div className="flex items-center space-x-4">
         <div className="flex items-center space-x-2">
           <div className="text-lg font-medium text-[var(--silver-light)]">
-            {pool.symbolA}/{pool.symbolB}
+             <SafeHtml content={`${pool.symbolA}/${pool.symbolB}`} />
           </div>
           <Badge
             variant="default"

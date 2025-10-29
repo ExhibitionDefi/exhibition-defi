@@ -1,18 +1,20 @@
-import React, { useEffect } from 'react';
-import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
-import { ExhibitionFormatters } from '../../utils/exFormatters';
-import toast from 'react-hot-toast';
-import { useTokenApproval } from '../../hooks/useTokenApproval';
+import React, { useEffect } from 'react'
+import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { Button } from '../ui/Button'
+import { Card } from '../ui/Card'
+import { ExhibitionFormatters } from '../../utils/exFormatters'
+import toast from 'react-hot-toast'
+import { useTokenApproval } from '../../hooks/useTokenApproval'
+import { escapeHtml } from '@/utils/sanitization'
+import { SafeHtml } from '@/components/SafeHtml'
 
 interface TokenApprovalProps {
-  tokenAddress: `0x${string}`;
-  spenderAddress: `0x${string}`;
-  requiredAmount: bigint;
-  tokenSymbol?: string;
-  onApprovalComplete?: () => void;
-  children?: React.ReactNode;
+  tokenAddress: `0x${string}`
+  spenderAddress: `0x${string}`
+  requiredAmount: bigint
+  tokenSymbol?: string
+  onApprovalComplete?: () => void
+  children?: React.ReactNode
 }
 
 export const TokenApproval: React.FC<TokenApprovalProps> = ({
@@ -36,26 +38,26 @@ export const TokenApproval: React.FC<TokenApprovalProps> = ({
     tokenAddress,
     spenderAddress,
     requiredAmount,
-  });
+  })
 
-  // If approval confirmed via the hook, call callback and refetch
+  const safeTokenSymbol = escapeHtml(tokenSymbol)
+
   useEffect(() => {
     if (isApproved) {
-      refetchAllowance?.();
-      onApprovalComplete?.();
-      toast.success('Token approval confirmed!');
+      refetchAllowance?.()
+      onApprovalComplete?.()
+      toast.success('Token approval confirmed!')
     }
-  }, [isApproved, refetchAllowance, onApprovalComplete]);
+  }, [isApproved, refetchAllowance, onApprovalComplete])
 
   const handleApprove = async () => {
     try {
-      await submitApproval();
-      // Toast is handled by useEffect above when isApproved becomes true
+      await submitApproval()
     } catch (err) {
-      console.error('Approval failed:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to submit approval');
+      console.error('Approval failed:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to submit approval')
     }
-  };
+  }
 
   if (allowance === undefined) {
     return (
@@ -65,7 +67,7 @@ export const TokenApproval: React.FC<TokenApprovalProps> = ({
           <span>Checking token approval...</span>
         </div>
       </Card>
-    );
+    )
   }
 
   if (!needsApproval) {
@@ -74,12 +76,12 @@ export const TokenApproval: React.FC<TokenApprovalProps> = ({
         <div className="flex items-center space-x-2">
           <CheckCircle className="h-5 w-5 text-green-500" />
           <span className="text-green-800 font-medium">
-            {tokenSymbol} approved for spending
+            <SafeHtml content={`${safeTokenSymbol} approved for spending`} />
           </span>
         </div>
         {children && <div className="mt-4">{children}</div>}
       </Card>
-    );
+    )
   }
 
   return (
@@ -90,8 +92,12 @@ export const TokenApproval: React.FC<TokenApprovalProps> = ({
           <div className="flex-1">
             <h4 className="font-medium text-yellow-800">Approval Required</h4>
             <p className="text-sm text-yellow-700 mt-1">
-              You need to approve {ExhibitionFormatters.formatTokenWithSymbol(requiredAmount, tokenSymbol)}
-              for spending before proceeding.
+              <SafeHtml
+                content={`You need to approve ${ExhibitionFormatters.formatTokenWithSymbol(
+                  requiredAmount,
+                  safeTokenSymbol
+                )} for spending before proceeding.`}
+              />
             </p>
           </div>
         </div>
@@ -101,9 +107,9 @@ export const TokenApproval: React.FC<TokenApprovalProps> = ({
           loadingText={writeState.isPending ? 'Submitting...' : 'Confirming...'}
           className="w-full"
         >
-          Approve {tokenSymbol}
+          Approve {safeTokenSymbol}
         </Button>
       </div>
     </Card>
-  );
-};
+  )
+}

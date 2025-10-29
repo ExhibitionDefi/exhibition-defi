@@ -198,6 +198,7 @@ export function useProjects() {
           tokenDecimals: projectTokenInfo?.decimals ?? 18,
           contributionTokenSymbol: contributionTokenInfo?.symbol ?? '',
           contributionTokenDecimals: contributionTokenInfo?.decimals ?? 18,
+          projectTokenLogoURI: project.projectTokenLogoURI ?? '',
 
           fundingGoal: project.fundingGoal,
           softCap: project.softCap,

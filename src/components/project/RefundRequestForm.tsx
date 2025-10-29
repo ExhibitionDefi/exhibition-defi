@@ -1,11 +1,13 @@
 // src/components/project/RefundRequestForm.tsx
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
 import { Card } from '../ui/Card'
 import { type ProjectDisplayData, ProjectStatus, ProjectStatusLabels } from '../../types/project'
 import { ExhibitionFormatters } from '../../utils/exFormatters'
 import { AlertTriangle } from 'lucide-react'
+import { SafeHtml } from '../SafeHtml'
+import { sanitizeText } from '../../utils/sanitization'
 
 interface RefundRequestFormProps {
   project: ProjectDisplayData
@@ -28,6 +30,18 @@ export const RefundRequestForm: React.FC<RefundRequestFormProps> = ({
   isLoading,
   onRequestRefund
 }) => {
+  // ✅ Sanitize token symbol for display
+  const safeTokenSymbol = useMemo(() => 
+    sanitizeText(contributionTokenSymbol), 
+    [contributionTokenSymbol]
+  )
+
+  // ✅ Safely get project status label
+  const safeStatusLabel = useMemo(() => {
+    const status = project.status as ProjectStatus
+    return sanitizeText(ProjectStatusLabels[status] || 'Unknown')
+  }, [project.status])
+
   if (!canRefund) {
     return (
       <div className="border-[var(--charcoal)] bg-[var(--deep-black)] rounded-xl p-6 text-center">
@@ -38,11 +52,17 @@ export const RefundRequestForm: React.FC<RefundRequestFormProps> = ({
           This project has not failed or you have already requested a refund.
         </p>
         <Badge variant="info" className="mt-3">
-          {ProjectStatusLabels[project.status as ProjectStatus]}
+          <SafeHtml 
+            content={safeStatusLabel}
+            as="span"
+          />
         </Badge>
       </div>
     )
   }
+
+  // ✅ Determine status message safely
+  const statusMessage = project.status === 4 ? 'failed' : 'become refundable'
 
   return (
     <Card hover className="border-[var(--charcoal)] bg-[var(--deep-black)]">
@@ -54,9 +74,11 @@ export const RefundRequestForm: React.FC<RefundRequestFormProps> = ({
           <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-1">
             Request Refund
           </h3>
-          <p className="text-sm text-[var(--metallic-silver)]">
-            This project has {project.status === 4 ? 'failed' : 'become refundable'}. You can request a refund for your contribution.
-          </p>
+          <SafeHtml 
+            content={`This project has ${statusMessage}. You can request a refund for your contribution.`}
+            as="p"
+            className="text-sm text-[var(--metallic-silver)]"
+          />
         </div>
       </div>
 
@@ -67,7 +89,10 @@ export const RefundRequestForm: React.FC<RefundRequestFormProps> = ({
             variant={project.status === 4 ? 'error' : 'warning'}
             className="text-sm"
           >
-            {ProjectStatusLabels[project.status as ProjectStatus]}
+            <SafeHtml 
+              content={safeStatusLabel}
+              as="span"
+            />
           </Badge>
         </div>
 
@@ -77,23 +102,27 @@ export const RefundRequestForm: React.FC<RefundRequestFormProps> = ({
           <div className="relative space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm text-[var(--metallic-silver)]">Your Contribution:</span>
-              <span className="font-semibold text-[var(--silver-light)]">
-                {ExhibitionFormatters.formatTokenWithSymbol(
+              <SafeHtml 
+                content={ExhibitionFormatters.formatTokenWithSymbol(
                   userContribution,
-                  contributionTokenSymbol,
+                  safeTokenSymbol,
                   contributionTokenDecimals
                 )}
-              </span>
+                as="span"
+                className="font-semibold text-[var(--silver-light)]"
+              />
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-[var(--metallic-silver)]">Refund Amount:</span>
-              <span className="font-semibold text-[var(--neon-orange)] drop-shadow-[0_0_4px_var(--neon-orange)]">
-                {ExhibitionFormatters.formatTokenWithSymbol(
+              <SafeHtml 
+                content={ExhibitionFormatters.formatTokenWithSymbol(
                   userContribution,
-                  contributionTokenSymbol,
+                  safeTokenSymbol,
                   contributionTokenDecimals
                 )}
-              </span>
+                as="span"
+                className="font-semibold text-[var(--neon-orange)] drop-shadow-[0_0_4px_var(--neon-orange)]"
+              />
             </div>
           </div>
         </div>
@@ -113,6 +142,7 @@ export const RefundRequestForm: React.FC<RefundRequestFormProps> = ({
             isLoading={isLoading}
             loadingText="Requesting Refund..."
             onClick={onRequestRefund}
+            disabled={isLoading}
           >
             Request Refund
           </Button>

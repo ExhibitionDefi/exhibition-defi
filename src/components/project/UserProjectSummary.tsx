@@ -64,10 +64,23 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
 
   return (
     <Card>
-      <h3 className="text-lg font-semibold mb-4 flex items-center" style={{ color: 'var(--silver-light)' }}>
-        <Wallet className="h-5 w-5 mr-2" />
-        {userSummary.contributionAmount > 0n ? 'Your Participation' : 'Project Actions'}
-      </h3>
+      {/* Header with Logo */}
+      <div className="flex items-center space-x-3 mb-4">
+        {project.projectTokenLogoURI && (
+          <img
+            src={project.projectTokenLogoURI}
+            alt={`${project.tokenName} logo`}
+            className="w-10 h-10 rounded-lg object-cover border border-[var(--metallic-silver)]/20 flex-shrink-0"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none'
+            }}
+          />
+        )}
+        <h3 className="text-lg font-semibold flex items-center" style={{ color: 'var(--silver-light)' }}>
+          <Wallet className="h-5 w-5 mr-2" />
+          {userSummary.contributionAmount > 0n ? 'Your Participation' : 'Project Actions'}
+        </h3>
+      </div>
 
       <div className="space-y-4">
         {/* Only show contribution section if user participated */}

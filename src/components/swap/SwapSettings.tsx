@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+// src/components/amm/SwapSettings.tsx
+import React, { useState, useMemo, useCallback } from 'react';
 import { Zap, Info, AlertTriangle, Clock, Target } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
+import { SafeHtml } from '../SafeHtml';
+import { sanitizeNumber } from '@/utils/sanitization';
 
 interface SwapSettingsProps {
   slippage: number;
@@ -24,29 +27,79 @@ export const SwapSettings: React.FC<SwapSettingsProps> = ({
   const predefinedSlippages = [0.1, 0.5, 1.0, 2.0];
 
   // Calculate slippage status
-  const getSlippageStatus = (value: number) => {
+  const getSlippageStatus = useCallback((value: number) => {
     if (value < 0.1) return { type: 'error', message: 'Slippage too low - transaction may fail' };
     if (value < recommendedSlippage * 0.7) return { type: 'warning', message: 'Low slippage may cause failed transactions' };
     if (value > recommendedSlippage * 1.5) return { type: 'warning', message: 'High slippage may result in unfavorable trades' };
     if (value > 5) return { type: 'error', message: 'Extremely high slippage - not recommended' };
     return { type: 'success', message: 'Optimal slippage range' };
-  };
+  }, [recommendedSlippage]);
 
-  const slippageStatus = getSlippageStatus(slippage);
+  const slippageStatus = useMemo(() => getSlippageStatus(slippage), [slippage, getSlippageStatus]);
   const isRecommendedSlippage = Math.abs(slippage - recommendedSlippage) < 0.05;
 
-  const handleCustomSlippageChange = (value: string) => {
-    setCustomSlippage(value);
-    const parsed = parseFloat(value);
-    if (!isNaN(parsed) && parsed >= 0.1 && parsed <= 50) {
-      onSlippageChange(parsed);
+  // ✅ Sanitize and validate slippage input
+  const handleCustomSlippageChange = useCallback((value: string) => {
+    // Remove any non-numeric characters except decimal point
+    const cleaned = value.replace(/[^\d.]/g, '');
+    
+    // Prevent multiple decimal points
+    const parts = cleaned.split('.');
+    const sanitized = parts.length > 2 
+      ? parts[0] + '.' + parts.slice(1).join('') 
+      : cleaned;
+    
+    // Limit decimal places to 2
+    if (parts[1] && parts[1].length > 2) {
+      return;
     }
-  };
 
-  const handleUseRecommended = () => {
+    setCustomSlippage(sanitized);
+
+    // ✅ Validate with sanitizeNumber
+    const validated = sanitizeNumber(sanitized, {
+      min: 0.1,
+      max: 50,
+      decimals: 2
+    });
+
+    if (validated !== null) {
+      onSlippageChange(validated);
+    }
+  }, [onSlippageChange]);
+
+  // ✅ Sanitize and validate deadline input
+  const handleDeadlineChange = useCallback((value: string) => {
+    // Remove any non-numeric characters
+    const cleaned = value.replace(/[^\d]/g, '');
+    
+    // ✅ Validate with sanitizeNumber
+    const validated = sanitizeNumber(cleaned, {
+      min: 1,
+      max: 120,
+      decimals: 0
+    });
+
+    if (validated !== null) {
+      onDeadlineChange(validated);
+    }
+  }, [onDeadlineChange]);
+
+  const handleUseRecommended = useCallback(() => {
     onSlippageChange(recommendedSlippage);
     setCustomSlippage(recommendedSlippage.toString());
-  };
+  }, [recommendedSlippage, onSlippageChange]);
+
+  // ✅ Safe number formatting
+  const formatSlippage = useCallback((value: number) => {
+    if (isNaN(value)) return '0.0';
+    return value.toFixed(1);
+  }, []);
+
+  const formatPriceImpact = useCallback((value: number) => {
+    if (isNaN(value)) return '0.0';
+    return Math.max(0, value - 0.5).toFixed(1);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -69,9 +122,11 @@ export const SwapSettings: React.FC<SwapSettingsProps> = ({
               <div className="flex items-center space-x-2">
                 <Target className="w-4 h-4 text-neon-blue" />
                 <div>
-                  <span className="text-sm text-neon-blue font-medium">
-                    Recommended: {recommendedSlippage.toFixed(1)}%
-                  </span>
+                  <SafeHtml 
+                    content={`Recommended: ${formatSlippage(recommendedSlippage)}%`}
+                    as="span"
+                    className="text-sm text-neon-blue font-medium"
+                  />
                   <p className="text-xs text-silver-dark mt-1">
                     Based on current market conditions and price impact
                   </p>
@@ -91,7 +146,11 @@ export const SwapSettings: React.FC<SwapSettingsProps> = ({
         {/* Current Slippage Display */}
         <div className="flex items-center justify-between mb-3 p-3 rounded-lg bg-charcoal border border-silver-dark">
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-silver-light">Current: {slippage.toFixed(1)}%</span>
+            <SafeHtml 
+              content={`Current: ${formatSlippage(slippage)}%`}
+              as="span"
+              className="text-sm text-silver-light"
+            />
             {isRecommendedSlippage && (
               <div className="flex items-center space-x-1 text-neon-blue">
                 <Zap className="w-3 h-3" />
@@ -106,7 +165,10 @@ export const SwapSettings: React.FC<SwapSettingsProps> = ({
           }`}>
             {slippageStatus.type === 'error' && <AlertTriangle className="w-3 h-3" />}
             {slippageStatus.type === 'warning' && <Info className="w-3 h-3" />}
-            <span>{slippageStatus.message}</span>
+            <SafeHtml 
+              content={slippageStatus.message}
+              as="span"
+            />
           </div>
         </div>
         
@@ -145,7 +207,10 @@ export const SwapSettings: React.FC<SwapSettingsProps> = ({
             }`}
           >
             <Zap className="w-3 h-3" />
-            <span>Smart {recommendedSlippage.toFixed(1)}%</span>
+            <SafeHtml 
+              content={`Smart ${formatSlippage(recommendedSlippage)}%`}
+              as="span"
+            />
           </Button>
           <Button
             variant="outline"
@@ -161,16 +226,15 @@ export const SwapSettings: React.FC<SwapSettingsProps> = ({
         {showAdvanced && (
           <div className="relative">
             <Input
-              type="number"
-              step="0.1"
-              min="0.1"
-              max="50"
+              type="text"
+              inputMode="decimal"
               value={customSlippage}
               onChange={(e) => handleCustomSlippageChange(e.target.value)}
+              maxLength={10} // ✅ Prevent DoS
               className="pr-8 bg-charcoal border-silver-dark text-silver-light"
               placeholder="Custom slippage"
             />
-            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-silver-dark text-sm">
+            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-silver-dark text-sm pointer-events-none">
               %
             </span>
           </div>
@@ -183,7 +247,12 @@ export const SwapSettings: React.FC<SwapSettingsProps> = ({
             <div className="text-xs text-silver-dark space-y-1">
               <p><span className="text-silver-light">Smart Slippage:</span> Automatically adjusts based on:</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>Current price impact ({(recommendedSlippage - 0.5).toFixed(1)}% impact adjustment)</li>
+                <li>
+                  <SafeHtml 
+                    content={`Current price impact (${formatPriceImpact(recommendedSlippage)}% impact adjustment)`}
+                    as="span"
+                  />
+                </li>
                 <li>Pool liquidity depth</li>
                 <li>Market volatility indicators</li>
               </ul>
@@ -203,7 +272,11 @@ export const SwapSettings: React.FC<SwapSettingsProps> = ({
           </label>
           <div className="flex items-center space-x-2">
             <Clock className="w-4 h-4 text-silver-dark" />
-            <span className="text-xs text-silver-dark">{deadline} minutes</span>
+            <SafeHtml 
+              content={`${deadline} minutes`}
+              as="span"
+              className="text-xs text-silver-dark"
+            />
           </div>
         </div>
         
@@ -229,16 +302,11 @@ export const SwapSettings: React.FC<SwapSettingsProps> = ({
         {/* Custom Deadline Input */}
         {showAdvanced && (
           <Input
-            type="number"
-            min="1"
-            max="120"
-            value={deadline}
-            onChange={(e) => {
-              const value = parseInt(e.target.value);
-              if (!isNaN(value) && value >= 1 && value <= 120) {
-                onDeadlineChange(value);
-              }
-            }}
+            type="text"
+            inputMode="numeric"
+            value={deadline.toString()}
+            onChange={(e) => handleDeadlineChange(e.target.value)}
+            maxLength={3} // ✅ Prevent DoS (max 120)
             className="bg-charcoal border-silver-dark text-silver-light"
             placeholder="Custom deadline (minutes)"
           />
@@ -272,13 +340,19 @@ export const SwapSettings: React.FC<SwapSettingsProps> = ({
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-silver-dark">Price impact adjustment:</span>
-              <span className="text-neon-blue">+{(recommendedSlippage - 0.5).toFixed(1)}%</span>
+              <SafeHtml 
+                content={`+${formatPriceImpact(recommendedSlippage)}%`}
+                as="span"
+                className="text-neon-blue"
+              />
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-silver-dark">Your current setting:</span>
-              <span className={slippage === recommendedSlippage ? 'text-neon-blue' : 'text-silver-light'}>
-                {slippage.toFixed(1)}%
-              </span>
+              <SafeHtml 
+                content={`${formatSlippage(slippage)}%`}
+                as="span"
+                className={slippage === recommendedSlippage ? 'text-neon-blue' : 'text-silver-light'}
+              />
             </div>
           </div>
 

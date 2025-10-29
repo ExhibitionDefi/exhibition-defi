@@ -158,6 +158,8 @@ export function useProject(projectId?: string) {
         tokenDecimals: projectTokenInfo?.decimals ?? 18,
         contributionTokenSymbol: contributionTokenInfo?.symbol ?? '',
         contributionTokenDecimals: contributionTokenInfo?.decimals ?? 18,
+        // 🆕 Logo field
+        projectTokenLogoURI: projectData.projectTokenLogoURI ?? '',
 
         fundingGoal: projectData.fundingGoal,
         softCap: projectData.softCap,

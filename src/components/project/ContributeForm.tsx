@@ -1,5 +1,5 @@
 // src/components/project/ContributeForm
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Badge } from '../ui/Badge'
@@ -9,6 +9,8 @@ import { ExhibitionFormatters } from '../../utils/exFormatters'
 import { EXHIBITION_ADDRESS } from '../../config/contracts'
 import { Card } from '../ui/Card'
 import { CheckCircle2, TrendingUp } from 'lucide-react'
+import { SafeHtml, SafeAddressDisplay } from '../SafeHtml'
+import { sanitizeNumber, sanitizeText } from '../../utils/sanitization'
 
 interface ContributeFormProps {
   project: ProjectDisplayData
@@ -42,7 +44,7 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
   isConnected,
   canContribute,
   isLoading,
-  contributionSuccess = false, // ✅ Default to false
+  contributionSuccess = false,
   txHash,
   contributedAmount,
   onSetMaxBalance,
@@ -51,6 +53,39 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
   onApprovalComplete,
   inputAmountBigInt
 }) => {
+  // ✅ Sanitize token symbol for display
+  const safeTokenSymbol = useMemo(() => 
+    sanitizeText(contributionTokenSymbol), 
+    [contributionTokenSymbol]
+  )
+  
+  const safeProjectSymbol = useMemo(() => 
+    sanitizeText(project.tokenSymbol), 
+    [project.tokenSymbol]
+  )
+
+  // ✅ Handle input change with sanitization
+  const handleContributionChange = (value: string) => {
+    // Allow only valid number characters
+    const cleaned = value.replace(/[^\d.]/g, '')
+    
+    // Prevent multiple decimal points
+    const parts = cleaned.split('.')
+    const sanitized = parts.length > 2 
+      ? parts[0] + '.' + parts.slice(1).join('') 
+      : cleaned
+    
+    // Validate number before passing to parent
+    const validated = sanitizeNumber(sanitized, {
+      min: 0,
+      max: Number.MAX_SAFE_INTEGER,
+      decimals: contributionTokenDecimals
+    })
+    
+    // Pass sanitized value to parent (or empty string if invalid)
+    onContributionChange(validated !== null ? sanitized : '')
+  }
+
   if (!canContribute) {
     return (
       <div className="border-[var(--charcoal)] bg-[var(--deep-black)] rounded-xl p-6 text-center">
@@ -77,7 +112,7 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
         Contribute to Project
       </h3>
 
-      {/* ✅ Contribution Success Banner */}
+      {/* ✅ Contribution Success Banner with Safe Address Display */}
       {contributionSuccess && contributedAmount && (
         <div className="mb-4 p-4 bg-gradient-to-r from-[var(--charcoal)] to-transparent rounded-lg border-2 border-[var(--neon-blue)] relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-[var(--neon-blue)] to-transparent opacity-10"></div>
@@ -88,15 +123,21 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
                 Contribution Successful! 
                 <TrendingUp className="h-4 w-4 ml-2" />
               </p>
-              <p className="text-xs text-[var(--silver-dark)] mb-2">
-                You contributed {contributedAmount} {contributionTokenSymbol} to this project
-              </p>
+              <SafeHtml 
+                content={`You contributed ${contributedAmount} ${safeTokenSymbol} to this project`}
+                as="p"
+                className="text-xs text-[var(--silver-dark)] mb-2"
+              />
               {txHash && (
                 <div className="mt-2 p-2 bg-[var(--deep-black)] rounded">
                   <p className="text-xs text-[var(--silver-dark)] mb-1">Transaction Hash:</p>
-                  <p className="text-xs font-mono text-[var(--silver-light)] break-all">
-                    {txHash}
-                  </p>
+                  {/* ✅ Safe address display with copy functionality */}
+                  <SafeAddressDisplay 
+                    address={txHash}
+                    truncate={true}
+                    className="text-xs text-[var(--silver-light)]"
+                    onCopySuccess={() => console.log('Transaction hash copied!')}
+                  />
                 </div>
               )}
             </div>
@@ -110,7 +151,7 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
           <span className="font-medium text-[var(--silver-light)]">
             {ExhibitionFormatters.formatTokenWithSymbol(
               balanceBigInt,
-              contributionTokenSymbol,
+              safeTokenSymbol,
               contributionTokenDecimals
             )}
           </span>
@@ -136,7 +177,7 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
             <Badge variant="info" className="text-xs border-[var(--neon-blue)] text-[var(--neon-blue)] bg-transparent">
               {ExhibitionFormatters.formatTokenWithSymbol(
                 project.minContribution,
-                contributionTokenSymbol,
+                safeTokenSymbol,
                 contributionTokenDecimals
               )}
             </Badge>
@@ -146,20 +187,22 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
             <Badge variant="info" className="text-xs border-[var(--neon-orange)] text-[var(--neon-orange)] bg-transparent">
               {ExhibitionFormatters.formatTokenWithSymbol(
                 project.maxContribution,
-                contributionTokenSymbol,
+                safeTokenSymbol,
                 contributionTokenDecimals
               )}
             </Badge>
           </div>
         </div>
 
+        {/* ✅ Sanitized Input */}
         <Input
-          label={`Contribution Amount (${contributionTokenSymbol})`}
-          type="number"
-          step="any"
+          label={`Contribution Amount (${safeTokenSymbol})`}
+          type="text"
+          inputMode="decimal"
           placeholder="0.0"
           value={contributionAmount}
-          onChange={(e) => onContributionChange(e.target.value)}
+          onChange={(e) => handleContributionChange(e.target.value)}
+          maxLength={50} // Prevent DoS
         />
 
         {tokenAmountDue > 0n && (
@@ -167,9 +210,11 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
             <div className="absolute inset-0 bg-gradient-to-r from-[var(--neon-blue)] to-transparent opacity-5 animate-pulse"></div>
             <div className="relative flex justify-between items-center">
               <span className="text-sm text-[var(--metallic-silver)]">You will receive:</span>
-              <span className="font-semibold text-[var(--neon-blue)] drop-shadow-[0_0_4px_var(--neon-blue)]">
-                {ExhibitionFormatters.formatLargeNumber(tokenAmountDue)} {project.tokenSymbol}
-              </span>
+              <SafeHtml 
+                content={`${ExhibitionFormatters.formatLargeNumber(tokenAmountDue)} ${safeProjectSymbol}`}
+                as="span"
+                className="font-semibold text-[var(--neon-blue)] drop-shadow-[0_0_4px_var(--neon-blue)]"
+              />
             </div>
           </div>
         )}
@@ -179,7 +224,7 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
             tokenAddress={project.contributionTokenAddress as `0x${string}`}
             spenderAddress={EXHIBITION_ADDRESS as `0x${string}`}
             requiredAmount={inputAmountBigInt}
-            tokenSymbol={contributionTokenSymbol}
+            tokenSymbol={safeTokenSymbol}
             onApprovalComplete={onApprovalComplete}
           >
             <Button
@@ -188,11 +233,11 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
               isLoading={isLoading}
               loadingText="Contributing..."
               onClick={onContribute}
-              disabled={isLoading || contributionSuccess} // ✅ Disable after success
+              disabled={isLoading || contributionSuccess}
             >
               {contributionSuccess 
                 ? '✓ Contribution Complete' 
-                : `Contribute ${contributionAmount} ${contributionTokenSymbol}`
+                : `Contribute ${contributionAmount} ${safeTokenSymbol}`
               }
             </Button>
           </TokenApproval>
@@ -212,7 +257,6 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
           </div>
         )}
 
-        {/* ✅ Additional success info */}
         {contributionSuccess && (
           <div className="text-center py-3 px-4 bg-[var(--charcoal)] rounded-lg">
             <p className="text-xs text-[var(--silver-dark)]">

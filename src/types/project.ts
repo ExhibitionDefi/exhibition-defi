@@ -59,6 +59,7 @@ export interface ProjectDisplayData {
   // Token info
   tokenName?: string
   tokenSymbol?: string
+  projectTokenLogoURI?: string
   tokenDecimals?: number
   contributionTokenSymbol?: string
   contributionTokenDecimals?: number

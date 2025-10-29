@@ -8,6 +8,69 @@ import { ProjectCard } from '../components/project/ProjectCard'
 import { Link } from 'react-router-dom'
 import ExhibitionFormatters from '../utils/exFormatters'
 import { useUserProjects } from '@/hooks/pad/useUserProjects'
+import { useProject } from '@/hooks/useProject'
+
+// Component to display a single contribution with project logo
+const ContributionCard: React.FC<{ projectId: string; amount: string | bigint; index: number }> = ({ 
+  projectId, 
+  amount, 
+  index 
+}) => {
+  const { project } = useProject(projectId)
+  
+  return (
+    <Card 
+      className="bg-gradient-to-r from-[var(--charcoal)]/80 to-[var(--deep-black)]/80 border border-[var(--neon-orange)]/30 transition-all duration-300 hover:border-[var(--neon-orange)]/50 hover:shadow-lg hover:shadow-[var(--neon-orange)]/10"
+      style={{
+        animationDelay: `${index * 100}ms`
+      }}
+    >
+      <div className="flex items-center justify-between p-6">
+        <div className="flex items-center space-x-4">
+          {/* Project Logo */}
+          {project?.projectTokenLogoURI ? (
+            <img
+              src={project.projectTokenLogoURI}
+              alt={`${project.tokenName || 'Project'} logo`}
+              className="w-12 h-12 rounded-lg object-cover border border-[var(--metallic-silver)]/20 flex-shrink-0"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none'
+              }}
+            />
+          ) : (
+            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-[var(--neon-orange)] to-[var(--neon-orange)]/70 drop-shadow-[0_0_4px_var(--neon-orange)]"></div>
+          )}
+          
+          <div>
+            <p className="font-semibold" style={{ color: 'var(--silver-light)' }}>
+              {project?.tokenName || `Project #${projectId}`}
+            </p>
+            <p className="text-sm" style={{ color: 'var(--metallic-silver)' }}>
+              Contributed: {ExhibitionFormatters.formatLargeNumber(BigInt(amount), 18, 2)} tokens
+            </p>
+            {project?.tokenSymbol && (
+              <p className="text-xs font-mono" style={{ color: 'var(--silver-dark)' }}>
+                {project.tokenSymbol}
+              </p>
+            )}
+          </div>
+        </div>
+        
+        <Link to={`/projects/${projectId}`}>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="border-[var(--neon-orange)]/50 hover:bg-[var(--neon-orange)]/10 hover:border-[var(--neon-orange)] transition-all duration-300"
+            style={{ color: 'var(--silver-light)' }}
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            View Project
+          </Button>
+        </Link>
+      </div>
+    </Card>
+  )
+}
 
 export const DashboardPage: React.FC = () => {
   const { isConnected} = useAccount()
@@ -257,38 +320,12 @@ export const DashboardPage: React.FC = () => {
         ) : userContributions && userContributions.length > 0 ? (
           <div className="space-y-4">
             {userContributions.map(({ projectId, amount }, index) => (
-              <Card 
+              <ContributionCard
                 key={projectId}
-                className="bg-gradient-to-r from-[var(--charcoal)]/80 to-[var(--deep-black)]/80 border border-[var(--neon-orange)]/30 transition-all duration-300 hover:border-[var(--neon-orange)]/50 hover:shadow-lg hover:shadow-[var(--neon-orange)]/10"
-                style={{
-                  animationDelay: `${index * 100}ms`
-                }}
-              >
-                <div className="flex items-center justify-between p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-[var(--neon-orange)] to-[var(--neon-orange)]/70 drop-shadow-[0_0_4px_var(--neon-orange)]"></div>
-                    <div>
-                      <p className="font-semibold" style={{ color: 'var(--silver-light)' }}>
-                        Project #{projectId}
-                      </p>
-                      <p className="text-sm" style={{ color: 'var(--metallic-silver)' }}>
-                        Contributed: {ExhibitionFormatters.formatLargeNumber(BigInt(amount), 18, 2)} tokens
-                      </p>
-                    </div>
-                  </div>
-                  <Link to={`/projects/${projectId}`}>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="border-[var(--neon-orange)]/50 hover:bg-[var(--neon-orange)]/10 hover:border-[var(--neon-orange)] transition-all duration-300"
-                      style={{ color: 'var(--silver-light)' }}
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Project
-                    </Button>
-                  </Link>
-                </div>
-              </Card>
+                projectId={projectId}
+                amount={amount}
+                index={index}
+              />
             ))}
           </div>
         ) : (

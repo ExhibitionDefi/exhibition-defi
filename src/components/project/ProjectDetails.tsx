@@ -39,27 +39,44 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project }) => {
       {/* Header Section */}
       <Card hover>
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0">
-          <div className="flex-1">
-            <div className="flex items-center space-x-3 mb-2">
-              <h1 className="text-2xl font-bold text-[var(--silver-light)]">
-                {project.tokenName || 'Unknown Token'}
-              </h1>
-              <Badge variant={getStatusVariant(project.status as ProjectStatus)} size="md">
-                {ProjectStatusLabels[project.status as keyof typeof ProjectStatusLabels]}
-              </Badge>
-            </div>
+          <div className="flex-1 flex items-start space-x-4">
+            {/* Project Logo */}
+            {project.projectTokenLogoURI && (
+              <div className="flex-shrink-0">
+                <img
+                  src={project.projectTokenLogoURI}
+                  alt={`${project.tokenName} logo`}
+                  className="w-16 h-16 rounded-lg object-cover border border-[var(--metallic-silver)]/20"
+                  onError={(e) => {
+                    // Fallback if image fails to load
+                    e.currentTarget.style.display = 'none'
+                  }}
+                />
+              </div>
+            )}
             
-            <div className="flex items-center space-x-4 text-sm text-[var(--metallic-silver)]">
-              <span className="font-mono">{project.tokenSymbol}</span>
-              <span>•</span>
-              <span>
-                Owner: {ExhibitionFormatters.formatAddress(project.projectOwner)}
-              </span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center space-x-3 mb-2 flex-wrap">
+                <h1 className="text-2xl font-bold text-[var(--silver-light)]">
+                  {project.tokenName || 'Unknown Token'}
+                </h1>
+                <Badge variant={getStatusVariant(project.status as ProjectStatus)} size="md">
+                  {ProjectStatusLabels[project.status as keyof typeof ProjectStatusLabels]}
+                </Badge>
+              </div>
+              
+              <div className="flex items-center space-x-4 text-sm text-[var(--metallic-silver)] flex-wrap">
+                <span className="font-mono">{project.tokenSymbol}</span>
+                <span>•</span>
+                <span>
+                  Owner: {ExhibitionFormatters.formatAddress(project.projectOwner)}
+                </span>
+              </div>
             </div>
           </div>
 
           {isLive && (
-            <div className="flex items-center space-x-2 text-[var(--neon-blue)]">
+            <div className="flex items-center space-x-2 text-[var(--neon-blue)] flex-shrink-0">
               <div className="w-2 h-2 bg-[var(--neon-blue)] rounded-full animate-pulse shadow-[0_0_4px_var(--neon-blue)]" />
               <span className="font-medium">Live Now</span>
             </div>

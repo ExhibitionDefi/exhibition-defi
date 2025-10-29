@@ -1,7 +1,10 @@
-import React from 'react';
+// src/components/amm/RemoveLiquidityForm.tsx
+import React, { useMemo, useCallback } from 'react';
 import { MultiTransactionModal } from '@/components/common/MultiTransactionModal';
 import { useRemoveLiquidity } from '@/hooks/amm/useRemoveLiquidity';
 import { AMMFormatters } from '@/utils/ammFormatters';
+import { SafeHtml } from '@/components/SafeHtml';
+import { sanitizeText } from '@/utils/sanitization';
 import type { Pool } from '@/components/liquidity/PoolList';
 
 interface RemoveLiquidityFormProps {
@@ -21,6 +24,45 @@ export const RemoveLiquidityForm: React.FC<RemoveLiquidityFormProps> = ({
   React.useEffect(() => {
     removeLiquidity.setSelectedPosition(selectedPosition);
   }, [selectedPosition, removeLiquidity]);
+
+  // ✅ Sanitize LP amount input
+  const handleLpAmountChange = useCallback((value: string) => {
+    // Remove any non-numeric characters except decimal point
+    const cleaned = value.replace(/[^\d.]/g, '');
+    
+    // Prevent multiple decimal points
+    const parts = cleaned.split('.');
+    const sanitized = parts.length > 2 
+      ? parts[0] + '.' + parts.slice(1).join('') 
+      : cleaned;
+    
+    // Limit decimal places to 18 (LP token standard)
+    if (parts[1] && parts[1].length > 18) {
+      return; // Don't update if exceeds 18 decimals
+    }
+    
+    removeLiquidity.updateState({ lpAmount: sanitized });
+  }, [removeLiquidity]);
+
+  // ✅ Safe token symbol display
+  const safeTokenASymbol = useMemo(
+    () => sanitizeText(removeLiquidity.tokenAInfo?.symbol || 'Token A'),
+    [removeLiquidity.tokenAInfo?.symbol]
+  );
+
+  const safeTokenBSymbol = useMemo(
+    () => sanitizeText(removeLiquidity.tokenBInfo?.symbol || 'Token B'),
+    [removeLiquidity.tokenBInfo?.symbol]
+  );
+
+  // ✅ Sanitize pool symbols for select options
+  const sanitizePoolOption = useCallback((pool: Pool) => {
+    const symbolA = sanitizeText(pool.symbolA || '').slice(0, 20);
+    const symbolB = sanitizeText(pool.symbolB || '').slice(0, 20);
+    const share = pool.userShare ? Math.min(Math.max(pool.userShare, 0), 100).toFixed(2) : '0.00';
+    
+    return `${symbolA}/${symbolB} - ${share}% share`;
+  }, []);
 
   return (
     <div className="w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl mx-auto px-4">
@@ -67,20 +109,18 @@ export const RemoveLiquidityForm: React.FC<RemoveLiquidityFormProps> = ({
             </option>
             {positions.map((pool) => (
               <option key={`${pool.tokenA}-${pool.tokenB}`} value={`${pool.tokenA}-${pool.tokenB}`}>
-                {`${pool.symbolA}/${pool.symbolB} - ${pool.userShare?.toFixed(2)}% share`}
+                {sanitizePoolOption(pool)}
               </option>
             ))}
           </select>
 
           <input
             type="text"
+            inputMode="decimal"
             placeholder="0.0"
             value={removeLiquidity.state.lpAmount}
-            onChange={(e) => {
-              if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) {
-                removeLiquidity.updateState({ lpAmount: e.target.value });
-              }
-            }}
+            onChange={(e) => handleLpAmountChange(e.target.value)}
+            maxLength={30} // ✅ Prevent DoS
             className="w-full bg-transparent text-lg font-bold text-[var(--silver-light)] placeholder:text-[var(--silver-dark)] border-0 outline-none text-right"
           />
         </div>
@@ -92,7 +132,10 @@ export const RemoveLiquidityForm: React.FC<RemoveLiquidityFormProps> = ({
               <span>You will receive</span>
             </div>
             <div className="flex justify-between text-sm text-[var(--silver-dark)]">
-              <span>{removeLiquidity.tokenAInfo?.symbol || 'Token A'}:</span>
+              <SafeHtml 
+                content={`${safeTokenASymbol}:`}
+                as="span"
+              />
               <span className="text-[var(--silver-light)]">
                 {AMMFormatters.formatTokenAmountSync(
                   removeLiquidity.removeQuote[0] as bigint,
@@ -102,7 +145,10 @@ export const RemoveLiquidityForm: React.FC<RemoveLiquidityFormProps> = ({
               </span>
             </div>
             <div className="flex justify-between text-sm text-[var(--silver-dark)]">
-              <span>{removeLiquidity.tokenBInfo?.symbol || 'Token B'}:</span>
+              <SafeHtml 
+                content={`${safeTokenBSymbol}:`}
+                as="span"
+              />
               <span className="text-[var(--silver-light)]">
                 {AMMFormatters.formatTokenAmountSync(
                   removeLiquidity.removeQuote[1] as bigint,

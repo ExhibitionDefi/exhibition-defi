@@ -36,7 +36,7 @@ export const Card: React.FC<CardProps> = ({
   const effectivePadding = paddingClasses[padding] || padding // Use predefined or custom class
 
   // ✅ Neutral default: let parent layout control width
-  const effectiveWidth = widthClass || (fullWidth ? 'w-full' : '')
+  const effectiveWidth = widthClass || (fullWidth ? 'w-full' : 'w-full md:max-w-3xl')
 
   return (
     <div

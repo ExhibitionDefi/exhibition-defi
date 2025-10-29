@@ -1,9 +1,11 @@
 // src/components/exnex/ExNEXInterface.tsx
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Coins, ArrowDownUp, CheckCircle, AlertCircle, ArrowDown, ArrowUp } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { MultiTransactionModal } from '@/components/common/MultiTransactionModal'
+import { SafeHtml } from '@/components/SafeHtml'
+import { sanitizeNumber } from '@/utils/sanitization'
 
 interface ExNEXInterfaceProps {
   // From useExNEX hook
@@ -42,17 +44,30 @@ export const ExNEXInterface: React.FC<ExNEXInterfaceProps> = ({
   const [localError, setLocalError] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
 
+  // Sanitize and memoize balance values
+  const sanitizedBalances = useMemo(() => {
+    return {
+      exNEXBalance: sanitizeNumber(balance, { min: 0, decimals: 4 }) ?? 0,
+      nexBalance: sanitizeNumber(nexBalance, { min: 0, decimals: 4 }) ?? 0,
+      totalSupply: sanitizeNumber(totalSupply, { min: 0, decimals: 4 }) ?? 0,
+    }
+  }, [balance, nexBalance, totalSupply])
+
   const handleSubmit = async () => {
-    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-      setLocalError('Please enter a valid amount')
+    // Sanitize input amount
+    const sanitizedAmount = sanitizeNumber(amount, { min: 0.0001, decimals: 18 })
+    
+    if (!sanitizedAmount) {
+      setLocalError('Please enter a valid amount (minimum 0.0001)')
       return
     }
 
     // Validate balance
-    const amountValue = parseFloat(amount)
-    const availableBalance = parseFloat(mode === 'deposit' ? nexBalance : balance)
+    const availableBalance = mode === 'deposit' 
+      ? sanitizedBalances.nexBalance 
+      : sanitizedBalances.exNEXBalance
     
-    if (amountValue > availableBalance) {
+    if (sanitizedAmount > availableBalance) {
       setLocalError(`Insufficient ${mode === 'deposit' ? 'NEX' : 'exNEX'} balance`)
       return
     }
@@ -62,9 +77,9 @@ export const ExNEXInterface: React.FC<ExNEXInterfaceProps> = ({
       setShowModal(true)
       
       if (mode === 'deposit') {
-        await deposit(amount)
+        await deposit(sanitizedAmount.toString())
       } else {
-        await withdraw(amount)
+        await withdraw(sanitizedAmount.toString())
       }
       
       // Clear amount on success
@@ -78,8 +93,10 @@ export const ExNEXInterface: React.FC<ExNEXInterfaceProps> = ({
   }
 
   const handleMaxBalance = () => {
-    const maxAmount = mode === 'deposit' ? nexBalance : balance
-    setAmount(maxAmount)
+    const maxAmount = mode === 'deposit' 
+      ? sanitizedBalances.nexBalance 
+      : sanitizedBalances.exNEXBalance
+    setAmount(maxAmount.toString())
     setLocalError(null)
   }
 
@@ -89,6 +106,12 @@ export const ExNEXInterface: React.FC<ExNEXInterfaceProps> = ({
       resetState()
     }
   }
+
+  // Sanitize user input amount for display
+  const displayAmount = useMemo(() => {
+    const sanitized = sanitizeNumber(amount, { min: 0, decimals: 4 })
+    return sanitized !== null ? sanitized.toFixed(4) : '0.0000'
+  }, [amount])
 
   const displayError = localError || error?.message
 
@@ -121,7 +144,7 @@ export const ExNEXInterface: React.FC<ExNEXInterfaceProps> = ({
                   NEX Balance
                 </p>
                 <p className="text-2xl font-bold" style={{ color: 'var(--silver-light)' }}>
-                  {parseFloat(nexBalance).toFixed(4)}
+                  {sanitizedBalances.nexBalance.toFixed(4)}
                 </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-blue)]/70 flex items-center justify-center">
@@ -137,7 +160,7 @@ export const ExNEXInterface: React.FC<ExNEXInterfaceProps> = ({
                   exNEX Balance
                 </p>
                 <p className="text-2xl font-bold" style={{ color: 'var(--silver-light)' }}>
-                  {parseFloat(balance).toFixed(4)}
+                  {sanitizedBalances.exNEXBalance.toFixed(4)}
                 </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[var(--neon-orange)] to-[var(--neon-orange)]/70 flex items-center justify-center">
@@ -207,6 +230,8 @@ export const ExNEXInterface: React.FC<ExNEXInterfaceProps> = ({
                     setLocalError(null)
                   }}
                   placeholder="0.0"
+                  step="0.0001"
+                  min="0"
                   className="w-full px-4 py-3 bg-[var(--charcoal)] border border-[var(--metallic-silver)]/30 rounded-lg text-[var(--silver-light)] placeholder-[var(--silver-dark)] focus:outline-none focus:border-[var(--neon-blue)]/50 focus:ring-1 focus:ring-[var(--neon-blue)]/30"
                 />
                 <span 
@@ -217,21 +242,30 @@ export const ExNEXInterface: React.FC<ExNEXInterfaceProps> = ({
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs" style={{ color: 'var(--silver-dark)' }}>
-                <span>Available: {parseFloat(mode === 'deposit' ? nexBalance : balance).toFixed(4)}</span>
-                {amount && !isNaN(parseFloat(amount)) && (
+                <span>
+                  Available: {(mode === 'deposit' 
+                    ? sanitizedBalances.nexBalance 
+                    : sanitizedBalances.exNEXBalance
+                  ).toFixed(4)}
+                </span>
+                {amount && sanitizeNumber(amount, { min: 0 }) && (
                   <span style={{ color: 'var(--neon-blue)' }}>
-                    You will {mode === 'deposit' ? 'receive' : 'get back'}: {parseFloat(amount).toFixed(4)} {mode === 'deposit' ? 'exNEX' : 'NEX'}
+                    You will {mode === 'deposit' ? 'receive' : 'get back'}: {displayAmount} {mode === 'deposit' ? 'exNEX' : 'NEX'}
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Error Display */}
+            {/* Error Display - SANITIZED */}
             {displayError && (
               <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start space-x-3">
                 <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-red-400 text-sm">{displayError}</p>
+                <div className="flex-1">
+                  <SafeHtml 
+                    content={displayError}
+                    className="text-red-400 text-sm"
+                    as="p"
+                  />
                 </div>
               </div>
             )}
@@ -317,7 +351,7 @@ export const ExNEXInterface: React.FC<ExNEXInterfaceProps> = ({
               <div className="flex items-center justify-between text-sm">
                 <span style={{ color: 'var(--metallic-silver)' }}>Total exNEX Supply:</span>
                 <span className="font-mono font-semibold" style={{ color: 'var(--silver-light)' }}>
-                  {parseFloat(totalSupply).toFixed(4)} exNEX
+                  {sanitizedBalances.totalSupply.toFixed(4)} exNEX
                 </span>
               </div>
             </div>

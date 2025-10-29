@@ -81,7 +81,7 @@ export const CreateProjectPage: React.FC = () => {
   if (!isConnected) {
     return (
       <div className="min-h-screen bg-[var(--deep-black)] flex items-center justify-center px-4">
-        <div className="max-w-md w-full">
+        <div className="w-full max-w-md">
           <Card className="text-center p-12">
             <div className="mb-6 flex justify-center">
               <div className="w-20 h-20 rounded-full bg-[var(--neon-orange)]/10 border-2 border-[var(--neon-orange)]/30 flex items-center justify-center">

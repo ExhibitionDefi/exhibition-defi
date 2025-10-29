@@ -11,6 +11,15 @@ import { Alert } from '../ui/Alert'
 import type { CreateProjectFormData } from '@/hooks/pad/useCreateProject'
 import { SUPPORTED_EXH, SUPPORTED_EXUSDT, SUPPORTED_EXNEX } from '@/config/contracts'
 
+// 🔒 SECURITY: Import sanitization utilities
+import {
+  sanitizeText,
+  sanitizeUrl,
+  sanitizeNumber,
+  hasSuspiciousContent,
+  logSanitization,
+} from '@/utils/sanitization'
+
 interface CreateProjectFormProps {
   onSubmit: (data: CreateProjectFormData) => void
   isSubmitting: boolean
@@ -107,8 +116,76 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
     }
   }, [tokenDecimals])
 
+  // 🔒 SECURITY: Sanitized handleChange with input validation
   const handleChange = (field: keyof CreateProjectFormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    let sanitizedValue = value
+
+    // Apply field-specific sanitization
+    switch (field) {
+      case 'projectTokenName':
+        sanitizedValue = sanitizeText(value).slice(0, 100)
+        logSanitization(field, value, sanitizedValue)
+        
+        // Check for suspicious content
+        if (hasSuspiciousContent(sanitizedValue)) {
+          console.warn('⚠️ Suspicious content detected in token name')
+          return // Block the update
+        }
+        break
+
+      case 'projectTokenSymbol':
+        // Remove special characters and limit length
+        sanitizedValue = sanitizeText(value)
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, '')
+          .slice(0, 10)
+        logSanitization(field, value, sanitizedValue)
+        break
+
+      case 'projectTokenLogoURI':
+        sanitizedValue = sanitizeUrl(value)
+        if (value && !sanitizedValue) {
+          setValidationErrors(prev => ({
+            ...prev,
+            [field]: 'Invalid or unsafe URL'
+          }))
+          return
+        }
+        logSanitization(field, value, sanitizedValue)
+        break
+
+      case 'initialTotalSupply':
+      case 'amountTokensForSale':
+        // Remove non-numeric characters
+        sanitizedValue = value.replace(/[^\d.]/g, '')
+        break
+
+      case 'fundingGoal':
+      case 'softCap':
+      case 'minContribution':
+      case 'maxContribution':
+      case 'tokenPrice':
+      case 'liquidityPercentage':
+      case 'lockDuration':
+      case 'vestingCliff':
+      case 'vestingDuration':
+      case 'vestingInterval':
+      case 'vestingInitialRelease':
+        // Sanitize numeric inputs
+        const num = sanitizeNumber(value, { min: 0 })
+        sanitizedValue = num !== null ? num.toString() : ''
+        break
+
+      default:
+        // For other fields, basic sanitization
+        if (typeof value === 'string') {
+          sanitizedValue = sanitizeText(value)
+        }
+    }
+
+    setFormData((prev) => ({ ...prev, [field]: sanitizedValue }))
+    
+    // Clear validation error for this field
     if (validationErrors[field]) {
       setValidationErrors((prev) => {
         const updated = { ...prev }
@@ -131,6 +208,14 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
         if (!formData.projectTokenName) errors.projectTokenName = 'Token name is required'
         if (!formData.projectTokenSymbol) errors.projectTokenSymbol = 'Token symbol is required'
         if (!formData.initialTotalSupply) errors.initialTotalSupply = 'Total supply is required'
+        
+        // 🔒 SECURITY: Additional validation
+        if (formData.projectTokenName && formData.projectTokenName.length < 3) {
+          errors.projectTokenName = 'Token name must be at least 3 characters'
+        }
+        if (formData.projectTokenSymbol && formData.projectTokenSymbol.length < 2) {
+          errors.projectTokenSymbol = 'Token symbol must be at least 2 characters'
+        }
         break
 
       case 2:
@@ -209,11 +294,35 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
     setCurrentStep((prev) => Math.max(prev - 1, 1))
   }
 
+  // 🔒 SECURITY: Final sanitization before submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (validateStep(currentStep)) {
-      onSubmit(formData)
+    
+    if (!validateStep(currentStep)) {
+      return
     }
+
+    // Create a sanitized copy of formData for submission
+    const sanitizedData: CreateProjectFormData = {
+      ...formData,
+      projectTokenName: sanitizeText(formData.projectTokenName).slice(0, 100),
+      projectTokenSymbol: sanitizeText(formData.projectTokenSymbol).toUpperCase().slice(0, 10),
+      projectTokenLogoURI: sanitizeUrl(formData.projectTokenLogoURI) || '',
+      // Numbers are already sanitized in handleChange
+    }
+
+    // Final security check
+    if (hasSuspiciousContent(sanitizedData.projectTokenName)) {
+      setValidationErrors(prev => ({
+        ...prev,
+        projectTokenName: 'Token name contains invalid characters'
+      }))
+      setCurrentStep(1)
+      return
+    }
+
+    console.log('✅ Submitting sanitized data:', sanitizedData)
+    onSubmit(sanitizedData)
   }
 
   const renderStepContent = () => {
@@ -242,6 +351,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
                   placeholder="e.g., Nexus Supporter Token"
                   error={validationErrors.projectTokenName}
                   className="text-base"
+                  maxLength={100}
                 />
                 <p className="text-sm text-[var(--metallic-silver)] flex items-start gap-2">
                   <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -256,7 +366,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
                 <Input
                   id="projectTokenSymbol"
                   value={formData.projectTokenSymbol}
-                  onChange={(e) => handleChange('projectTokenSymbol', e.target.value.toUpperCase())}
+                  onChange={(e) => handleChange('projectTokenSymbol', e.target.value)}
                   placeholder="e.g., NST"
                   maxLength={10}
                   error={validationErrors.projectTokenSymbol}
@@ -264,7 +374,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
                 />
                 <p className="text-sm text-[var(--metallic-silver)] flex items-start gap-2">
                   <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  A short identifier for your token (3-10 characters)
+                  A short identifier for your token (3-10 characters, letters and numbers only)
                 </p>
               </div>
 
@@ -296,11 +406,12 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
                   value={formData.projectTokenLogoURI}
                   onChange={(e) => handleChange('projectTokenLogoURI', e.target.value)}
                   placeholder="https://example.com/logo.png"
+                  error={validationErrors.projectTokenLogoURI}
                   className="text-base font-mono text-sm"
                 />
                 <p className="text-sm text-[var(--metallic-silver)] flex items-start gap-2">
                   <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  URL to your token logo image (recommended: 256x256 PNG)
+                  URL to your token logo image (recommended: 256x256 PNG, https only)
                 </p>
               </div>
             </div>

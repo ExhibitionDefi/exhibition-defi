@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+// src/components/amm/AddLiquidityForm.tsx
+import React, { useState, useMemo, useCallback } from 'react';
 import type { Address } from 'viem';
 import { ArrowLeftRight, ChevronDown } from 'lucide-react';
 import { TokenSelector } from '@/components/swap/TokenSelector';
@@ -6,6 +7,8 @@ import { MultiTransactionModal } from '@/components/common/MultiTransactionModal
 import { useAddLiquidity } from '@/hooks/amm/useAddLiquidity';
 import { AMMFormatters } from '@/utils/ammFormatters';
 import { AMM_ADDRESS } from '@/config/contracts';
+import { SafeHtml } from '@/components/SafeHtml';
+import { sanitizeText } from '@/utils/sanitization';
 
 interface Token {
   address: Address;
@@ -56,15 +59,54 @@ export const AddLiquidityForm: React.FC = () => {
     return [...tokensWithDecimals, ...customTokens];
   }, [customTokens, addLiquidity.tokenAInfo, addLiquidity.tokenBInfo]);
 
-  const handleAddCustomToken = (token: Token) => {
+  // ✅ Validate and sanitize custom token before adding
+  const handleAddCustomToken = useCallback((token: Token) => {
     setCustomTokens((prev) => {
       const exists = prev.some((t) => t.address.toLowerCase() === token.address.toLowerCase());
       if (exists) return prev;
-      return [...prev, { ...token, isCustom: true }];
+      
+      // ✅ Sanitize token data
+      const sanitizedToken: Token = {
+        ...token,
+        symbol: sanitizeText(token.symbol).slice(0, 20),
+        name: sanitizeText(token.name || token.symbol).slice(0, 100),
+        decimals: Math.min(Math.max(Number(token.decimals), 0), 18),
+        isCustom: true,
+      };
+      
+      return [...prev, sanitizedToken].slice(0, 50); // ✅ Limit to 50 custom tokens
     });
-  };
+  }, []);
 
-  const handleMaxBalance = (token: 'A' | 'B') => {
+  // ✅ Sanitize amount input
+  const handleAmountChange = useCallback((value: string, token: 'A' | 'B') => {
+    // Remove any non-numeric characters except decimal point
+    const cleaned = value.replace(/[^\d.]/g, '');
+    
+    // Prevent multiple decimal points
+    const parts = cleaned.split('.');
+    const sanitized = parts.length > 2 
+      ? parts[0] + '.' + parts.slice(1).join('') 
+      : cleaned;
+    
+    // Get token decimals
+    const tokenInfo = token === 'A' ? addLiquidity.tokenAInfo : addLiquidity.tokenBInfo;
+    const decimals = tokenInfo?.decimals || 18;
+    
+    // Limit decimal places
+    if (parts[1] && parts[1].length > decimals) {
+      return; // Don't update if exceeds token decimals
+    }
+    
+    // Update state with sanitized value
+    if (token === 'A') {
+      addLiquidity.updateState({ amountA: sanitized });
+    } else {
+      addLiquidity.updateState({ amountB: sanitized });
+    }
+  }, [addLiquidity]);
+
+  const handleMaxBalance = useCallback((token: 'A' | 'B') => {
     if (token === 'A' && addLiquidity.balanceA?.value && addLiquidity.tokenAInfo) {
       const maxAmount = AMMFormatters.formatTokenAmountSync(
         addLiquidity.balanceA.value,
@@ -80,28 +122,40 @@ export const AddLiquidityForm: React.FC = () => {
       );
       addLiquidity.updateState({ amountB: maxAmount });
     }
-  };
+  }, [addLiquidity]);
+
+  // ✅ Safe token symbol display
+  const safeTokenASymbol = useMemo(
+    () => sanitizeText(addLiquidity.tokenAInfo?.symbol || 'Token A'),
+    [addLiquidity.tokenAInfo?.symbol]
+  );
+
+  const safeTokenBSymbol = useMemo(
+    () => sanitizeText(addLiquidity.tokenBInfo?.symbol || 'Token B'),
+    [addLiquidity.tokenBInfo?.symbol]
+  );
 
   return (
     <>
       <div className="space-y-1">
         {/* Token A */}
         <div className="bg-[var(--charcoal)] rounded-xl p-3 sm:p-4 border border-[var(--silver-dark)] border-opacity-30 hover:border-opacity-50 transition-all duration-300">
-          {/* Header with Balance - Stacked on mobile, inline on desktop */}
+          {/* Header with Balance */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2 sm:gap-0">
             <span className="text-xs sm:text-sm font-medium text-[var(--metallic-silver)]">Token A</span>
             {addLiquidity.balanceA?.value !== undefined && addLiquidity.tokenAInfo && (
               <div className="text-xs sm:text-sm text-[var(--silver-dark)] flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <div className="flex items-center gap-1 flex-wrap">
                   <span className="whitespace-nowrap">Balance:</span>
-                  <span className="text-[var(--silver-light)] truncate">
-                    {AMMFormatters.formatTokenAmountSync(
+                  <SafeHtml 
+                    content={`${AMMFormatters.formatTokenAmountSync(
                       addLiquidity.balanceA.value,
                       addLiquidity.tokenAInfo.decimals,
                       6
-                    )}{' '}
-                    {addLiquidity.tokenAInfo.symbol}
-                  </span>
+                    )} ${safeTokenASymbol}`}
+                    as="span"
+                    className="text-[var(--silver-light)] truncate"
+                  />
                 </div>
                 {addLiquidity.balanceA.value > 0 && (
                   <button
@@ -115,7 +169,7 @@ export const AddLiquidityForm: React.FC = () => {
             )}
           </div>
 
-          {/* Input Row - Stack on small screens */}
+          {/* Input Row */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <button
               onClick={() => setShowTokenSelector('tokenA')}
@@ -124,9 +178,11 @@ export const AddLiquidityForm: React.FC = () => {
               <div className="flex items-center space-x-2 justify-center sm:justify-start">
                 {addLiquidity.tokenAInfo ? (
                   <>
-                    <span className="font-semibold text-xs sm:text-sm text-[var(--silver-light)] group-hover:text-[var(--neon-blue)] transition-colors duration-300">
-                      {addLiquidity.tokenAInfo.symbol}
-                    </span>
+                    <SafeHtml 
+                      content={safeTokenASymbol}
+                      as="span"
+                      className="font-semibold text-xs sm:text-sm text-[var(--silver-light)] group-hover:text-[var(--neon-blue)] transition-colors duration-300"
+                    />
                     <ChevronDown className="w-4 h-4 text-[var(--silver-dark)] group-hover:text-[var(--neon-blue)] transition-colors duration-300" />
                   </>
                 ) : (
@@ -141,13 +197,11 @@ export const AddLiquidityForm: React.FC = () => {
             </button>
             <input
               type="text"
+              inputMode="decimal"
               placeholder="0.0"
               value={addLiquidity.state.amountA}
-              onChange={(e) => {
-                if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) {
-                  addLiquidity.updateState({ amountA: e.target.value });
-                }
-              }}
+              onChange={(e) => handleAmountChange(e.target.value, 'A')}
+              maxLength={30} // ✅ Prevent DoS
               className="flex-1 bg-transparent text-base sm:text-lg font-bold text-[var(--silver-light)] placeholder:text-[var(--silver-dark)] border-0 outline-none text-center sm:text-right"
             />
           </div>
@@ -166,6 +220,7 @@ export const AddLiquidityForm: React.FC = () => {
             }}
             disabled={!addLiquidity.state.tokenA || !addLiquidity.state.tokenB}
             className="bg-[var(--deep-black)] border-2 border-[var(--silver-dark)] border-opacity-50 rounded-full p-2 sm:p-3 hover:border-[var(--neon-blue)] hover:border-opacity-80 disabled:opacity-50 transition-all duration-300 group"
+            aria-label="Swap token positions"
           >
             <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--silver-light)] group-hover:text-[var(--neon-blue)] transition-colors duration-300" />
           </button>
@@ -173,21 +228,22 @@ export const AddLiquidityForm: React.FC = () => {
 
         {/* Token B */}
         <div className="bg-[var(--charcoal)] rounded-xl p-3 sm:p-4 border border-[var(--silver-dark)] border-opacity-30 hover:border-opacity-50 transition-all duration-300">
-          {/* Header with Balance - Stacked on mobile, inline on desktop */}
+          {/* Header with Balance */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2 sm:gap-0">
             <span className="text-xs sm:text-sm font-medium text-[var(--metallic-silver)]">Token B</span>
             {addLiquidity.balanceB?.value !== undefined && addLiquidity.tokenBInfo && (
               <div className="text-xs sm:text-sm text-[var(--silver-dark)] flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <div className="flex items-center gap-1 flex-wrap">
                   <span className="whitespace-nowrap">Balance:</span>
-                  <span className="text-[var(--silver-light)] truncate">
-                    {AMMFormatters.formatTokenAmountSync(
+                  <SafeHtml 
+                    content={`${AMMFormatters.formatTokenAmountSync(
                       addLiquidity.balanceB.value,
                       addLiquidity.tokenBInfo.decimals,
                       6
-                    )}{' '}
-                    {addLiquidity.tokenBInfo.symbol}
-                  </span>
+                    )} ${safeTokenBSymbol}`}
+                    as="span"
+                    className="text-[var(--silver-light)] truncate"
+                  />
                 </div>
                 {addLiquidity.balanceB.value > 0 && (
                   <button
@@ -201,7 +257,7 @@ export const AddLiquidityForm: React.FC = () => {
             )}
           </div>
 
-          {/* Input Row - Stack on small screens */}
+          {/* Input Row */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <button
               onClick={() => setShowTokenSelector('tokenB')}
@@ -210,9 +266,11 @@ export const AddLiquidityForm: React.FC = () => {
               <div className="flex items-center space-x-2 justify-center sm:justify-start">
                 {addLiquidity.tokenBInfo ? (
                   <>
-                    <span className="font-semibold text-xs sm:text-sm text-[var(--silver-light)] group-hover:text-[var(--neon-orange)] transition-colors duration-300">
-                      {addLiquidity.tokenBInfo.symbol}
-                    </span>
+                    <SafeHtml 
+                      content={safeTokenBSymbol}
+                      as="span"
+                      className="font-semibold text-xs sm:text-sm text-[var(--silver-light)] group-hover:text-[var(--neon-orange)] transition-colors duration-300"
+                    />
                     <ChevronDown className="w-4 h-4 text-[var(--silver-dark)] group-hover:text-[var(--neon-orange)] transition-colors duration-300" />
                   </>
                 ) : (
@@ -227,13 +285,11 @@ export const AddLiquidityForm: React.FC = () => {
             </button>
             <input
               type="text"
+              inputMode="decimal"
               placeholder="0.0"
               value={addLiquidity.state.amountB}
-              onChange={(e) => {
-                if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) {
-                  addLiquidity.updateState({ amountB: e.target.value });
-                }
-              }}
+              onChange={(e) => handleAmountChange(e.target.value, 'B')}
+              maxLength={30} // ✅ Prevent DoS
               className="flex-1 bg-transparent text-base sm:text-lg font-bold text-[var(--silver-light)] placeholder:text-[var(--silver-dark)] border-0 outline-none text-center sm:text-right"
             />
           </div>
@@ -294,7 +350,11 @@ export const AddLiquidityForm: React.FC = () => {
                   ) : (
                     <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 border-current flex-shrink-0" />
                   )}
-                  <span className="font-medium whitespace-nowrap">{addLiquidity.tokenAInfo?.symbol || 'Token A'}</span>
+                  <SafeHtml 
+                    content={safeTokenASymbol}
+                    as="span"
+                    className="font-medium whitespace-nowrap"
+                  />
                 </div>
                 <svg className="w-3 h-3 sm:w-4 sm:h-4 text-[var(--silver-dark)] hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -320,7 +380,11 @@ export const AddLiquidityForm: React.FC = () => {
                   ) : (
                     <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 border-current flex-shrink-0" />
                   )}
-                  <span className="font-medium whitespace-nowrap">{addLiquidity.tokenBInfo?.symbol || 'Token B'}</span>
+                  <SafeHtml 
+                    content={safeTokenBSymbol}
+                    as="span"
+                    className="font-medium whitespace-nowrap"
+                  />
                 </div>
                 <svg className="w-3 h-3 sm:w-4 sm:h-4 text-[var(--silver-dark)] hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

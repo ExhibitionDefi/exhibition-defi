@@ -1,13 +1,18 @@
-import React from 'react'
+// src/components/project/WithdrawUnsoldTokensCard.tsx
+import React, { useMemo } from 'react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { AlertCircle, Clock, CheckCircle2 } from 'lucide-react'
 import { formatUnits } from 'viem'
+import { SafeHtml, SafeAddressDisplay } from '../SafeHtml'
+import { sanitizeText } from '../../utils/sanitization'
 
 interface WithdrawUnsoldTokensCardProps {
   projectId: bigint
   tokenSymbol?: string
   tokenDecimals?: number
+  projectTokenLogoURI?: string
+  tokenName?: string
   buttonState: {
     text: string
     disabled: boolean
@@ -18,8 +23,8 @@ interface WithdrawUnsoldTokensCardProps {
   unsoldTokensAmount: bigint
   tokensForSale: bigint
   tokensAllocated: bigint
-  hasWithdrawn?: boolean // ✅ NEW: Flag to track if withdrawal was successful
-  txHash?: `0x${string}` // ✅ NEW: Optional transaction hash
+  hasWithdrawn?: boolean
+  txHash?: `0x${string}`
   onWithdraw: () => void
 }
 
@@ -27,32 +32,82 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
   projectId,
   tokenSymbol = 'TOKEN',
   tokenDecimals = 18,
+  projectTokenLogoURI,
+  tokenName,
   buttonState,
   isWithdrawalUnlocked,
   withdrawalUnlocksAt,
   unsoldTokensAmount,
   tokensForSale,
   tokensAllocated,
-  hasWithdrawn = false, // ✅ Default to false
+  hasWithdrawn = false,
   txHash,
   onWithdraw,
 }) => {
+  // ✅ Sanitize token symbol for display
+  const safeTokenSymbol = useMemo(() => 
+    sanitizeText(tokenSymbol), 
+    [tokenSymbol]
+  )
+
+  // ✅ Format amounts safely
   const formattedUnsoldTokens = formatUnits(unsoldTokensAmount, tokenDecimals)
   const formattedTokensForSale = formatUnits(tokensForSale, tokenDecimals)
   const formattedTokensAllocated = formatUnits(tokensAllocated, tokenDecimals)
+
+  // ✅ Safe number formatting helper
+  const formatDisplayNumber = (value: string, maxDecimals: number = 2) => {
+    const num = parseFloat(value)
+    if (isNaN(num)) return '0'
+    return num.toLocaleString(undefined, {
+      maximumFractionDigits: maxDecimals,
+    })
+  }
+
+  // ✅ Safe date formatting
+  const formattedUnlockDate = useMemo(() => {
+    try {
+      return withdrawalUnlocksAt.toLocaleString()
+    } catch {
+      return 'Invalid date'
+    }
+  }, [withdrawalUnlocksAt])
+
+  // ✅ Safe project ID display
+  const safeProjectId = useMemo(() => {
+    try {
+      return projectId.toString()
+    } catch {
+      return 'Unknown'
+    }
+  }, [projectId])
   
   return (
     <Card className="border-[var(--charcoal)] bg-[var(--deep-black)]">
       <div className="space-y-4">
-        {/* Header */}
+        {/* Header with Logo */}
         <div className="flex items-start justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-1">
-              Withdraw Unsold Tokens
-            </h3>
-            <p className="text-sm text-[var(--silver-dark)]">
-              Reclaim any unsold {tokenSymbol} tokens from the project
-            </p>
+          <div className="flex items-start space-x-3 flex-1">
+            {projectTokenLogoURI && (
+              <img
+                src={projectTokenLogoURI}
+                alt={`${tokenName || tokenSymbol} logo`}
+                className="w-10 h-10 rounded-lg object-cover border border-[var(--metallic-silver)]/20 flex-shrink-0"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                }}
+              />
+            )}
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-1">
+                Withdraw Unsold Tokens
+              </h3>
+              <SafeHtml 
+                content={`Reclaim any unsold ${safeTokenSymbol} tokens from the project`}
+                as="p"
+                className="text-sm text-[var(--silver-dark)]"
+              />
+            </div>
           </div>
         </div>
 
@@ -61,25 +116,19 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
           <div>
             <p className="text-xs text-[var(--silver-dark)] mb-1">For Sale</p>
             <p className="text-sm font-medium text-[var(--silver-light)]">
-              {parseFloat(formattedTokensForSale).toLocaleString(undefined, { 
-                maximumFractionDigits: 2 
-              })}
+              {formatDisplayNumber(formattedTokensForSale)}
             </p>
           </div>
           <div>
             <p className="text-xs text-[var(--silver-dark)] mb-1">Allocated</p>
             <p className="text-sm font-medium text-[var(--silver-light)]">
-              {parseFloat(formattedTokensAllocated).toLocaleString(undefined, { 
-                maximumFractionDigits: 2 
-              })}
+              {formatDisplayNumber(formattedTokensAllocated)}
             </p>
           </div>
           <div>
             <p className="text-xs text-[var(--silver-dark)] mb-1">Unsold</p>
             <p className="text-sm font-medium text-[var(--neon-blue)]">
-              {parseFloat(formattedUnsoldTokens).toLocaleString(undefined, { 
-                maximumFractionDigits: 2 
-              })}
+              {formatDisplayNumber(formattedUnsoldTokens)}
             </p>
           </div>
         </div>
@@ -94,17 +143,20 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
                 <p className="text-sm font-semibold text-[var(--neon-blue)] mb-1">
                   Withdrawal Successful!
                 </p>
-                <p className="text-xs text-[var(--silver-dark)]">
-                  {parseFloat(formattedUnsoldTokens).toLocaleString(undefined, { 
-                    maximumFractionDigits: 2 
-                  })} {tokenSymbol} tokens have been returned to your wallet
-                </p>
+                <SafeHtml 
+                  content={`${formatDisplayNumber(formattedUnsoldTokens)} ${safeTokenSymbol} tokens have been returned to your wallet`}
+                  as="p"
+                  className="text-xs text-[var(--silver-dark)]"
+                />
                 {txHash && (
                   <div className="mt-2 p-2 bg-[var(--deep-black)] rounded">
                     <p className="text-xs text-[var(--silver-dark)] mb-1">Transaction Hash:</p>
-                    <p className="text-xs font-mono text-[var(--silver-light)] break-all">
-                      {txHash}
-                    </p>
+                    <SafeAddressDisplay 
+                      address={txHash}
+                      truncate={true}
+                      className="text-xs text-[var(--silver-light)]"
+                      onCopySuccess={() => console.log('Transaction hash copied!')}
+                    />
                   </div>
                 )}
               </div>
@@ -122,9 +174,11 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
                 <p className="text-xs text-[var(--silver-dark)]">
                   Available after 1-day timelock period
                 </p>
-                <p className="text-sm text-[var(--neon-orange)] mt-2 font-medium">
-                  Unlocks: {withdrawalUnlocksAt.toLocaleString()}
-                </p>
+                <SafeHtml 
+                  content={`Unlocks: ${formattedUnlockDate}`}
+                  as="p"
+                  className="text-sm text-[var(--neon-orange)] mt-2 font-medium"
+                />
               </div>
             </div>
           )}
@@ -137,11 +191,11 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
                 <p className="text-sm font-medium text-[var(--silver-light)] mb-1">
                   Withdrawal Available
                 </p>
-                <p className="text-xs text-[var(--silver-dark)]">
-                  You can now withdraw {parseFloat(formattedUnsoldTokens).toLocaleString(undefined, { 
-                    maximumFractionDigits: 2 
-                  })} {tokenSymbol} tokens
-                </p>
+                <SafeHtml 
+                  content={`You can now withdraw ${formatDisplayNumber(formattedUnsoldTokens)} ${safeTokenSymbol} tokens`}
+                  as="p"
+                  className="text-xs text-[var(--silver-dark)]"
+                />
               </div>
             </div>
           )}
@@ -192,7 +246,10 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
 
         {/* Additional Info */}
         <div className="text-xs text-[var(--silver-dark)] text-center">
-          Project ID: #{projectId.toString()}
+          <SafeHtml 
+            content={`Project ID: #${safeProjectId}`}
+            as="span"
+          />
         </div>
       </div>
     </Card>

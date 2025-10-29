@@ -231,6 +231,9 @@ export function useUserProjects() {
           tokenSymbol: projectTokenInfo?.symbol ?? '',
           tokenDecimals: projectTokenInfo?.decimals ?? 18,
           contributionTokenSymbol: contributionTokenInfo?.symbol ?? '',
+          contributionTokenDecimals: contributionTokenInfo?.decimals ?? 18,
+          // ✅ ADD LOGO URI
+          projectTokenLogoURI: project.projectTokenLogoURI ?? '',
           fundingGoal: project.fundingGoal,
           softCap: project.softCap,
           totalRaised: project.totalRaised,
@@ -252,9 +255,9 @@ export function useUserProjects() {
           timeRemaining: Number(timeRemaining),
           canContribute: Boolean(canContribute),
           formattedStatus: ProjectStatusLabels[Number(project.status) as ProjectStatus] ?? 'Unknown',
-          totalProjectTokenSupply: 0n,
-          requiredLiquidityTokens: 0n,
-          depositedLiquidityTokens: 0n
+          totalProjectTokenSupply: project.totalProjectTokenSupply,
+          requiredLiquidityTokens: details[4],
+          depositedLiquidityTokens: details[5]
         })
       } catch (err) {
         console.error('Failed to format user project:', ownedProjectIds[i], err)
