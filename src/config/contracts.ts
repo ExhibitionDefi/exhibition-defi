@@ -8,6 +8,7 @@ export const CONTRACT_ADDRESSES = {
   EXH: import.meta.env.VITE_EXH_ADDRESS as `0x${string}`, 
   EXUSDT: import.meta.env.VITE_EXUSDT_ADDRESS as `0x${string}`, 
   EXNEX: import.meta.env.VITE_EXNEX_ADDRESS as `0x${string}`, 
+  FACTORY: import.meta.env.VITE_FACTORY_ADDRESS as `0x${string}`,
 } as const
 
 // AMM specific constants
@@ -34,6 +35,7 @@ export const AMM_ADDRESS = import.meta.env.VITE_AMM_ADDRESS as Address
 export const EXH_ADDRESS = import.meta.env.VITE_EXH_ADDRESS as Address
 export const EXUSDT_ADDRESS = import.meta.env.VITE_EXUSDT_ADDRESS as Address
 export const EXNEX_ADDRESS = import.meta.env.VITE_EXNEX_ADDRESS as Address
+export const FACTORY_ADDRESS = import.meta.env.VITE_FACTORY_ADDRESS as Address
 
 // Supported Tokens (flat exports)
 export const SUPPORTED_EXH = EXH_ADDRESS

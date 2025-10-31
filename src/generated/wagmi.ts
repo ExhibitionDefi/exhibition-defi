@@ -2855,6 +2855,55 @@ export const exhibitionAmmAbi = [
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ExhibitionFactory
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export const exhibitionFactoryAbi = [
+  { type: 'constructor', inputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'exhibitionContractAddress',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getAllCreatedTokens',
+    outputs: [{ name: '', internalType: 'address[]', type: 'address[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'tokenAddress', internalType: 'address', type: 'address' },
+    ],
+    name: 'getTokenLogoURI',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'tokenAddress', internalType: 'address', type: 'address' },
+    ],
+    name: 'getTokenName',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'tokenAddress', internalType: 'address', type: 'address' },
+    ],
+    name: 'getTokenSymbol',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view',
+  },
+] as const
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // exNeX
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -5234,6 +5283,58 @@ export const useWatchExhibitionAmmSwapEvent =
   /*#__PURE__*/ createUseWatchContractEvent({
     abi: exhibitionAmmAbi,
     eventName: 'Swap',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionFactoryAbi}__
+ */
+export const useReadExhibitionFactory = /*#__PURE__*/ createUseReadContract({
+  abi: exhibitionFactoryAbi,
+})
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionFactoryAbi}__ and `functionName` set to `"exhibitionContractAddress"`
+ */
+export const useReadExhibitionFactoryExhibitionContractAddress =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionFactoryAbi,
+    functionName: 'exhibitionContractAddress',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionFactoryAbi}__ and `functionName` set to `"getAllCreatedTokens"`
+ */
+export const useReadExhibitionFactoryGetAllCreatedTokens =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionFactoryAbi,
+    functionName: 'getAllCreatedTokens',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionFactoryAbi}__ and `functionName` set to `"getTokenLogoURI"`
+ */
+export const useReadExhibitionFactoryGetTokenLogoUri =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionFactoryAbi,
+    functionName: 'getTokenLogoURI',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionFactoryAbi}__ and `functionName` set to `"getTokenName"`
+ */
+export const useReadExhibitionFactoryGetTokenName =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionFactoryAbi,
+    functionName: 'getTokenName',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionFactoryAbi}__ and `functionName` set to `"getTokenSymbol"`
+ */
+export const useReadExhibitionFactoryGetTokenSymbol =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionFactoryAbi,
+    functionName: 'getTokenSymbol',
   })
 
 /**

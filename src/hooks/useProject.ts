@@ -1,3 +1,4 @@
+// src/hooks/useProject.ts
 import { useMemo, useState, useEffect } from 'react'
 import { useAccount, useReadContracts } from 'wagmi'
 import { exhibitionAbi } from '@/generated/wagmi'

@@ -20,9 +20,10 @@ declare module "../abis/*.json" {
 
 interface ImportMetaEnv {
   // Network Configuration
+  readonly VITE_NEXUS_TESTNET_CHAIN_ID: string
   readonly VITE_NEXUS_TESTNET_RPC_URL: string
   readonly VITE_NEXUS_ALCHEMY_RPC_URL: string
-  readonly VITE_NEXUS_TESTNET_CHAIN_ID: string
+  readonly VITE_NEXUS_TESTNET_WS_RPC_URL: string
   readonly VITE_NEXUS_TESTNET_EXPLORER_URL: string
 
   readonly VITE_APP_URL: string
@@ -31,6 +32,7 @@ interface ImportMetaEnv {
   // Contract Addresses
   readonly VITE_EXHIBITION_ADDRESS: string
   readonly VITE_AMM_ADDRESS: string
+  readonly VITE_FACTORY_ADDRESS: string
 
   // Contribution Tokens Addresses
   readonly VITE_EXH_ADDRESS: string

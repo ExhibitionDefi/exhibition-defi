@@ -1,5 +1,16 @@
 import { defineChain } from 'viem'
 
+// 1. Define variables for cleaner configuration below
+const NEXUS_TESTNET_RPC_URLS = [
+  import.meta.env.VITE_NEXUS_TESTNET_RPC_URL,
+  import.meta.env.VITE_NEXUS_ALCHEMY_RPC_URL,
+].filter(Boolean); // HTTP RPC Endpoints
+
+// 2. Extract the dedicated WebSocket URL
+const NEXUS_TESTNET_WS_URLS = [
+  import.meta.env.VITE_NEXUS_TESTNET_WS_RPC_URL, // <-- Your WSS URL variable
+].filter(Boolean); // WebSocket Endpoints
+
 export const nexusTestnet = defineChain({
   id: parseInt(import.meta.env.VITE_NEXUS_TESTNET_CHAIN_ID),
   name: 'Nexus Testnet',
@@ -11,16 +22,14 @@ export const nexusTestnet = defineChain({
   },
   rpcUrls: {
     public: {
-      http: [
-        import.meta.env.VITE_NEXUS_TESTNET_RPC_URL,
-        import.meta.env.VITE_NEXUS_ALCHEMY_RPC_URL,
-      ].filter(Boolean),
+      http: NEXUS_TESTNET_RPC_URLS,
+      // ⭐ ADDITION 1: Use the WSS URL here for public connections
+      webSocket: NEXUS_TESTNET_WS_URLS, 
     },
     default: {
-      http: [
-        import.meta.env.VITE_NEXUS_TESTNET_RPC_URL,
-        import.meta.env.VITE_NEXUS_ALCHEMY_RPC_URL,
-      ].filter(Boolean),
+      http: NEXUS_TESTNET_RPC_URLS,
+      // ⭐ ADDITION 2: Use the WSS URL here for default connections
+      webSocket: NEXUS_TESTNET_WS_URLS,
     },
   },
   blockExplorers: {

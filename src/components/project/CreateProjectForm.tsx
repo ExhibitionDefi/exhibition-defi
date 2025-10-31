@@ -123,7 +123,11 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
     // Apply field-specific sanitization
     switch (field) {
       case 'projectTokenName':
-        sanitizedValue = sanitizeText(value).slice(0, 100)
+        // Text only: allow only letters and spaces
+        sanitizedValue = value
+          .replace(/[^a-zA-Z\s]/g, '') // Only allow letters and space
+          .replace(/\s{2,}/g, ' ') // Replace multiple spaces with single space
+          .slice(0, 100) // Limit length
         logSanitization(field, value, sanitizedValue)
         
         // Check for suspicious content
@@ -155,7 +159,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
         break
 
       case 'initialTotalSupply':
-      case 'amountTokensForSale':
+      case 'tokenPrice':
         // Remove non-numeric characters
         sanitizedValue = value.replace(/[^\d.]/g, '')
         break
@@ -164,7 +168,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
       case 'softCap':
       case 'minContribution':
       case 'maxContribution':
-      case 'tokenPrice':
+      case 'amountTokensForSale':
       case 'liquidityPercentage':
       case 'lockDuration':
       case 'vestingCliff':

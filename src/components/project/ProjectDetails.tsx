@@ -7,6 +7,7 @@ import { Progress } from '../ui/Progress'
 import { type ProjectDisplayData, ProjectStatus, ProjectStatusLabels } from '../../types/project'
 import { ExhibitionFormatters } from '../../utils/exFormatters'
 import { formatTimeRemaining } from '../../utils/timeHelpers'
+import { SafeHtml, SafeImage } from '../SafeHtml'
 
 interface ProjectDetailsProps {
   project: ProjectDisplayData
@@ -45,33 +46,37 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project }) => {
               {/* Project Logo */}
               {project.projectTokenLogoURI && (
                 <div className="flex-shrink-0">
-                  <img
+                  <SafeImage
                     src={project.projectTokenLogoURI}
                     alt={`${project.tokenName} logo`}
                     className="w-16 h-16 rounded-lg object-cover border border-[var(--metallic-silver)]/20"
-                    onError={(e) => {
-                      // Fallback if image fails to load
-                      e.currentTarget.style.display = 'none'
-                    }}
+                    fallback={
+                      <div className="w-16 h-16 rounded-lg bg-[var(--charcoal)] flex items-center justify-center text-[var(--silver-dark)] text-xs">
+                        N/A
+                      </div>
+                    }
+                    onError={() => console.warn('Failed to load token logo')}
                   />
                 </div>
               )}
             
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-3 mb-2 flex-wrap">
-                  <h1 className="text-2xl font-bold text-[var(--silver-light)]">
-                    {project.tokenName || 'Unknown Token'}
-                  </h1>
-                  <Badge variant={getStatusVariant(project.status as ProjectStatus)} size="md">
-                    {ProjectStatusLabels[project.status as keyof typeof ProjectStatusLabels]}
-                  </Badge>
-                </div>
+                      <h1 className="text-2xl font-bold text-[var(--silver-light)]">
+                        <SafeHtml content={project.tokenName || 'Unknown Token'} />
+                      </h1>
+                      <Badge variant={getStatusVariant(project.status as ProjectStatus)} size="md">
+                        {ProjectStatusLabels[project.status as keyof typeof ProjectStatusLabels]}
+                      </Badge>
+                    </div>
               
                 <div className="flex items-center space-x-4 text-sm text-[var(--metallic-silver)] flex-wrap">
-                  <span className="font-mono">{project.tokenSymbol}</span>
+                  <span className="font-mono">
+                    <SafeHtml content={project.tokenSymbol || ''} />
+                  </span>
                   <span>•</span>
                   <span>
-                    Owner: {ExhibitionFormatters.formatAddress(project.projectOwner)}
+                    Owner: <SafeHtml content={ExhibitionFormatters.formatAddress(project.projectOwner)}/>
                   </span>
                 </div>
               </div>

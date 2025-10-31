@@ -112,7 +112,7 @@ export const CreateProjectPage: React.FC = () => {
     <div className="min-h-screen bg-[var(--deep-black)]">
       {/* Hero Header Section */}
       <div className="bg-gradient-to-b from-[var(--charcoal)] to-[var(--deep-black)] border-b border-[var(--silver-dark)]/20">
-        <div className="container mx-auto px-4 py-12">
+        <div className="w-full px-4 py-12">
           <div className="max-w-4xl mx-auto">
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-[var(--metallic-silver)] mb-6">

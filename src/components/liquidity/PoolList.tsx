@@ -14,6 +14,9 @@ import { CONTRACT_ADDRESSES } from '../../config/contracts';
 import { AMMFormatters } from '../../utils/ammFormatters';
 import { SafeHtml } from '../SafeHtml';
 
+// 🆕 Import Factory ABI (you'll need to add this)
+import { exhibitionFactoryAbi } from '@/generated/wagmi';
+
 export interface Pool {
   tokenA: Address;
   tokenB: Address;
@@ -24,6 +27,9 @@ export interface Pool {
   totalLPSupply: bigint;
   userLPBalance?: bigint;
   userShare?: number;
+  // 🆕 Add logo URIs
+  logoURIA?: string;
+  logoURIB?: string;
 }
 
 interface PoolListProps {
@@ -76,8 +82,6 @@ export const PoolList: React.FC<PoolListProps> = ({
     | [Address[], Address[], bigint[], bigint[], bigint, boolean]
     | undefined;
 
-
-
   // Gather all tokens
   const allTokens = useMemo(() => {
     const tokens = new Set<Address>();
@@ -118,15 +122,36 @@ export const PoolList: React.FC<PoolListProps> = ({
     | readonly [readonly string[], readonly bigint[], readonly bigint[]]
     | undefined;
 
-  // Create pools array with token information
+  // 🆕 Fetch logo URIs from Factory
+  const { data: logoData, isLoading: isLoadingLogos } = useReadContracts({
+    contracts: allTokens.map((tokenAddress) => ({
+      address: CONTRACT_ADDRESSES.FACTORY,
+      abi: exhibitionFactoryAbi,
+      functionName: 'getTokenLogoURI',
+      args: [tokenAddress],
+    })),
+    query: {
+      enabled: allTokens.length > 0,
+      refetchInterval: 300_000, // 5 minutes - logos don't change often
+      staleTime: 240_000, // 4 minutes
+    },
+  });
+
+  // Create pools array with token information and logos
   const pools: Pool[] = useMemo(() => {
     if (!tokensInfo) return [];
 
     const [symbols] = tokensInfo;
     const tokenSymbolMap: Record<Address, string> = {};
+    const tokenLogoMap: Record<Address, string> = {}; // 🆕
+
     allTokens.forEach((token, index) => {
       if (symbols[index]) {
         tokenSymbolMap[token] = symbols[index];
+      }
+      // 🆕 Map logos
+      if (logoData?.[index]?.result) {
+        tokenLogoMap[token] = logoData[index].result as string;
       }
     });
 
@@ -137,17 +162,23 @@ export const PoolList: React.FC<PoolListProps> = ({
         return [];
       }
 
-      return tokenAs.map((tokenA: Address, index: number) => ({
-        tokenA,
-        tokenB: tokenBs?.[index] || ('0x0' as Address),
-        symbolA: tokenSymbolMap[tokenA] || 'Unknown',
-        symbolB: tokenSymbolMap[tokenBs?.[index] || ('0x0' as Address)] || 'Unknown',
-        reserveA: BigInt(0),
-        reserveB: BigInt(0),
-        totalLPSupply: BigInt(0),
-        userLPBalance: lpBalances?.[index] || BigInt(0),
-        userShare: sharePercentages?.[index] ? Number(sharePercentages[index]) / 100 : 0,
-      }));
+      return tokenAs.map((tokenA: Address, index: number) => {
+        const tokenB = tokenBs?.[index] || ('0x0' as Address);
+        return {
+          tokenA,
+          tokenB,
+          symbolA: tokenSymbolMap[tokenA] || 'Unknown',
+          symbolB: tokenSymbolMap[tokenB] || 'Unknown',
+          reserveA: BigInt(0),
+          reserveB: BigInt(0),
+          totalLPSupply: BigInt(0),
+          userLPBalance: lpBalances?.[index] || BigInt(0),
+          userShare: sharePercentages?.[index] ? Number(sharePercentages[index]) / 100 : 0,
+          // 🆕 Add logos
+          logoURIA: tokenLogoMap[tokenA] || '',
+          logoURIB: tokenLogoMap[tokenB] || '',
+        };
+      });
     }
 
     if (poolsPaginatedResult && !showUserPositionsOnly) {
@@ -157,15 +188,21 @@ export const PoolList: React.FC<PoolListProps> = ({
         return [];
       }
 
-      return tokenAs.map((tokenA: Address, index: number) => ({
-        tokenA,
-        tokenB: tokenBs?.[index] || ('0x0' as Address),
-        symbolA: tokenSymbolMap[tokenA] || 'Unknown',
-        symbolB: tokenSymbolMap[tokenBs?.[index] || ('0x0' as Address)] || 'Unknown',
-        reserveA: BigInt(0),
-        reserveB: BigInt(0),
-        totalLPSupply: BigInt(0),
-      }));
+      return tokenAs.map((tokenA: Address, index: number) => {
+        const tokenB = tokenBs?.[index] || ('0x0' as Address);
+        return {
+          tokenA,
+          tokenB,
+          symbolA: tokenSymbolMap[tokenA] || 'Unknown',
+          symbolB: tokenSymbolMap[tokenB] || 'Unknown',
+          reserveA: BigInt(0),
+          reserveB: BigInt(0),
+          totalLPSupply: BigInt(0),
+          // 🆕 Add logos
+          logoURIA: tokenLogoMap[tokenA] || '',
+          logoURIB: tokenLogoMap[tokenB] || '',
+        };
+      });
     }
 
     return [];
@@ -173,6 +210,7 @@ export const PoolList: React.FC<PoolListProps> = ({
     poolsPaginatedResult,
     userPortfolioResult,
     tokensInfo,
+    logoData, // 🆕
     allTokens,
     showUserPositionsOnly,
   ]);
@@ -191,7 +229,7 @@ export const PoolList: React.FC<PoolListProps> = ({
     );
   }, [pools, searchQuery]);
 
-  const isLoading = isLoadingPools || isLoadingTokens;
+  const isLoading = isLoadingPools || isLoadingTokens || isLoadingLogos; // 🆕
 
   if (isLoading) {
     return (
@@ -296,9 +334,34 @@ const PoolRow: React.FC<PoolRowProps> = ({ pool, onSelect }) => {
     <div className="flex items-center justify-between p-4 border border-[var(--silver-dark)] border-opacity-30 rounded-lg hover:bg-[var(--charcoal)] hover:border-opacity-50 transition-all duration-300">
       {/* Pool Info */}
       <div className="flex items-center space-x-4">
+        {/* 🆕 Token Logo Display */}
+        <div className="flex items-center -space-x-2">
+          {pool.logoURIA && (
+            <img
+              src={pool.logoURIA}
+              alt={pool.symbolA}
+              className="w-8 h-8 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)]"
+              onError={(e) => {
+                // Fallback if image fails to load
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          )}
+          {pool.logoURIB && (
+            <img
+              src={pool.logoURIB}
+              alt={pool.symbolB}
+              className="w-8 h-8 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)]"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          )}
+        </div>
+
         <div className="flex items-center space-x-2">
           <div className="text-lg font-medium text-[var(--silver-light)]">
-             <SafeHtml content={`${pool.symbolA}/${pool.symbolB}`} />
+            <SafeHtml content={`${pool.symbolA}/${pool.symbolB}`} />
           </div>
           <Badge
             variant="default"
@@ -322,7 +385,7 @@ const PoolRow: React.FC<PoolRowProps> = ({ pool, onSelect }) => {
 
       {/* Pool Stats */}
       <div className="flex items-center space-x-6">
-       {pool.userLPBalance !== undefined && pool.userLPBalance > BigInt(0) && pool.userShare !== undefined && (
+        {pool.userLPBalance !== undefined && pool.userLPBalance > BigInt(0) && pool.userShare !== undefined && (
           <div className="text-right">
             <div className="text-sm font-medium text-[var(--silver-light)]">
               {AMMFormatters.formatTokenAmountSync(
