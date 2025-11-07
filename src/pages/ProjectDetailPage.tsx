@@ -227,6 +227,8 @@ export const ProjectDetailPage: React.FC = () => {
           }}
           platformFeePercentage={platformFeePercentage}
           isLoading={isPlatformSettingsLoading}
+          onFinalize={() => finalizeLiquidity.executeFinalize(project.id)}
+          buttonState={finalizeLiquidity.buttonState}
         />
       )}
 

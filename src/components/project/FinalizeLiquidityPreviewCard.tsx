@@ -1,6 +1,7 @@
 import React from 'react'
 import { Info, Coins, Droplets, Wallet } from 'lucide-react'
 import { ExhibitionFormatters } from '@/utils/exFormatters'
+import { Button } from '@/components/ui/Button'
 
 interface FinalizeLiquidityPreviewCardProps {
   project: {
@@ -15,12 +16,20 @@ interface FinalizeLiquidityPreviewCardProps {
   }
   platformFeePercentage: bigint
   isLoading?: boolean
+  // NEW: Props for button functionality
+  onFinalize?: () => void
+  buttonState?: {
+    text: string
+    disabled: boolean
+  }
 }
 
 export const FinalizeLiquidityPreviewCard: React.FC<FinalizeLiquidityPreviewCardProps> = ({
   project,
   platformFeePercentage,
   isLoading = false,
+  onFinalize,
+  buttonState = { text: 'Finalize Liquidity & Release Funds', disabled: false },
 }) => {
   // Get contribution token decimals (assuming 18 for ERC20)
   const contributionDecimals = 18
@@ -42,7 +51,7 @@ export const FinalizeLiquidityPreviewCard: React.FC<FinalizeLiquidityPreviewCard
 
   if (isLoading) {
     return (
-      <div className="bg-[var(--charcoal)] border border-[var(--silver-dark)]/30 rounded-2xl p-6">
+      <div className="max-w-3xl mx-auto bg-[var(--charcoal)] border border-[var(--silver-dark)]/30 rounded-2xl p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-6 bg-[var(--silver-dark)]/20 rounded w-3/4"></div>
           <div className="h-20 bg-[var(--silver-dark)]/20 rounded"></div>
@@ -52,7 +61,7 @@ export const FinalizeLiquidityPreviewCard: React.FC<FinalizeLiquidityPreviewCard
   }
 
   return (
-    <div className="bg-gradient-to-br from-[var(--charcoal)] to-[var(--obsidian)] border border-[var(--neon-cyan)]/20 rounded-2xl p-6 space-y-6">
+    <div className="max-w-3xl mx-auto bg-gradient-to-br from-[var(--charcoal)] to-[var(--obsidian)] border border-[var(--neon-cyan)]/20 rounded-2xl p-6 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -202,6 +211,18 @@ export const FinalizeLiquidityPreviewCard: React.FC<FinalizeLiquidityPreviewCard
           </p>
         </div>
       </div>
+
+      {/* NEW: Finalize Button */}
+      {onFinalize && (
+        <Button
+          onClick={onFinalize}
+          disabled={buttonState.disabled}
+          className="w-full"
+          size="lg"
+        >
+          {buttonState.text}
+        </Button>
+      )}
     </div>
   )
 }

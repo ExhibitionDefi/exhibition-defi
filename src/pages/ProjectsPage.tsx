@@ -5,12 +5,12 @@ import { ProjectFilters } from '../components/project/ProjectFilters'
 import { useProjects } from '../hooks/useProjects'
 import { useProjectStore } from '../stores/projectStore'
 import { Button } from '../components/ui/Button'
-import { Search, TrendingUp, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
+import { Search, TrendingUp, AlertCircle } from 'lucide-react'
 import { ProjectStatus } from '@/types/project'
 
 export const ProjectsPage: React.FC = () => {
   const { projects: allProjects, isLoading, error } = useProjects()
-  const { currentPage, pageSize, setCurrentPage, searchQuery, statusFilter } = useProjectStore()
+  const { searchQuery, statusFilter } = useProjectStore()
 
   // Apply filters and default sort by contribution (totalRaised desc)
   const filteredProjects = React.useMemo(() => {
@@ -54,19 +54,6 @@ export const ProjectsPage: React.FC = () => {
 
     return { totalProjects, completedCount, successfulCount, liveCount }
   }, [allProjects])
-
-  // Pagination on filtered
-  const totalPages = Math.ceil(filteredProjects.length / pageSize)
-  const startIndex = (currentPage - 1) * pageSize
-  const endIndex = startIndex + pageSize
-  const paginatedProjects = filteredProjects.slice(startIndex, endIndex)
-
-  // Reset page if needed
-  React.useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(1)
-    }
-  }, [currentPage, totalPages, setCurrentPage])
 
   if (isLoading) {
     return (
@@ -187,18 +174,13 @@ export const ProjectsPage: React.FC = () => {
         <div className="flex items-center space-x-3">
           <div className="w-1 h-1 rounded-full bg-[var(--neon-blue)] drop-shadow-[0_0_3px_var(--neon-blue)] animate-pulse"></div>
           <p className="text-sm font-medium" style={{ color: 'var(--silver-light)' }}>
-            Showing {paginatedProjects.length} of {filteredProjects.length} projects
+            Showing {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'}
           </p>
         </div>
-        {totalPages > 1 && (
-          <p className="text-xs" style={{ color: 'var(--metallic-silver)' }}>
-            Page {currentPage} of {totalPages}
-          </p>
-        )}
       </div>
 
       {/* Enhanced Projects Grid */}
-      {paginatedProjects.length === 0 ? (
+      {filteredProjects.length === 0 ? (
         <div className="text-center py-16">
           <div className="bg-gradient-to-r from-[var(--charcoal)]/60 to-[var(--deep-black)]/60 p-8 rounded-xl border border-[var(--metallic-silver)]/20 max-w-md mx-auto">
             <Search 
@@ -215,7 +197,7 @@ export const ProjectsPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {paginatedProjects.map((project, index) => (
+          {filteredProjects.map((project, index) => (
             <div 
               key={project.id.toString()}
               className="transform transition-all duration-300 hover:scale-[1.02]"
@@ -226,77 +208,6 @@ export const ProjectsPage: React.FC = () => {
               <ProjectCard project={project} />
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Enhanced Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="transition-all duration-300 hover:border-[var(--neon-blue)]/50 hover:bg-[var(--neon-blue)]/10 disabled:opacity-30"
-            style={{ 
-              borderColor: 'var(--metallic-silver)', 
-              color: 'var(--silver-light)' 
-            }}
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Previous
-          </Button>
-
-          <div className="flex space-x-1">
-            {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-              let page: number
-              if (totalPages <= 7) {
-                page = i + 1
-              } else if (currentPage <= 4) {
-                page = i + 1
-              } else if (currentPage >= totalPages - 3) {
-                page = totalPages - 6 + i
-              } else {
-                page = currentPage - 3 + i
-              }
-
-              const isActive = page === currentPage
-              return (
-                <Button
-                  key={page}
-                  variant={isActive ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-10 h-10 transition-all duration-300 ${
-                    isActive
-                      ? 'bg-gradient-to-r from-[var(--neon-blue)]/80 to-[var(--neon-blue)] border-[var(--neon-blue)] shadow-lg shadow-[var(--neon-blue)]/30'
-                      : 'hover:border-[var(--neon-blue)]/50 hover:bg-[var(--neon-blue)]/10'
-                  }`}
-                  style={{ 
-                    borderColor: isActive ? 'var(--neon-blue)' : 'var(--metallic-silver)', 
-                    color: 'var(--silver-light)' 
-                  }}
-                >
-                  {page}
-                </Button>
-              )
-            })}
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="transition-all duration-300 hover:border-[var(--neon-blue)]/50 hover:bg-[var(--neon-blue)]/10 disabled:opacity-30"
-            style={{ 
-              borderColor: 'var(--metallic-silver)', 
-              color: 'var(--silver-light)' 
-            }}
-          >
-            Next
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
         </div>
       )}
     </div>

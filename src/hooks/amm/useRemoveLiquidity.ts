@@ -19,6 +19,14 @@ interface RemoveLiquidityState {
   transactionSuccess?: boolean;
 }
 
+interface LiquidityLockInfo {
+  projectId: bigint;
+  projectOwner: Address;
+  unlockTime: bigint;
+  lockedLPAmount: bigint;
+  isActive: boolean;
+}
+
 const isValidAddress = (address: any): address is Address => {
   return typeof address === 'string' && address.length > 0 && isAddress(address);
 };
@@ -59,7 +67,7 @@ export const useRemoveLiquidity = () => {
     return isValidAddress(state.tokenA) && isValidAddress(state.tokenB);
   }, [state.tokenA, state.tokenB]);
 
-  // Fetch token info and pool data
+  // Fetch token info, pool data, and lock info
   const { data: ammData, refetch: refetchAMMData } = useReadContracts({
     contracts: [
       {
@@ -92,6 +100,13 @@ export const useRemoveLiquidity = () => {
         functionName: 'isLiquidityLocked',
         args: shouldFetchData && address ? [state.tokenA!, state.tokenB!, address] : undefined,
       },
+      // NEW: Fetch lock info including unlock time
+      {
+        address: CONTRACT_ADDRESSES.AMM,
+        abi: exhibitionAmmAbi,
+        functionName: 'getLiquidityLock',
+        args: shouldFetchData && address ? [state.tokenA!, state.tokenB!, address] : undefined,
+      },
     ],
     query: {
       enabled: shouldFetchData,
@@ -105,6 +120,7 @@ export const useRemoveLiquidity = () => {
   const lpBalance = ammData?.[2]?.result as bigint | undefined;
   const withdrawableLP = ammData?.[3]?.result as bigint | undefined;
   const isLocked = ammData?.[4]?.result as boolean | undefined;
+  const liquidityLockInfo = ammData?.[5]?.result as LiquidityLockInfo | undefined;
 
   // Parse token info
   useEffect(() => {
@@ -279,6 +295,7 @@ export const useRemoveLiquidity = () => {
     lpBalance,
     withdrawableLP,
     isLocked,
+    liquidityLockInfo, // NEW: Expose lock info including unlockTime
     removeQuote,
     tokenAInfo,
     tokenBInfo,

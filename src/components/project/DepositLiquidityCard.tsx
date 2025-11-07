@@ -146,7 +146,7 @@ export const DepositLiquidityCard: React.FC<DepositLiquidityCardProps> = ({
   }
 
   return (
-    <div className="bg-[var(--charcoal)] border border-[var(--silver-dark)]/30 rounded-2xl p-6 space-y-6">
+    <div className="max-w-3xl mx-auto bg-[var(--charcoal)] border border-[var(--silver-dark)]/30 rounded-2xl p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
