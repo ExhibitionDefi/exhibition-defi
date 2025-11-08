@@ -1,6 +1,6 @@
 // src/components/project/ProjectDetails.tsx
-import React from 'react'
-import { Calendar, Clock, TrendingUp, Info } from 'lucide-react'
+import React, { useState } from 'react'
+import { Calendar, Clock, TrendingUp, Info, Copy, Check } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
 import { Progress } from '../ui/Progress'
@@ -11,9 +11,41 @@ import { SafeHtml, SafeImage } from '../SafeHtml'
 
 interface ProjectDetailsProps {
   project: ProjectDisplayData
+  isProjectOwner?: boolean
 }
 
-export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project }) => {
+export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProjectOwner = false }) => {
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
+
+  const copyToClipboard = async (address: string) => {
+    try {
+      await navigator.clipboard.writeText(address)
+      setCopiedAddress(address)
+      setTimeout(() => setCopiedAddress(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
+  }
+
+  const CopyableAddress: React.FC<{ address: string }> = ({ address }) => {
+    const isCopied = copiedAddress === address
+    const displayAddress = `${address.slice(0, 6)}...${address.slice(-4)}`
+    return (
+      <button
+        onClick={() => copyToClipboard(address)}
+        className="group inline-flex items-center space-x-1.5 font-mono text-xs text-[var(--neon-blue)] hover:text-[var(--neon-blue)]/80 transition-colors cursor-pointer underline decoration-[var(--neon-blue)]/30 hover:decoration-[var(--neon-blue)]/60"
+        title="Click to copy full address"
+      >
+        <span>{displayAddress}</span>
+        {isCopied ? (
+          <Check className="h-3 w-3 flex-shrink-0" />
+        ) : (
+          <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+        )}
+      </button>
+    )
+  }
+
   const getStatusVariant = (status: ProjectStatus) => {
     switch (status) {
       case ProjectStatus.Active:
@@ -33,7 +65,107 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project }) => {
 
   const progressPercentage = Number(project.progressPercentage) / 100
   const isLive = project.status === ProjectStatus.Active
-  const hasEnded = project.timeRemaining <= 0 && project.status !== ProjectStatus.Upcoming
+
+  // Check current time and project timing
+  const now = Math.floor(Date.now() / 1000)
+  const hasStarted = now >= Number(project.startTime)
+  const hasEnded = now >= Number(project.endTime)
+  const isActive = project.status === ProjectStatus.Active
+  const isUpcoming = project.status === ProjectStatus.Upcoming
+  const isSuccessful = project.status === ProjectStatus.Successful
+  const isClaimable = project.status === ProjectStatus.Claimable
+  const isFailed = project.status === ProjectStatus.Failed
+  const isRefundable = project.status === ProjectStatus.Refundable
+  const isFundingEnded = project.status === ProjectStatus.FundingEnded
+
+  // Determine what message to show
+  const showOwnerMessage = isProjectOwner && (isActive || isUpcoming)
+  const showUserMessage = !isProjectOwner && (isActive || isUpcoming || isSuccessful || isClaimable || isFundingEnded || isFailed || isRefundable)
+
+  // Generate owner messages
+  type MessageVariant = 'info' | 'success' | 'warning' | 'error';
+
+  const getOwnerMessage = () => {
+    if (isUpcoming && !hasStarted) {
+      return {
+        main: 'Your project is scheduled and ready to launch!',
+        sub: `Contributions will begin on ${new Date(Number(project.startTime) * 1000).toLocaleString()}`,
+        variant: 'info' as MessageVariant
+      }
+    }
+    if (isActive && !hasStarted) {
+      return {
+        main: 'Your project is active but has not started yet.',
+        sub: `Contributions will open on ${new Date(Number(project.startTime) * 1000).toLocaleString()}`,
+        variant: 'info' as const
+      }
+    }
+    if (isActive && hasStarted && !hasEnded) {
+      return {
+        main: 'Your project is live and accepting contributions!',
+        sub: 'As the project owner, you cannot contribute to your own project.',
+        variant: 'success' as const
+      }
+    }
+    if (isActive && hasEnded) {
+      return {
+        main: 'Funding period has ended.',
+        sub: 'Your project needs to be finalized to determine its status.',
+        variant: 'warning' as const
+      }
+    }
+    return null
+  }
+
+  // Generate user messages
+  const getUserMessage = () => {
+    if (isUpcoming || (isActive && !hasStarted)) {
+      return {
+        main: 'This project has not started yet.',
+        sub: `Contributions will open on ${new Date(Number(project.startTime) * 1000).toLocaleString()}`,
+        variant: 'info' as const
+      }
+    }
+    if (isActive && hasStarted && !hasEnded) {
+      return {
+        main: 'This project is live and accepting contributions!',
+        sub: 'Connect your wallet and contribute to participate in this project.',
+        variant: 'success' as const
+      }
+    }
+    if (isActive && hasEnded) {
+      return {
+        main: 'Funding period has ended.',
+        sub: 'This project is awaiting finalization. The final status will be determined soon.',
+        variant: 'warning' as const
+      }
+    }
+    if (isFundingEnded) {
+      return {
+        main: 'Funding period has ended.',
+        sub: 'This project is being finalized. Please check back soon for the final status.',
+        variant: 'warning' as const
+      }
+    }
+    if (isSuccessful || isClaimable) {
+      return {
+        main: 'Project Successful! 🎉',
+        sub: 'This project has reached its funding goal. If you contributed, you can now claim your tokens!',
+        variant: 'success' as const
+      }
+    }
+    if (isFailed || isRefundable) {
+      return {
+        main: 'Project did not reach its funding goal.',
+        sub: 'If you contributed, you can request a refund of your contribution.',
+        variant: 'error' as const
+      }
+    }
+    return null
+  }
+
+  const ownerMessage = getOwnerMessage()
+  const userMessage = getUserMessage()
 
   return (
     <div className="space-y-6">
@@ -41,53 +173,52 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Header Section */}
         <Card hover>
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0">
-            <div className="flex-1 flex items-start space-x-4">
-              {/* Project Logo */}
+          <div className="space-y-4">
+            {/* Logo Row */}
+            <div className="flex items-center justify-between">
               {project.projectTokenLogoURI && (
-                <div className="flex-shrink-0">
-                  <SafeImage
-                    src={project.projectTokenLogoURI}
-                    alt={`${project.tokenName} logo`}
-                    className="w-16 h-16 rounded-lg object-cover border border-[var(--metallic-silver)]/20"
-                    fallback={
-                      <div className="w-16 h-16 rounded-lg bg-[var(--charcoal)] flex items-center justify-center text-[var(--silver-dark)] text-xs">
-                        N/A
-                      </div>
-                    }
-                    onError={() => console.warn('Failed to load token logo')}
-                  />
+                <SafeImage
+                  src={project.projectTokenLogoURI}
+                  alt={`${project.tokenName} logo`}
+                  className="w-16 h-16 rounded-lg object-cover border border-[var(--metallic-silver)]/20"
+                  fallback={
+                    <div className="w-16 h-16 rounded-lg bg-[var(--charcoal)] flex items-center justify-center text-[var(--silver-dark)] text-xs">
+                      N/A
+                    </div>
+                  }
+                  onError={() => console.warn('Failed to load token logo')}
+                />
+              )}
+              
+              {isLive && (
+                <div className="flex items-center space-x-2 text-[var(--neon-blue)]">
+                  <div className="w-2 h-2 bg-[var(--neon-blue)] rounded-full animate-pulse shadow-[0_0_4px_var(--neon-blue)]" />
+                  <span className="font-medium">Live Now</span>
                 </div>
               )}
-            
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-3 mb-2 flex-wrap">
-                      <h1 className="text-2xl font-bold text-[var(--silver-light)]">
-                        <SafeHtml content={project.tokenName || 'Unknown Token'} />
-                      </h1>
-                      <Badge variant={getStatusVariant(project.status as ProjectStatus)} size="md">
-                        {ProjectStatusLabels[project.status as keyof typeof ProjectStatusLabels]}
-                      </Badge>
-                    </div>
-              
-                <div className="flex items-center space-x-4 text-sm text-[var(--metallic-silver)] flex-wrap">
-                  <span className="font-mono">
-                    <SafeHtml content={project.tokenSymbol || ''} />
-                  </span>
-                  <span>•</span>
-                  <span>
-                    Owner: <SafeHtml content={ExhibitionFormatters.formatAddress(project.projectOwner)}/>
-                  </span>
-                </div>
-              </div>
             </div>
 
-            {isLive && (
-              <div className="flex items-center space-x-2 text-[var(--neon-blue)] flex-shrink-0">
-                <div className="w-2 h-2 bg-[var(--neon-blue)] rounded-full animate-pulse shadow-[0_0_4px_var(--neon-blue)]" />
-                <span className="font-medium">Live Now</span>
+            {/* Title and Badge Row */}
+            <div className="flex items-center space-x-3 flex-wrap">
+              <h1 className="text-2xl font-bold text-[var(--silver-light)]">
+                <SafeHtml content={project.tokenName || 'Unknown Token'} />
+              </h1>
+              <Badge variant={getStatusVariant(project.status as ProjectStatus)} size="md">
+                {ProjectStatusLabels[project.status as keyof typeof ProjectStatusLabels]}
+              </Badge>
+            </div>
+
+            {/* Token Symbol and Owner Row */}
+            <div className="flex items-center space-x-4 text-sm text-[var(--metallic-silver)] flex-wrap">
+              <span className="font-mono">
+                <SafeHtml content={project.tokenSymbol || ''} />
+              </span>
+              <span>•</span>
+              <div className="flex items-center space-x-2">
+                <span>Owner:</span>
+                <CopyableAddress address={project.projectOwner} />
               </div>
-            )}
+            </div>
           </div>
         </Card>
 
@@ -309,41 +440,79 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project }) => {
         </Card>
       </div>
 
-      {/* Additional Information */}
-      <Card hover>
-        <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-4">Project Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-[var(--metallic-silver)]">Project Token Address</p>
-            <p className="font-mono text-xs break-all text-[var(--silver-dark)]">
-              {project.projectToken}
-            </p>
-          </div>
-          
-          <div>
-            <p className="text-[var(--metallic-silver)]">Contribution Token</p>
-            <p className="font-mono text-xs break-all text-[var(--silver-dark)]">
-              {project.contributionTokenAddress}
-            </p>
-          </div>
-          
-          {('lockDuration' in project) && (
+      {/* Bottom Grid - Project Information (Left) and Status Messages (Right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Project Information Card - Always shows on left */}
+        <Card hover>
+          <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-4">Project Information</h3>
+          <div className="grid grid-cols-1 gap-4 text-sm">
             <div>
-              <p className="text-[var(--metallic-silver)]">Lock Duration</p>
-              <p className="font-medium text-[var(--silver-light)]">
-                {ExhibitionFormatters.formatDuration(Number((project as any).lockDuration || 0))}
+              <p className="text-[var(--metallic-silver)] mb-1">Project Token Address</p>
+              <CopyableAddress address={project.projectToken} />
+            </div>
+            
+            <div>
+              <p className="text-[var(--metallic-silver)] mb-1">Contribution Token</p>
+              <CopyableAddress address={project.contributionTokenAddress} />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              {('lockDuration' in project) && (
+                <div>
+                  <p className="text-[var(--metallic-silver)]">Lock Duration</p>
+                  <p className="font-medium text-[var(--silver-light)]">
+                    {ExhibitionFormatters.formatDuration(Number((project as any).lockDuration || 0))}
+                  </p>
+                </div>
+              )}
+              
+              <div>
+                <p className="text-[var(--metallic-silver)]">Project ID</p>
+                <p className="font-medium text-[var(--silver-light)]">
+                  #{project.id.toString()}
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Status Message Card - Shows for both owner and users on right */}
+        {(showOwnerMessage && ownerMessage) && (
+          <Card hover>
+            <div className="text-center space-y-3">
+              <p className={`text-lg font-semibold ${
+                ownerMessage.variant === 'success' ? 'text-[var(--neon-blue)]' :
+                ownerMessage.variant === 'warning' ? 'text-[var(--neon-orange)]' :
+                ownerMessage.variant === 'error' ? 'text-[var(--neon-orange)]' :
+                'text-[var(--silver-light)]'
+              }`}>
+                {ownerMessage.main}
+              </p>
+              <p className="text-sm text-[var(--metallic-silver)]">
+                {ownerMessage.sub}
               </p>
             </div>
-          )}
-          
-          <div>
-            <p className="text-[var(--metallic-silver)]">Project ID</p>
-            <p className="font-medium text-[var(--silver-light)]">
-              #{project.id.toString()}
-            </p>
-          </div>
-        </div>
-      </Card>
+          </Card>
+        )}
+
+        {(showUserMessage && userMessage) && (
+          <Card hover>
+            <div className="text-center space-y-3">
+              <p className={`text-lg font-semibold ${
+                userMessage.variant === 'success' ? 'text-[var(--neon-blue)]' :
+                userMessage.variant === 'warning' ? 'text-[var(--neon-orange)]' :
+                userMessage.variant === 'error' ? 'text-[var(--neon-orange)]' :
+                'text-[var(--silver-light)]'
+              }`}>
+                {userMessage.main}
+              </p>
+              <p className="text-sm text-[var(--metallic-silver)]">
+                {userMessage.sub}
+              </p>
+            </div>
+          </Card>
+        )}
+      </div>
     </div>
   )
 }

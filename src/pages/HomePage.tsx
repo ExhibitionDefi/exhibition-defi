@@ -99,10 +99,10 @@ export const HomePage: React.FC = () => {
       <section className="space-y-8">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-[var(--silver-light)] mb-4">
-            Why Choose Exhibition?
+           Verifiable Launch: The Exhibition Difference
           </h2>
           <p className="text-lg text-[var(--metallic-silver)]">
-            Built for the future of decentralized fundraising
+            The only platform ensuring your token launch is mathematically proven, transparent, and fair.
           </p>
         </div>
 

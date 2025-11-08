@@ -175,8 +175,8 @@ export const ProjectDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Project Details */}
-      <ProjectDetails project={project} />
+      {/* Project Details - Now receives isProjectOwner prop */}
+      <ProjectDetails project={project} isProjectOwner={isProjectOwner} />
 
       {/* DEPOSIT PROJECT TOKENS CARD - Show when Upcoming and tokens NOT deposited */}
       {isProjectOwner && 
@@ -287,17 +287,7 @@ export const ProjectDetailPage: React.FC = () => {
               />
           )}
           
-          {/* Owner message when Active */}
-          {project.status === ProjectStatus.Active && isProjectOwner && (
-            <div className="bg-[var(--charcoal)] border border-[var(--silver-dark)]/30 rounded-2xl p-6 text-center">
-              <p className="text-[var(--silver-light)]">
-                Your project is live and accepting contributions!
-              </p>
-              <p className="text-[var(--neon-orange)] mt-2 text-sm">
-                As the project owner, you cannot contribute to your own project.
-              </p>
-            </div>
-          )}
+          {/* REMOVED: Owner message when Active - Now handled in ProjectDetails */}
           
           {/* Show message for other statuses */}
           {project.status === ProjectStatus.Upcoming && (

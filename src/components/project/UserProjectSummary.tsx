@@ -163,7 +163,7 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
               color: 'var(--neon-orange)'
             }}>
               <p className="text-sm font-medium">
-                ⚠️ Refund Available - Use the dedicated refund section below to request your refund
+                ⚠️ Refund Available - Use the dedicated refund section to request your refund
               </p>
             </div>
           )}
