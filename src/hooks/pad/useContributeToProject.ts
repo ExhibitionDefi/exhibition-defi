@@ -139,6 +139,13 @@ export function useContributeToProject(options: UseContributeOptions = {}) {
       setHasProcessedApproval(true)
       setTransactionType('contribute')
       
+      // ✅ TOAST 
+      if (showToast) {
+        toast.dismiss()
+        toast.success('Approval confirmed! Now contributing...')
+        hasShownApprovalToast.current = true
+      }
+      
       executeContributeOnly(pendingContrib.amount)
         .then(() => setPendingContrib(null))
         .catch(() => setPendingContrib(null))

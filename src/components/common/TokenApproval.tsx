@@ -3,7 +3,6 @@ import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { ExhibitionFormatters } from '../../utils/exFormatters'
-import toast from 'react-hot-toast'
 import { useTokenApproval } from '../../hooks/useTokenApproval'
 import { escapeHtml } from '@/utils/sanitization'
 import { SafeHtml } from '@/components/SafeHtml'
@@ -46,7 +45,6 @@ export const TokenApproval: React.FC<TokenApprovalProps> = ({
     if (isApproved) {
       refetchAllowance?.()
       onApprovalComplete?.()
-      toast.success('Token approval confirmed!')
     }
   }, [isApproved, refetchAllowance, onApprovalComplete])
 
@@ -55,7 +53,6 @@ export const TokenApproval: React.FC<TokenApprovalProps> = ({
       await submitApproval()
     } catch (err) {
       console.error('Approval failed:', err)
-      toast.error(err instanceof Error ? err.message : 'Failed to submit approval')
     }
   }
 
