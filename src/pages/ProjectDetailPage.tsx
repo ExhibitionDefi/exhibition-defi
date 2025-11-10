@@ -176,7 +176,11 @@ export const ProjectDetailPage: React.FC = () => {
       </div>
 
       {/* Project Details - Now receives isProjectOwner prop */}
-      <ProjectDetails project={project} isProjectOwner={isProjectOwner} />
+      <ProjectDetails 
+       project={project} 
+       isProjectOwner={isProjectOwner}
+       hasDepositedProjectTokens={depositProjectTokens.projectTokenInfo.isComplete}
+      />
 
       {/* DEPOSIT PROJECT TOKENS CARD - Show when Upcoming and tokens NOT deposited */}
       {isProjectOwner && 
