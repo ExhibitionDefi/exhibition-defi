@@ -120,6 +120,15 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
   const handleChange = (field: keyof CreateProjectFormData, value: any) => {
     let sanitizedValue = value
 
+    // Auto-calculate soft cap when funding goal changes
+    if (field === 'fundingGoal' && value) {
+      const fundingGoalValue = parseFloat(value)
+      if (!isNaN(fundingGoalValue) && fundingGoalValue > 0) {
+        const autoSoftCap = (fundingGoalValue * 0.510).toFixed(2)
+        setFormData((prev) => ({ ...prev, softCap: autoSoftCap }))
+      }
+    }
+
     // Apply field-specific sanitization
     switch (field) {
       case 'projectTokenName':
@@ -498,11 +507,13 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
                     step="0.01"
                     value={formData.softCap}
                     onChange={(e) => handleChange('softCap', e.target.value)}
-                    placeholder="50000"
+                    placeholder="Auto-calculated"
                     error={validationErrors.softCap}
                     className="text-base font-mono"
+                    readOnly
+                    disabled
                   />
-                  <p className="text-sm text-[var(--metallic-silver)]">Minimum for success</p>
+                  <p className="text-sm text-[var(--metallic-silver)]">Auto-calculated as 51% of funding goal</p>
                 </div>
               </div>
 
