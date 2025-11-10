@@ -287,23 +287,6 @@ export const ProjectDetailPage: React.FC = () => {
               />
           )}
           
-          {/* REMOVED: Owner message when Active - Now handled in ProjectDetails */}
-          
-          {/* Show message for other statuses */}
-          {project.status === ProjectStatus.Upcoming && (
-            <div className="bg-[var(--charcoal)] border border-[var(--silver-dark)]/30 rounded-2xl p-6 text-center">
-              <p className="text-[var(--silver-light)]">
-                This project will start accepting contributions on{' '}
-                {new Date(Number(project.startTime) * 1000).toLocaleString()}
-              </p>
-              {isProjectOwner && !depositProjectTokens.projectTokenInfo.isComplete && (
-                <p className="text-[var(--neon-orange)] mt-2 text-sm">
-                  ⚠️ You must deposit tokens before contributions can begin
-                </p>
-              )}
-            </div>
-          )}
-          
           {(project.status === ProjectStatus.FundingEnded || 
             project.status === ProjectStatus.Successful) && 
             !requestRefund.canRefund && (

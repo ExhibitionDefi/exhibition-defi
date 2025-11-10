@@ -12,9 +12,10 @@ import { SafeHtml, SafeImage } from '../SafeHtml'
 interface ProjectDetailsProps {
   project: ProjectDisplayData
   isProjectOwner?: boolean
+  hasDepositedProjectTokens?: boolean
 }
 
-export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProjectOwner = false }) => {
+export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProjectOwner = false, hasDepositedProjectTokens = false }) => {
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
 
   const copyToClipboard = async (address: string) => {
@@ -87,6 +88,14 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
 
   const getOwnerMessage = () => {
     if (isUpcoming && !hasStarted) {
+      // Check if tokens are deposited
+      if (hasDepositedProjectTokens === false) {
+        return {
+          main: '⚠️ Action Required: Deposit Project Tokens',
+          sub: 'You must deposit the required project tokens before the sale can begin. See the deposit card below.',
+          variant: 'warning' as MessageVariant
+        }
+      }
       return {
         main: 'Your project is scheduled and ready to launch!',
         sub: `Contributions will begin on ${new Date(Number(project.startTime) * 1000).toLocaleString()}`,
@@ -94,6 +103,13 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
       }
     }
     if (isActive && !hasStarted) {
+      if (hasDepositedProjectTokens === false) {
+        return {
+          main: '⚠️ Action Required: Deposit Project Tokens',
+          sub: 'Contributions cannot begin until you deposit the required tokens.',
+          variant: 'warning' as const
+        }
+      }
       return {
         main: 'Your project is active but has not started yet.',
         sub: `Contributions will open on ${new Date(Number(project.startTime) * 1000).toLocaleString()}`,
@@ -112,6 +128,27 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
         main: 'Funding period has ended.',
         sub: 'Your project needs to be finalized to determine its status.',
         variant: 'warning' as const
+      }
+    }
+    if (isFundingEnded) {
+      return {
+        main: 'Funding period has ended.',
+        sub: 'Please finalize your project to proceed with the next steps.',
+        variant: 'warning' as const
+      }
+    }
+    if (isSuccessful || isClaimable) {
+      return {
+        main: 'Project Successful! 🎉',
+        sub: 'See below for next steps: deposit liquidity tokens and finalize liquidity.',
+        variant: 'success' as const
+      }
+    }
+    if (isFailed || isRefundable) {
+      return {
+        main: 'Project did not reach its funding goal.',
+        sub: 'Contributors can request refunds. You can withdraw unsold tokens after the lock period.',
+        variant: 'error' as const
       }
     }
     return null
@@ -147,10 +184,10 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
         variant: 'warning' as const
       }
     }
-    if (isSuccessful || isClaimable) {
+   if (isSuccessful || isClaimable) {
       return {
         main: 'Project Successful! 🎉',
-        sub: 'This project has reached its funding goal. If you contributed, you can now claim your tokens!',
+        sub: 'This project has reached its funding goal. If you contributed, you can claim your tokens!',
         variant: 'success' as const
       }
     }

@@ -40,7 +40,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const [verified, setVerified] = React.useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = React.useState(false)
 
-  const customMessage = "Welcome to Exhibition, a comprehensive launchpad integrated with DEX and dedicated lock, built on Nexus verifiable network for the AI era."
+  const customMessage = "Welcome to Exhibition, a comprehensive token launchpad integrated with DEX and dedicated lock, built on Nexus verifiable network for the AI era."
 
   const navigation = [
     { name: 'Home', href: '/', icon: Home },

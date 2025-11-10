@@ -73,7 +73,7 @@ export const MultiTransactionModal: React.FC<MultiTransactionModalProps> = ({
   error = null,
   customTitle,
   message,
-  signMessageText = "Welcome to Exhibition, a comprehensive launchpad integrated with DEX and dedicated lock, built on Nexus verifiable network for the AI era.",
+  signMessageText = "Welcome to Exhibition, a comprehensive token launchpad integrated with DEX and dedicated lock, built on Nexus verifiable network for the AI era.",
 }) => {
   const { address } = useAccount()
   const { signMessage, data: sig, isPending: signPending, isSuccess: signSuccess, error: signError } = useSignMessage()
