@@ -250,7 +250,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 Welcome to Exhibition
               </h1>
               <p className="text-[var(--silver-dark)] mb-8 max-w-md">
-                A comprehensive launchpad integrated with DEX and dedicated lock, built on Nexus verifiable network for the AI era.
+                A verifiable token launchpad and DEX with dedicated liquidity lock, built on Nexus verifiable network for the AI era.
               </p>
               <div className="bg-[var(--charcoal)] border border-[var(--silver-dark)] rounded-xl p-6">
                 <p className="text-[var(--silver-light)] mb-4">
