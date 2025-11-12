@@ -10,6 +10,8 @@ import { Checkbox } from '../ui/Checkbox'
 import { Alert } from '../ui/Alert'
 import type { CreateProjectFormData } from '@/hooks/pad/useCreateProject'
 import { SUPPORTED_EXH, SUPPORTED_EXUSDT, SUPPORTED_EXNEX } from '@/config/contracts'
+import { useTokenomicsValidation } from '@/hooks/useTokenomicsValidation'
+import { TokenomicsValidationDisplay } from './TokenomicsValidationDisplay'
 
 // 🔒 SECURITY: Import sanitization utilities
 import {
@@ -103,6 +105,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
   })
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const tokenomicsValidation = useTokenomicsValidation(formData)
 
   const { data: tokenDecimals } = useReadContract({
     address: formData.contributionTokenAddress,
@@ -590,6 +593,16 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
                   Number of tokens available in this sale
                 </p>
               </div>
+
+              {/* 🎯 TOKENOMICS VALIDATION - ADD THIS ENTIRE BLOCK */}
+              {tokenomicsValidation && (
+                <TokenomicsValidationDisplay
+                  validation={tokenomicsValidation}
+                  contributionTokenSymbol={
+                    CONTRIBUTION_TOKENS.find(t => t.address === formData.contributionTokenAddress)?.symbol || 'Token'
+                  }
+                />
+              )}
             </div>
           </div>
         )

@@ -42,3 +42,6 @@ Thumbs.db
 .cache
 .parcel-cache
 .vite
+
+# src/utils/
+validateTokenomics.ts
