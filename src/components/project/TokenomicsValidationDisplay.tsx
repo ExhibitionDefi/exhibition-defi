@@ -5,17 +5,17 @@ import type { TokenomicsValidation } from '@/hooks/useTokenomicsValidation'
 
 interface TokenomicsValidationDisplayProps {
   validation: TokenomicsValidation
-  contributionTokenSymbol: string
+  tokenSymbol?: string
 }
 
 export const TokenomicsValidationDisplay: React.FC<TokenomicsValidationDisplayProps> = ({
   validation,
-  contributionTokenSymbol,
+  tokenSymbol,
 }) => {
   const formatTokens = (amount: bigint): string => {
     if (amount === 0n) return '0'
     const value = Number(amount) / 10 ** 18
-    return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${contributionTokenSymbol}`
+    return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${tokenSymbol}`
   }
 
   return (

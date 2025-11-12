@@ -16,7 +16,8 @@ import { useAccount } from 'wagmi'
 import { useMultiTransactionModal } from '@/components/common/MultiTransactionModal'
 import { MultiTransactionModal } from '@/components/common/MultiTransactionModal'
 import type { TransactionType } from '@/components/common/MultiTransactionModal'
-import { getCurrentUser, logout } from '@/utils/api' // ← ADD logout
+import { getCurrentUser, logout } from '@/utils/api'
+import exhLogo from '@/assets/16.svg'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -150,9 +151,11 @@ export const Layout: React.FC<LayoutProps> = ({
             {/* Logo */}
             <div className="flex items-center">
               <Link to="/" className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-[var(--neon-blue)] to-[var(--neon-orange)] rounded-lg flex items-center justify-center shadow-[0_0_8px_var(--neon-blue)]/40">
-                  <span className="font-bold text-sm text-[var(--deep-black)]">EXH</span>
-                </div>
+                <img
+                  src={exhLogo}
+                  alt="EXH logo"
+                  className="w-8 h-8 rounded-lg shadow-[0_0_8px_var(--neon-blue)]/40"
+                />
                 <span className={clsx(
                   'text-xl font-bold text-[var(--neon-blue)]',
                   isConnected && 'hidden sm:inline'
@@ -243,9 +246,11 @@ export const Layout: React.FC<LayoutProps> = ({
           {/* ✅ OPTION 1: Block everything until verified */}
           {shouldShowConnectPrompt && (
             <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] text-center px-4">
-              <div className="w-20 h-20 bg-gradient-to-br from-[var(--neon-blue)] to-[var(--neon-orange)] rounded-2xl flex items-center justify-center shadow-[0_0_30px_var(--neon-blue)]/40 mb-6">
-                <span className="font-bold text-3xl text-[var(--deep-black)]">EXH</span>
-              </div>
+                <img
+                  src={exhLogo}
+                  alt="EXH logo"
+                  className="w-20 h-20 rounded-2xl shadow-[0_0_30px_var(--neon-blue)]/40 mb-6"
+                />
               <h1 className="text-3xl font-bold text-[var(--silver-light)] mb-4">
                 Welcome to Exhibition
               </h1>

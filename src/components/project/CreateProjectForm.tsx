@@ -598,9 +598,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
               {tokenomicsValidation && (
                 <TokenomicsValidationDisplay
                   validation={tokenomicsValidation}
-                  contributionTokenSymbol={
-                    CONTRIBUTION_TOKENS.find(t => t.address === formData.contributionTokenAddress)?.symbol || 'Token'
-                  }
+                 tokenSymbol={formData.projectTokenSymbol}
                 />
               )}
             </div>
@@ -791,13 +789,13 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
                 />
                 <p className="text-sm text-[var(--metallic-silver)] flex items-start gap-2">
                   <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  How long liquidity tokens will be locked (minimum 14 days)
+                  How long liquidity tokens will be locked after liquidity is added (minimum 14 days)
                 </p>
                 {formData.lockDuration && parseFloat(formData.lockDuration) >= 14 && (
                   <div className="mt-3 p-3 bg-[var(--neon-blue)]/5 rounded-lg border border-[var(--neon-blue)]/30">
                     <p className="text-sm text-[var(--neon-blue)] flex items-center gap-2">
                       <Check className="w-4 h-4" />
-                      Liquidity will be locked until {new Date(Date.now() + parseFloat(formData.lockDuration) * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                      Liquidity will be locked for {formData.lockDuration} days after being added to the pool
                     </p>
                   </div>
                 )}

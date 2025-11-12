@@ -49,7 +49,6 @@ export function validateTokenomics(data: TokenomicsInput): TokenomicsValidation 
       (fundingGoalNorm * 10n ** 18n) / data.tokenPrice,
       data.projectTokenDecimals
     )
-    hints.push('💡 Suggestion: ' + expectedTokensForSale.toString() + ' tokens for sale')
   }
 
   // 2️⃣ Liquidity tokens needed
