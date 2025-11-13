@@ -31,8 +31,27 @@ export const ProjectsPage: React.FC = () => {
       )
     }
 
-    // Sort by contribution desc (totalRaised bigint - compare numerically)
+    // Sort by status priority first (Active > Upcoming > Claimable > others), then by totalRaised desc
     filtered.sort((a, b) => {
+      // Define status priority (lower number = higher priority)
+      const getStatusPriority = (status: number) => {
+        if (status === ProjectStatus.Active) return 1
+        if (status === ProjectStatus.Upcoming) return 2
+        if (status === ProjectStatus.Claimable) return 3
+        if (status === ProjectStatus.Successful) return 4
+        if (status === ProjectStatus.Completed) return 5
+        return 6 // Failed, Refundable, etc.
+      }
+      
+      const aPriority = getStatusPriority(a.status)
+      const bPriority = getStatusPriority(b.status)
+      
+      // First sort by status priority
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority
+      }
+      
+      // Then sort by totalRaised desc within same status
       if (a.totalRaised > b.totalRaised) return -1
       if (a.totalRaised < b.totalRaised) return 1
       return 0

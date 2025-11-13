@@ -15,6 +15,7 @@ import { LiquidityPage } from './pages/LiquidityPage'
 import { FaucetPage } from './pages/FaucetPage'
 // Layout
 import { Layout } from './components/Layout'
+import { ScrollToTop } from './components/ScrollToTop'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,6 +31,7 @@ function App() {
     <WagmiProvider config={wagmiAdapter.wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <Router>
+          <ScrollToTop />
           <Layout>
             <Routes>
               <Route path="/" element={<HomePage />} />

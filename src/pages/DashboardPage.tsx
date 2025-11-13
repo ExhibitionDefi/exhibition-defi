@@ -251,18 +251,44 @@ export const DashboardPage: React.FC = () => {
           </div>
         ) : userProjects && userProjects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {userProjects.map((project, index) => (
-              <div 
-                key={project.id.toString()}
-                className="transform transition-all duration-300 hover:scale-[1.02]"
-                style={{
-                  animationDelay: `${index * 150}ms`
-                }}
-              >
-                <ProjectCard project={project} />
-              </div>
-            ))}
+            {[...userProjects]
+              .sort((a, b) => {
+                // Define status priority for dashboard (Active and Upcoming need attention first)
+                const getStatusPriority = (status: number) => {
+                  if (status === 1) return 1 // Active
+                  if (status === 0) return 2 // Upcoming
+                  if (status === 5) return 3 // Claimable
+                  if (status === 2) return 4 // Successful
+                  if (status === 3) return 5 // Completed
+                  return 6 // Failed, Refundable, etc.
+                }
+                
+                const aPriority = getStatusPriority(a.status)
+                const bPriority = getStatusPriority(b.status)
+                
+                // First sort by status priority
+                if (aPriority !== bPriority) {
+                  return aPriority - bPriority
+                }
+                
+                // Then sort by totalRaised desc within same status
+                const aRaised = BigInt(a.totalRaised || 0)
+                const bRaised = BigInt(b.totalRaised || 0)
+                return bRaised > aRaised ? 1 : bRaised < aRaised ? -1 : 0
+              })
+              .map((project, index) => (
+                <div 
+                  key={project.id.toString()}
+                  className="transform transition-all duration-300 hover:scale-[1.02]"
+                  style={{
+                    animationDelay: `${index * 150}ms`
+                  }}
+                >
+                  <ProjectCard project={project} />
+                </div>
+              ))}
           </div>
+          
         ) : (
           <Card className="text-center py-12 bg-gradient-to-br from-[var(--charcoal)]/60 to-[var(--deep-black)]/60 border border-[var(--neon-orange)]/30">
             <div className="space-y-6">
@@ -319,15 +345,22 @@ export const DashboardPage: React.FC = () => {
           </div>
         ) : userContributions && userContributions.length > 0 ? (
           <div className="space-y-4">
-            {userContributions.map(({ projectId, amount }, index) => (
-              <ContributionCard
-                key={projectId}
-                projectId={projectId}
-                amount={amount}
-                index={index}
-              />
-            ))}
+            {[...userContributions]
+              .sort((a, b) => {
+                const aAmount = BigInt(a.amount || 0)
+                const bAmount = BigInt(b.amount || 0)
+                return bAmount > aAmount ? 1 : bAmount < aAmount ? -1 : 0
+              })
+              .map(({ projectId, amount }, index) => (
+                <ContributionCard
+                  key={projectId}
+                  projectId={projectId}
+                  amount={amount}
+                  index={index}
+                />
+              ))}
           </div>
+
         ) : (
           <Card className="text-center py-12 bg-gradient-to-br from-[var(--charcoal)]/60 to-[var(--deep-black)]/60 border border-[var(--neon-blue)]/30">
             <div className="space-y-6">

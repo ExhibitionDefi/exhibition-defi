@@ -14,6 +14,11 @@ export const HomePage: React.FC = () => {
   // Get featured projects (active projects)
   const activeProjects = projects
     .filter(p => p.status === ProjectStatus.Active)
+    .sort((a, b) => {
+      const aRaised = BigInt(a.totalRaised || 0)
+      const bRaised = BigInt(b.totalRaised || 0)
+      return bRaised > aRaised ? 1 : bRaised < aRaised ? -1 : 0
+    })
     .slice(0, 3)
 
   const stats = React.useMemo(() => {
