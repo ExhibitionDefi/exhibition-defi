@@ -290,16 +290,6 @@ export const ProjectDetailPage: React.FC = () => {
               onApprovalComplete={contribute.onApprovalComplete} 
               />
           )}
-          
-          {(project.status === ProjectStatus.FundingEnded || 
-            project.status === ProjectStatus.Successful) && 
-            !requestRefund.canRefund && (
-            <div className="bg-[var(--charcoal)] border border-[var(--silver-dark)]/30 rounded-2xl p-6 text-center">
-              <p className="text-[var(--silver-light)]">
-                Funding period has ended. Status: {project.formattedStatus}
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Right Column - User Summary & Actions */}
