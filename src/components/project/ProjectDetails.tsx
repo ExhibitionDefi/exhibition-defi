@@ -103,13 +103,6 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
       }
     }
     if (isActive && !hasStarted) {
-      if (hasDepositedProjectTokens === false) {
-        return {
-          main: '⚠️ Action Required: Deposit Project Tokens',
-          sub: 'Contributions cannot begin until you deposit the required tokens.',
-          variant: 'warning' as const
-        }
-      }
       return {
         main: 'Your project is active but has not started yet.',
         sub: `Contributions will open on ${new Date(Number(project.startTime) * 1000).toLocaleString()}`,
