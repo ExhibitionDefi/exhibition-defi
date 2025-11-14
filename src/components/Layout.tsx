@@ -17,7 +17,7 @@ import { useMultiTransactionModal } from '@/components/common/MultiTransactionMo
 import { MultiTransactionModal } from '@/components/common/MultiTransactionModal'
 import type { TransactionType } from '@/components/common/MultiTransactionModal'
 import { getCurrentUser, logout } from '@/utils/api'
-import exhLogo from '@/assets/favicon.svg'
+import exhLogo from '@/assets/001.svg'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -156,10 +156,6 @@ export const Layout: React.FC<LayoutProps> = ({
                   alt="EXH logo"
                   className="w-8 h-8 rounded-lg shadow-[0_0_8px_var(--neon-blue)]/40"
                 />
-                <span className={clsx(
-                  'text-xl font-bold text-[var(--neon-blue)]',
-                  isConnected && 'hidden sm:inline'
-                )}>EXHIBITION</span>
               </Link>
             </div>
 

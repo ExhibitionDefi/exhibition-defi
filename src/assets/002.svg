@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <!-- Stronger gradient for better contrast at small sizes -->
+    <linearGradient id="grad-exh" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00cfff" />
+      <stop offset="33%" stop-color="#8ee9ff" />
+      <stop offset="33%" stop-color="#f0f0f0" />
+      <stop offset="66%" stop-color="#bfbfbf" />
+      <stop offset="66%" stop-color="#ffb45a" />
+      <stop offset="100%" stop-color="#ff7e00" />
+    </linearGradient>
+
+    <!-- Border gradient -->
+    <linearGradient id="border-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00cfff" />
+      <stop offset="50%" stop-color="#c0c0c0" />
+      <stop offset="100%" stop-color="#ff7e00" />
+    </linearGradient>
+
+    <style>
+      .logo-text {
+        font-family: 'Arial Black', sans-serif;
+        font-weight: 900;
+        font-size: 52px;
+        text-anchor: middle;
+        dominant-baseline: middle;
+      }
+    </style>
+  </defs>
+
+  <!-- Thicker border, no glow -->
+  <rect x="6" y="15" width="88" height="70" rx="10" ry="10"
+        fill="none"
+        stroke="url(#border-grad)"
+        stroke-width="3"
+        opacity="1"/>
+
+  <!-- Centered text forced to fit perfectly -->
+  <text class="logo-text"
+        x="50" y="55"
+        fill="url(#grad-exh)"
+        textLength="76"
+        lengthAdjust="spacingAndGlyphs">EXH</text>
+</svg>
