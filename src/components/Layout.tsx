@@ -17,7 +17,7 @@ import { useMultiTransactionModal } from '@/components/common/MultiTransactionMo
 import { MultiTransactionModal } from '@/components/common/MultiTransactionModal'
 import type { TransactionType } from '@/components/common/MultiTransactionModal'
 import { getCurrentUser, logout } from '@/utils/api'
-import exhLogo from '@/assets/001.svg'
+import exhLogo from '@/assets/010.svg'
 
 interface LayoutProps {
   children: React.ReactNode
