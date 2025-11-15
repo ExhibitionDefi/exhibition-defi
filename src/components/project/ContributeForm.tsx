@@ -11,6 +11,7 @@ import { Card } from '../ui/Card'
 import { CheckCircle2, TrendingUp } from 'lucide-react'
 import { SafeHtml, SafeAddressDisplay } from '../SafeHtml'
 import { sanitizeNumber, sanitizeText } from '../../utils/sanitization'
+import { logger } from '@/utils/logger'
 
 interface ContributeFormProps {
   project: ProjectDisplayData
@@ -136,7 +137,7 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
                     address={txHash}
                     truncate={true}
                     className="text-xs text-[var(--silver-light)]"
-                    onCopySuccess={() => console.log('Transaction hash copied!')}
+                    onCopySuccess={() => logger.info('Transaction hash copied!')}
                   />
                 </div>
               )}

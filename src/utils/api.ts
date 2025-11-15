@@ -5,6 +5,8 @@
  * Location: src/utils/api.ts
  */
 
+import { logger } from "./logger"
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 interface ApiResponse<T = any> {
@@ -64,7 +66,7 @@ export async function apiClient<T = any>(
     
     return data
   } catch (error) {
-    console.error('API Error:', error)
+    logger.error('API Error:', error)
     throw error
   }
 }

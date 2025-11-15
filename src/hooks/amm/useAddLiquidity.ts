@@ -5,6 +5,7 @@ import { exhibitionAmmAbi } from '@/generated/wagmi';
 import { useTokenApproval } from '@/hooks/useTokenApproval';
 import { CONTRACT_ADDRESSES } from '@/config/contracts';
 import { publicClient } from '@/config/wagmi';
+import { logger } from '@/utils/logger';
 
 interface AddLiquidityState {
   tokenA?: Address;
@@ -205,7 +206,7 @@ export const useAddLiquidity = () => {
       if (reserveA === BigInt(0) || reserveB === BigInt(0)) return undefined;
       return (amountABigInt * reserveB) / reserveA;
     } catch (error) {
-      console.error('Error calculating optimal amount B:', error);
+      logger.error('Error calculating optimal amount B:', error);
       return undefined;
     }
   }, [amountABigInt, reservesData, poolExists, tokenBInfo]);
@@ -227,7 +228,7 @@ export const useAddLiquidity = () => {
         setState((prev) => ({ ...prev, amountB: formattedAmount }));
       }
     } catch (err) {
-      console.error('Failed to format calculatedAmountB:', err);
+      logger.error('Failed to format calculatedAmountB:', err);
     }
   }, [amountABigInt, calculatedAmountB, tokenBInfo, poolExists, state.amountB]);
 
@@ -261,7 +262,7 @@ export const useAddLiquidity = () => {
         
         if (tokenALower === tokenBLower) {
           // Swap tokens if trying to select the same token
-          console.log('Same token detected, swapping tokens');
+          logger.info('Same token detected, swapping tokens');
           return {
             ...prev,
             tokenA: updates.tokenA,
@@ -279,7 +280,7 @@ export const useAddLiquidity = () => {
         
         if (tokenALower === tokenBLower) {
           // Swap tokens if trying to select the same token
-          console.log('Same token detected, swapping tokens');
+          logger.info('Same token detected, swapping tokens');
           return {
             ...prev,
             tokenA: prev.tokenB,
@@ -387,7 +388,7 @@ export const useAddLiquidity = () => {
       resetAMMWrite();
       return receipt.transactionHash;
     } catch (error) {
-      console.error('❌ Add liquidity failed:', error);
+      logger.error('❌ Add liquidity failed:', error);
       setState((prev) => ({
         ...prev,
         currentStep: 'idle',

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger'
 import { ExhibitionFormatters } from '../utils/exFormatters'
 
 export class ContractService {
@@ -10,7 +11,7 @@ export class ContractService {
     try {
       return await contract.estimateGas[functionName](...args, overrides)
     } catch (error) {
-      console.error(`Gas estimation failed for ${functionName}:`, error)
+      logger.error(`Gas estimation failed for ${functionName}:`, error)
       throw error
     }
   }
@@ -48,7 +49,7 @@ export class ContractService {
 
       return true
     } catch (error) {
-      console.error('Project validation failed:', error)
+      logger.error('Project validation failed:', error)
       throw error
     }
   }  
@@ -57,7 +58,7 @@ export class ContractService {
     try {
       return ExhibitionFormatters.prepareProjectCreationParams(formData, decimals)
     } catch (error) {
-      console.error('Parameter preparation failed:', error)
+      logger.error('Parameter preparation failed:', error)
       throw error
     }
   }
@@ -69,7 +70,7 @@ export class ContractService {
 
   static debugParams(formData: any, params: any, contributionDecimals: number) {
     // Simple debug logging since debugContractParams doesn't exist
-    console.log('Debug Contract Params:', {
+    logger.info('Debug Contract Params:', {
       formData,
       params,
       contributionDecimals,

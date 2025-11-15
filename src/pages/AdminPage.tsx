@@ -13,6 +13,7 @@ import { Shield, AlertTriangle, Settings, Plus, Minus, Lock, Key, Database, Serv
 import { EXHIBITION_ADDRESS } from '../config/contracts';
 import { clsx } from 'clsx';
 import type { Address } from 'viem';
+import { logger } from '../utils/logger';
 
 interface AdminPageProps {
   containerClassName?: string;
@@ -125,7 +126,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
         await adminSettings.refetch.feeSettings();
       }
     } catch (error) {
-      console.error('Failed to update fee percentage:', error);
+      logger.error('Failed to update fee percentage:', error);
     }
   };
 
@@ -139,7 +140,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
         await adminSettings.refetch.feeSettings();
       }
     } catch (error) {
-      console.error('Failed to update fee recipient:', error);
+      logger.error('Failed to update fee recipient:', error);
     }
   };
 
@@ -153,7 +154,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
         await adminSettings.refetch.contributionTokens();
       }
     } catch (error) {
-      console.error('Failed to add token:', error);
+      logger.error('Failed to add token:', error);
     }
   };
 
@@ -165,7 +166,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
         await adminSettings.refetch.contributionTokens();
       }
     } catch (error) {
-      console.error('Failed to remove token:', error);
+      logger.error('Failed to remove token:', error);
     }
   };
 
@@ -180,7 +181,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
         await adminSettings.refetch.faucetSettings();
       }
     } catch (error) {
-      console.error('Failed to update EXH faucet amount:', error);
+      logger.error('Failed to update EXH faucet amount:', error);
     }
   };
 
@@ -194,7 +195,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
         await adminSettings.refetch.faucetSettings();
       }
     } catch (error) {
-      console.error('Failed to update USDT faucet amount:', error);
+      logger.error('Failed to update USDT faucet amount:', error);
     }
   };
 
@@ -209,7 +210,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
         await adminSettings.refetch.faucetSettings();
       }
     } catch (error) {
-      console.error('Failed to update faucet cooldown:', error);
+      logger.error('Failed to update faucet cooldown:', error);
     }
   };
 

@@ -5,6 +5,7 @@ import { exhibitionAmmAbi } from '@/generated/wagmi';
 import { CONTRACT_ADDRESSES } from '@/config/contracts';
 import { publicClient } from '@/config/wagmi';
 import type { Pool } from '@/components/liquidity/PoolList';
+import { logger } from '@/utils/logger';
 
 interface RemoveLiquidityState {
   tokenA?: Address;
@@ -227,14 +228,14 @@ export const useRemoveLiquidity = () => {
         );
       });
 
-      console.log('⏳ Waiting for remove liquidity confirmation...');
+      logger.info('⏳ Waiting for remove liquidity confirmation...');
 
       const receipt = await waitForTx(txHash);
       if (receipt.status !== 'success') {
         throw new Error('Remove liquidity transaction failed');
       }
 
-      console.log('✅ Liquidity removed successfully!');
+      logger.info('✅ Liquidity removed successfully!');
 
       await refetchAMMData();
 
@@ -245,7 +246,7 @@ export const useRemoveLiquidity = () => {
         transactionSuccess: true 
       }));
 
-      console.log('⏱️ Showing remove liquidity success for 10 seconds...');
+      logger.info('⏱️ Showing remove liquidity success for 10 seconds...');
       await new Promise((resolve) => setTimeout(resolve, 10000));
 
       setState((prev) => ({ 
@@ -259,7 +260,7 @@ export const useRemoveLiquidity = () => {
       resetAMMWrite();
       return receipt.transactionHash;
     } catch (error) {
-      console.error('❌ Remove liquidity failed:', error);
+      logger.error('❌ Remove liquidity failed:', error);
       setState((prev) => ({
         ...prev,
         currentStep: 'idle',
@@ -295,7 +296,7 @@ export const useRemoveLiquidity = () => {
     lpBalance,
     withdrawableLP,
     isLocked,
-    liquidityLockInfo, // NEW: Expose lock info including unlockTime
+    liquidityLockInfo,
     removeQuote,
     tokenAInfo,
     tokenBInfo,

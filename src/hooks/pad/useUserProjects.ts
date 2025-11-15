@@ -4,6 +4,7 @@ import { exhibitionAbi } from '@/generated/wagmi'
 import { EXHIBITION_ADDRESS } from '@/config/contracts'
 import type { ProjectDisplayData, ProjectStatus } from '@/types/project'
 import { ProjectStatusLabels } from '@/types/project'
+import { logger } from '@/utils/logger'
 
 /**
  * useUserProjects
@@ -260,7 +261,7 @@ export function useUserProjects() {
           depositedLiquidityTokens: details[5]
         })
       } catch (err) {
-        console.error('Failed to format user project:', ownedProjectIds[i], err)
+        logger.info('Failed to format user project:', ownedProjectIds[i], String(err))
       }
     }
 

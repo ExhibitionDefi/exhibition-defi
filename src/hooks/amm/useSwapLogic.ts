@@ -7,6 +7,7 @@ import { CONTRACT_ADDRESSES } from '@/config/contracts';
 import { AMMFormatters } from '@/utils/ammFormatters';
 import { useTokenApproval } from '@/hooks/useTokenApproval';
 import { publicClient } from '@/config/wagmi';
+import { logger } from '@/utils/logger';
 
 interface SwapLogicProps {
   defaultTokenIn?: Address;
@@ -207,7 +208,7 @@ export const useSwapLogic = ({ defaultTokenIn, defaultTokenOut }: SwapLogicProps
       const percent = raw * 100;
       return isFinite(percent) ? percent : 0;
     } catch (err) {
-      console.error('Error parsing slippageImpact:', err);
+      logger.error('Error parsing slippageImpact:', err);
       return 0;
     }
   }, [slippageImpact]);
@@ -338,20 +339,20 @@ export const useSwapLogic = ({ defaultTokenIn, defaultTokenOut }: SwapLogicProps
     try {
       // Step 1: Approval (if needed)
       if (approval.needsApproval) {
-        console.log('🔐 Step 1: Approving token...');
+        logger.info('🔐 Step 1: Approving token...');
         setCurrentStep('approving');
 
         const approvalTxHash = await approval.submitApproval(amountInBigInt);
         if (!approvalTxHash) throw new Error('Failed to get approval hash');
 
-        console.log('⏳ Waiting for approval confirmation...');
+        logger.info('⏳ Waiting for approval confirmation...');
         const approvalReceipt = await waitForTx(approvalTxHash);
 
         if (approvalReceipt.status !== 'success') {
           throw new Error('Approval transaction failed');
         }
 
-        console.log('✅ Token approved successfully:', approvalTxHash);
+        logger.info('✅ Token approved successfully:', approvalTxHash);
         setApprovalHash(approvalTxHash);
         setApprovalSuccess(true);
 
@@ -366,7 +367,7 @@ export const useSwapLogic = ({ defaultTokenIn, defaultTokenOut }: SwapLogicProps
       }
 
       // Step 2: Swap
-      console.log('💱 Step 2: Executing swap...');
+      logger.info('💱 Step 2: Executing swap...');
       setCurrentStep('swapping');
 
       const minAmountOut =
@@ -389,14 +390,14 @@ export const useSwapLogic = ({ defaultTokenIn, defaultTokenOut }: SwapLogicProps
         );
       });
 
-      console.log('⏳ Waiting for swap confirmation...');
+      logger.info('⏳ Waiting for swap confirmation...');
       const receipt = await waitForTx(txHash);
 
       if (receipt.status !== 'success') {
         throw new Error('Swap transaction failed');
       }
 
-      console.log('✅ Swap completed successfully!');
+      logger.info('✅ Swap completed successfully!');
       await Promise.all([refetchSwapData()]);
 
       setCurrentStep('idle');
@@ -404,7 +405,7 @@ export const useSwapLogic = ({ defaultTokenIn, defaultTokenOut }: SwapLogicProps
       setSwapSuccess(true);
 
       // ✅ Show success for 10 seconds
-      console.log('⏱️ Showing swap success for 10 seconds...');
+      logger.info('⏱️ Showing swap success for 10 seconds...');
       await new Promise(resolve => setTimeout(resolve, 10000));
 
       // Reset
@@ -417,7 +418,7 @@ export const useSwapLogic = ({ defaultTokenIn, defaultTokenOut }: SwapLogicProps
       return receipt.transactionHash;
 
     } catch (error) {
-      console.error('❌ Swap failed:', error);
+      logger.error('❌ Swap failed:', error);
       setCurrentStep('idle');
       setIsProcessing(false);
       setError(error instanceof Error ? error.message : 'Swap failed');

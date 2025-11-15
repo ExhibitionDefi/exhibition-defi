@@ -6,6 +6,7 @@
  */
 
 import { z } from 'zod'
+import { logger } from './logger'
 
 /**
  * ========================================
@@ -72,7 +73,7 @@ export function sanitizeUrl(url: string | null | undefined): string | null {
   const lower = cleaned.toLowerCase()
   const dangerousProtocols = ['javascript:', 'data:', 'vbscript:', 'file:', 'about:']
   if (dangerousProtocols.some(proto => lower.startsWith(proto))) {
-    console.warn('Blocked unsafe URL:', url)
+    logger.warn('Blocked unsafe URL:', url)
     return null
   }
 

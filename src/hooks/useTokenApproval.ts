@@ -5,6 +5,7 @@ import type { Address } from 'viem';
 
 // ✅ Correct imports (note lowercase “Erc20”)
 import { useReadErc20, useWriteErc20 } from '@/generated/wagmi';
+import { logger } from '@/utils/logger';
 
 type UseTokenApprovalArgs = {
   tokenAddress?: Address;
@@ -48,7 +49,7 @@ export const useTokenApproval = ({
 
   // Debugging info
   useEffect(() => {
-    console.log('🔐 Token Approval State:', {
+    logger.info('🔐 Token Approval State:', {
       tokenAddress,
       spenderAddress,
       requiredAmount: requiredAmount?.toString(),

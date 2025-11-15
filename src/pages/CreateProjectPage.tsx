@@ -8,6 +8,7 @@ import { useCreateProject } from '@/hooks/pad/useCreateProject'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Rocket, ArrowLeft, CheckCircle2, Wallet, ArrowRight } from 'lucide-react'
+import { logger } from '@/utils/logger'
 
 /**
  * Create Project Page
@@ -36,15 +37,15 @@ export const CreateProjectPage: React.FC = () => {
   // ✅ FIXED: Redirect to project details page
   useEffect(() => {
     if (isSuccess && projectId !== null && projectId !== undefined) {
-      console.log('🎯 Redirecting to project:', projectId)
+      logger.info('🎯 Redirecting to project:', projectId)
       
       // Convert bigint to string for URL
       const projectIdStr = projectId.toString()
       
       const timer = setTimeout(() => {
-        const route = `/projects/${projectIdStr}` // ✅ Matches your route: /projects/:projectId
+        const route = `/projects/${projectIdStr}`
         
-        console.log('📍 Navigating to:', route)
+        logger.info('📍 Navigating to:', route)
         navigate(route)
       }, 3000)
       
@@ -73,7 +74,7 @@ export const CreateProjectPage: React.FC = () => {
     if (projectId !== null && projectId !== undefined) {
       const projectIdStr = projectId.toString()
       const route = `/projects/${projectIdStr}` // ✅ Matches your route
-      console.log('🔗 Manual navigation to:', route)
+      logger.info('🔗 Manual navigation to:', route)
       navigate(route)
     }
   }

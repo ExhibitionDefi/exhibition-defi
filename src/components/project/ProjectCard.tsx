@@ -7,6 +7,7 @@ import { Progress } from '../ui/Progress'
 import { type ProjectDisplayData, ProjectStatus, ProjectStatusLabels } from '../../types/project'
 import { ExhibitionFormatters } from '../../utils/exFormatters'
 import { SafeHtml, SafeImage } from '../SafeHtml'
+import { logger } from '@/utils/logger'
 
 interface ProjectCardProps {
   project: ProjectDisplayData
@@ -56,7 +57,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
                       N/A
                     </div>
                   }
-                  onError={() => console.warn('Failed to load token logo')}
+                  onError={() => logger.warn('Failed to load token logo')}
                 />
               </div>
             )}

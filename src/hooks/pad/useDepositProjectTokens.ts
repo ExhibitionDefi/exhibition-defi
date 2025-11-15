@@ -8,6 +8,7 @@ import { EXHIBITION_ADDRESS, EXPLORER_URL } from '@/config/contracts'
 import type { Hash, Address } from 'viem'
 import type { ProjectDisplayData } from '@/types/project'
 import { useTokenApproval } from '../useTokenApproval'
+import { logger } from '@/utils/logger'
 
 type Step = 'idle' | 'approving' | 'submitting' | 'confirming' | 'confirmed' | 'error'
 
@@ -143,7 +144,7 @@ export function useDepositProjectTokens(options: UseDepositProjectTokensOptions 
     return BigInt(0)
   }, [externalAmount, pendingDeposit, showStatus, step])
 
-  console.log('💰 Amount for approval updated:', {
+  logger.info('💰 Amount for approval updated:', {
     amountForApproval: amountForApproval.toString(),
     pendingDeposit: pendingDeposit ? `${pendingDeposit.projectId}:${pendingDeposit.amount}` : 'none',
     externalAmount: externalAmount?.toString() ?? 'none',
@@ -300,7 +301,7 @@ export function useDepositProjectTokens(options: UseDepositProjectTokensOptions 
       setStep('idle')
       setHasProcessedApproval(false) // Reset approval processing flag
 
-      console.log('🚀 executeDeposit called', { 
+      logger.info('🚀 executeDeposit called', { 
         projectId: projectId.toString(), 
         amount: amount.toString(),
         needsApproval,
@@ -353,7 +354,7 @@ export function useDepositProjectTokens(options: UseDepositProjectTokensOptions 
         const currentAllowanceValue = currentAllowance ?? BigInt(0)
         const needsApprovalNow = depositAmount > currentAllowanceValue
 
-        console.log('🔍 Direct approval check:', {
+        logger.info('🔍 Direct approval check:', {
           amount: depositAmount.toString(),
           currentAllowance: currentAllowanceValue.toString(),
           needsApprovalNow,
@@ -368,23 +369,23 @@ export function useDepositProjectTokens(options: UseDepositProjectTokensOptions 
             toast.loading('Requesting approval...')
           }
 
-          console.log('📝 Initiating approval flow - waiting for state to propagate...')
+          logger.info('📝 Initiating approval flow - waiting for state to propagate...')
 
           // Wait for React to process state updates
           await new Promise(resolve => setTimeout(resolve, 100))
 
-          console.log('📝 Submitting approval with explicit amount')
+          logger.info('📝 Submitting approval with explicit amount')
 
           try {
             const approvalTxHash = await submitApproval(depositAmount)
             
             if (approvalTxHash) {
               setApprovalHash(approvalTxHash)
-              console.log('✅ Approval hash received:', approvalTxHash)
+              logger.info('✅ Approval hash received:', approvalTxHash)
             }
           } catch (approvalErr) {
             const e = approvalErr as Error
-            console.error('❌ Approval error:', e)
+            logger.error('❌ Approval error:', e)
             setTxError(e)
             setStep('error')
             setShowStatus(true)
@@ -403,7 +404,7 @@ export function useDepositProjectTokens(options: UseDepositProjectTokensOptions 
             return Promise.reject(e)
           }
         } else {
-          console.log('✅ Sufficient allowance, proceeding to deposit')
+          logger.info('✅ Sufficient allowance, proceeding to deposit')
           setTransactionType('deposit')
           setPendingDeposit(null)
           await executeDepositOnly(projectId, depositAmount)
@@ -447,7 +448,7 @@ export function useDepositProjectTokens(options: UseDepositProjectTokensOptions 
   // React to receipt confirmation
   useEffect(() => {
     if (isConfirmed && step === 'confirming') {
-      console.log('✅ Deposit confirmed, setting step to confirmed')
+      logger.info('✅ Deposit confirmed, setting step to confirmed')
       setStep('confirmed')
       setShowStatus(true)
       toast.dismiss()
@@ -477,9 +478,9 @@ export function useDepositProjectTokens(options: UseDepositProjectTokensOptions 
     if (!showStatus) return
 
     if (step === 'confirmed') {
-      console.log('⏱️ Starting auto-close timer (10s)')
+      logger.info('⏱️ Starting auto-close timer (10s)')
       const t = setTimeout(() => {
-        console.log('⏱️ Auto-closing modal and resetting all state')
+        logger.info('⏱️ Auto-closing modal and resetting all state')
         setShowStatus(false)
         setApprovalHash(undefined)
         setTransactionType(null)
@@ -490,15 +491,15 @@ export function useDepositProjectTokens(options: UseDepositProjectTokensOptions 
         setHasProcessedApproval(false)
       }, 10_000)
       return () => {
-        console.log('⏱️ Cleanup: clearing auto-close timer')
+        logger.info('⏱️ Cleanup: clearing auto-close timer')
         clearTimeout(t)
       }
     }
     
     if (step === 'error') {
-      console.log('⏱️ Starting error auto-close timer (10s)')
+      logger.info('⏱️ Starting error auto-close timer (10s)')
       const t = setTimeout(() => {
-        console.log('⏱️ Auto-closing error modal and resetting all state')
+        logger.info('⏱️ Auto-closing error modal and resetting all state')
         setShowStatus(false)
         setApprovalHash(undefined)
         setTransactionType(null)
@@ -509,7 +510,7 @@ export function useDepositProjectTokens(options: UseDepositProjectTokensOptions 
         setHasProcessedApproval(false)
       }, 10_000)
       return () => {
-        console.log('⏱️ Cleanup: clearing error auto-close timer')
+        logger.info('⏱️ Cleanup: clearing error auto-close timer')
         clearTimeout(t)
       }
     }

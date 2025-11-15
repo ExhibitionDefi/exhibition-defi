@@ -16,6 +16,7 @@ import { SafeHtml, SafeImage } from '../SafeHtml';
 
 // 🆕 Import Factory ABI (you'll need to add this)
 import { exhibitionFactoryAbi } from '@/generated/wagmi';
+import { logger } from '@/utils/logger';
 
 export interface Pool {
   tokenA: Address;
@@ -346,7 +347,7 @@ const PoolRow: React.FC<PoolRowProps> = ({ pool, onSelect }) => {
                   ?
                 </div>
               }
-              onError={() => console.warn('Failed to load token A logo:', pool.logoURIA)}
+              onError={() => logger.warn('Failed to load token A logo:', pool.logoURIA)}
             />
           )}
           {pool.logoURIB && (
@@ -359,7 +360,7 @@ const PoolRow: React.FC<PoolRowProps> = ({ pool, onSelect }) => {
                   ?
                 </div>
               }
-              onError={() => console.warn('Failed to load token B logo:', pool.logoURIB)}
+              onError={() => logger.warn('Failed to load token B logo:', pool.logoURIB)}
             />
           )}
         </div>

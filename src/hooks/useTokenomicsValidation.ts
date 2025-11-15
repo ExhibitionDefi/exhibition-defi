@@ -1,6 +1,7 @@
 // src/hooks/useTokenomicsValidation.ts
 import { useMemo } from 'react'
 import type { CreateProjectFormData } from '@/hooks/pad/useCreateProject'
+import { logger } from '@/utils/logger'
 
 /* -------------------- Types -------------------- */
 export interface TokenomicsInput {
@@ -122,7 +123,7 @@ export function useTokenomicsValidation(
 
       return validateTokenomics(input)
     } catch (error) {
-      console.error('Tokenomics validation error:', error)
+      logger.error('Tokenomics validation error:', error)
       return null
     }
   }, [

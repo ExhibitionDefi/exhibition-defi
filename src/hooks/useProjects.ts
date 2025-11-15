@@ -6,6 +6,7 @@ import { EXHIBITION_ADDRESS } from '@/config/contracts'
 import { useProjectStore } from '@/stores/projectStore'
 import type { ProjectDisplayData, ProjectStatus } from '@/types/project'
 import { ProjectStatusLabels } from '@/types/project'
+import { logger } from '@/utils/logger'
 
 /**
  * useProjects
@@ -232,7 +233,7 @@ export function useProjects() {
           depositedLiquidityTokens,
         } satisfies ProjectDisplayData)
       } catch (err) {
-        console.error('Failed to format project:', projectIds[i], err)
+        logger.error('Failed to format project:', projectIds[i], err instanceof Error ? err.message : String(err))
       }
     }
 

@@ -6,6 +6,7 @@ import { ExhibitionFormatters } from '../../utils/exFormatters'
 import { useTokenApproval } from '../../hooks/useTokenApproval'
 import { escapeHtml } from '@/utils/sanitization'
 import { SafeHtml } from '@/components/SafeHtml'
+import { logger } from '@/utils/logger'
 
 interface TokenApprovalProps {
   tokenAddress: `0x${string}`
@@ -52,7 +53,7 @@ export const TokenApproval: React.FC<TokenApprovalProps> = ({
     try {
       await submitApproval()
     } catch (err) {
-      console.error('Approval failed:', err)
+      logger.error('Approval failed:', err)
     }
   }
 

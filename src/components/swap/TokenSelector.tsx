@@ -8,6 +8,7 @@ import { exhibitionAmmAbi } from '../../generated/wagmi';
 import { AMMFormatters } from '../../utils/ammFormatters';
 import { SafeHtml, SafeImage } from '../SafeHtml';
 import { sanitizeText, sanitizeAddress } from '../../utils/sanitization';
+import { logger } from '@/utils/logger';
 
 interface Token {
   address: Address;
@@ -120,7 +121,7 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
           const sanitizedDecimals = Math.min(Math.max(Number(decimals[0]), 0), 18); // Limit decimals 0-18
           
           if (!sanitizedSymbol) {
-            console.error('Invalid token symbol');
+            logger.error('Invalid token symbol');
             return;
           }
 
@@ -139,7 +140,7 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
         }
       }
     } catch (error) {
-      console.error('Failed to add custom token:', error);
+      logger.error('Failed to add custom token:', error);
     }
   }, [searchQuery, tokenInfo, isExistingToken, onAddCustomToken, onSelectToken]);
 

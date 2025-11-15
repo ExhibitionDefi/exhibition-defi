@@ -12,6 +12,7 @@ import { AMMFormatters } from '@/utils/ammFormatters';
 import { AMM_ADDRESS } from '@/config/contracts';
 import { SafeHtml } from '../SafeHtml';
 import { sanitizeText } from '@/utils/sanitization';
+import { logger } from '@/utils/logger';
 
 // Token interface
 interface Token {
@@ -114,7 +115,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
       
       localStorage.setItem('customTokens', JSON.stringify(validTokens));
     } catch (error) {
-      console.warn('Failed to save custom tokens:', error);
+      logger.warn('Failed to save custom tokens:', error);
     }
   }, [customTokens]);
 
@@ -141,7 +142,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
       
       // ✅ Validate token data
       if (!token.address || !token.symbol || typeof token.decimals !== 'number') {
-        console.warn('Invalid token data');
+        logger.warn('Invalid token data');
         return prev;
       }
       
@@ -185,7 +186,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
     try {
       await swapLogic.executeSwap();
     } catch (error) {
-      console.error('Swap failed:', error);
+      logger.error('Swap failed:', error);
     }
   };
 

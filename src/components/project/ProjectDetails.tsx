@@ -8,6 +8,7 @@ import { type ProjectDisplayData, ProjectStatus, ProjectStatusLabels } from '../
 import { ExhibitionFormatters } from '../../utils/exFormatters'
 import { formatTimeRemaining } from '../../utils/timeHelpers'
 import { SafeHtml, SafeImage } from '../SafeHtml'
+import { logger } from '@/utils/logger'
 
 interface ProjectDetailsProps {
   project: ProjectDisplayData
@@ -24,7 +25,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
       setCopiedAddress(address)
       setTimeout(() => setCopiedAddress(null), 2000)
     } catch (err) {
-      console.error('Failed to copy:', err)
+      logger.error('Failed to copy:', err)
     }
   }
 
@@ -216,7 +217,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
                       N/A
                     </div>
                   }
-                  onError={() => console.warn('Failed to load token logo')}
+                  onError={() => logger.warn('Failed to load token logo')}
                 />
               )}
               

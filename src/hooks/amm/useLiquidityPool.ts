@@ -6,6 +6,7 @@ import { useTokenApproval } from '@/hooks/useTokenApproval';
 import { CONTRACT_ADDRESSES } from '@/config/contracts';
 import { publicClient } from '@/config/wagmi';
 import type { Pool } from '@/components/liquidity/PoolList';
+import { logger } from '@/utils/logger';
 
 export interface LiquidityState {
   tokenA?: Address;
@@ -92,7 +93,7 @@ export const useLiquidityPool = () => {
     
     // Debug log for production
     if (tokens.length === 0 && (liquidityState.tokenA || liquidityState.tokenB)) {
-      console.warn('⚠️ Invalid token addresses detected:', {
+      logger.warn('⚠️ Invalid token addresses detected:', {
         tokenA: liquidityState.tokenA,
         tokenB: liquidityState.tokenB,
       });
@@ -314,7 +315,7 @@ export const useLiquidityPool = () => {
 
       const optimalB = (amountABigInt * reserveB) / reserveA;
 
-      console.log('📊 Off-chain calculation:', {
+      logger.info('📊 Off-chain calculation:', {
         amountA: amountABigInt.toString(),
         reserveA: reserveA.toString(),
         reserveB: reserveB.toString(),
@@ -323,7 +324,7 @@ export const useLiquidityPool = () => {
 
       return optimalB;
     } catch (error) {
-      console.error('Error calculating optimal amount B:', error);
+      logger.error('Error calculating optimal amount B:', error);
       return undefined;
     }
   }, [amountABigInt, reservesData, poolExists, tokenBInfo]);
@@ -348,7 +349,7 @@ export const useLiquidityPool = () => {
         setLiquidityState((prev) => ({ ...prev, amountB: formattedAmount }));
       }
     } catch (err) {
-      console.error('Failed to format calculatedAmountB:', err);
+      logger.error('Failed to format calculatedAmountB:', err);
     }
   }, [amountABigInt, calculatedAmountB, tokenBInfo, poolExists, liquidityState.amountB, liquidityState.mode]);
 
@@ -445,7 +446,7 @@ export const useLiquidityPool = () => {
     try {
    
       if (approvalA.needsApproval) {
-        console.log('🔐 Step 1: Approving Token A...');
+        logger.info('🔐 Step 1: Approving Token A...');
         setLiquidityState((prev) => ({ 
           ...prev, 
           currentStep: 'approving-a',
@@ -457,7 +458,7 @@ export const useLiquidityPool = () => {
         const approvalAHash = await approvalA.submitApproval(amountABigInt);
         if (!approvalAHash) throw new Error('Failed to get approval A hash');
       
-        console.log('⏳ Waiting for Token A approval confirmation...');
+        logger.info('⏳ Waiting for Token A approval confirmation...');
       
         // Wait for confirmation
         const approvalAReceipt = await waitForTx(approvalAHash);
@@ -466,7 +467,7 @@ export const useLiquidityPool = () => {
           throw new Error('Token A approval transaction failed');
         }
 
-        console.log('✅ Token A approved successfully:', approvalAHash);
+        logger.info('✅ Token A approved successfully:', approvalAHash);
       
         // ✅ Set success state with hash
         setLiquidityState((prev) => ({ 
@@ -497,7 +498,7 @@ export const useLiquidityPool = () => {
       }
 
       if (approvalB.needsApproval) {
-        console.log('🔐 Step 2: Approving Token B...');
+        logger.info('🔐 Step 2: Approving Token B...');
         setLiquidityState((prev) => ({ 
           ...prev, 
           currentStep: 'approving-b',
@@ -509,7 +510,7 @@ export const useLiquidityPool = () => {
         const approvalBHash = await approvalB.submitApproval(finalAmountB);
         if (!approvalBHash) throw new Error('Failed to get approval B hash');
       
-        console.log('⏳ Waiting for Token B approval confirmation...');
+        logger.info('⏳ Waiting for Token B approval confirmation...');
       
         // Wait for confirmation
         const approvalBReceipt = await waitForTx(approvalBHash);
@@ -518,7 +519,7 @@ export const useLiquidityPool = () => {
           throw new Error('Token B approval transaction failed');
         }
 
-        console.log('✅ Token B approved successfully:', approvalBHash);
+        logger.info('✅ Token B approved successfully:', approvalBHash);
       
         // ✅ Set success state with hash
         setLiquidityState((prev) => ({ 
@@ -548,7 +549,7 @@ export const useLiquidityPool = () => {
         }));
       }
 
-      console.log('💰 Step 3: Adding Liquidity...');
+      logger.info('💰 Step 3: Adding Liquidity...');
       setLiquidityState((prev) => ({ 
         ...prev, 
         currentStep: 'adding',
@@ -566,7 +567,7 @@ export const useLiquidityPool = () => {
         Math.floor(Date.now() / 1000) + liquidityState.deadline * 60
       );
 
-      console.log('💰 Adding liquidity with:', {
+      logger.info('💰 Adding liquidity with:', {
         amountA: amountABigInt.toString(),
         amountB: finalAmountB.toString(),
         minAmountA: minAmountA.toString(),
@@ -598,7 +599,7 @@ export const useLiquidityPool = () => {
         );
       });
 
-      console.log('⏳ Waiting for add liquidity confirmation...');
+      logger.info('⏳ Waiting for add liquidity confirmation...');
 
       // Wait for confirmation
       const receipt = await waitForTx(txHash);
@@ -607,7 +608,7 @@ export const useLiquidityPool = () => {
         throw new Error('Add liquidity transaction failed');
       }
 
-      console.log('✅ Liquidity added successfully!');
+      logger.info('✅ Liquidity added successfully!');
     
       // Refetch balances
       await Promise.all([refetchBalances(), refetchAMMData()]);
@@ -621,7 +622,7 @@ export const useLiquidityPool = () => {
       }));
 
       // ✅ ONLY THIS STEP WAITS 10 SECONDS
-      console.log('⏱️ Showing add liquidity success for 10 seconds...');
+      logger.info('⏱️ Showing add liquidity success for 10 seconds...');
       await new Promise(resolve => setTimeout(resolve, 10000));
     
       // ✅ Close modal and reset
@@ -638,7 +639,7 @@ export const useLiquidityPool = () => {
       return receipt.transactionHash;
 
     } catch (error) {
-      console.error('❌ Add liquidity failed:', error);
+      logger.error('❌ Add liquidity failed:', error);
       setLiquidityState((prev) => ({
         ...prev,
         currentStep: 'idle',
@@ -718,7 +719,7 @@ export const useLiquidityPool = () => {
         );
       });
 
-      console.log('⏳ Waiting for remove liquidity confirmation...');
+      logger.info('⏳ Waiting for remove liquidity confirmation...');
     
       const receipt = await waitForTx(txHash);
 
@@ -726,7 +727,7 @@ export const useLiquidityPool = () => {
         throw new Error('Remove liquidity transaction failed');
       }
 
-      console.log('✅ Liquidity removed successfully!');
+      logger.info('✅ Liquidity removed successfully!');
     
       await Promise.all([refetchBalances(), refetchAMMData()]);
     
@@ -737,7 +738,7 @@ export const useLiquidityPool = () => {
         transactionSuccess: true, 
       }));
 
-      console.log('⏱️ Showing remove liquidity success for 10 seconds...');
+      logger.info('⏱️ Showing remove liquidity success for 10 seconds...');
       await new Promise(resolve => setTimeout(resolve, 10000));
     
       setLiquidityState((prev) => ({
@@ -753,7 +754,7 @@ export const useLiquidityPool = () => {
       return receipt.transactionHash;
 
     } catch (error) {
-      console.error('❌ Remove liquidity failed:', error);
+      logger.error('❌ Remove liquidity failed:', error);
       setLiquidityState((prev) => ({
         ...prev,
         currentStep: 'idle',

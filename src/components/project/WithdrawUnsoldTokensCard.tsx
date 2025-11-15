@@ -6,6 +6,7 @@ import { AlertCircle, Clock, CheckCircle2 } from 'lucide-react'
 import { formatUnits } from 'viem'
 import { SafeHtml, SafeAddressDisplay } from '../SafeHtml'
 import { sanitizeText } from '../../utils/sanitization'
+import { logger } from '@/utils/logger'
 
 interface WithdrawUnsoldTokensCardProps {
   projectId: bigint
@@ -53,7 +54,7 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
   useEffect(() => {
     if (hasWithdrawn && savedWithdrawnAmount === null && withdrawnAmount && withdrawnAmount > 0n) {
       setSavedWithdrawnAmount(withdrawnAmount)
-      console.log('💾 Saved withdrawn amount:', withdrawnAmount.toString())
+      logger.info('💾 Saved withdrawn amount:', withdrawnAmount.toString())
     }
   }, [hasWithdrawn, withdrawnAmount, savedWithdrawnAmount])
 
@@ -179,7 +180,7 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
                       address={txHash}
                       truncate={true}
                       className="text-xs text-[var(--silver-light)]"
-                      onCopySuccess={() => console.log('Transaction hash copied!')}
+                      onCopySuccess={() => logger.info('Transaction hash copied!')}
                     />
                   </div>
                 )}

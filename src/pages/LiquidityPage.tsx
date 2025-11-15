@@ -7,6 +7,7 @@ import { PoolList } from '@/components/liquidity/PoolList';
 import { Button } from '@/components/ui/Button';
 import type { Pool } from '@/components/liquidity/PoolList';
 import type { Address } from 'viem';
+import { logger } from '@/utils/logger';
 
 export const LiquidityPage: React.FC = () => {
   const { address } = useAccount();
@@ -73,14 +74,14 @@ export const LiquidityPage: React.FC = () => {
   // Transform portfolio data into Pool array with correct symbols
   useEffect(() => {
     if (!portfolioResult || !address || !tokensInfo) {
-      console.log('Missing data:', { portfolioResult: !!portfolioResult, address: !!address, tokensInfo: !!tokensInfo });
+      logger.info('Missing data:', { portfolioResult: !!portfolioResult, address: !!address, tokensInfo: !!tokensInfo });
       setInitialPositions([]);
       setSelectedPosition(null);
       return;
     }
 
-    console.log('Portfolio data:', portfolioResult);
-    console.log('Tokens info:', tokensInfo);
+    logger.info('Portfolio data:', portfolioResult);
+    logger.info('Tokens info:', tokensInfo);
 
     const [tokenAs, tokenBs, lpBalances, sharePercentages] = portfolioResult;
     const [symbols] = tokensInfo;
@@ -93,7 +94,7 @@ export const LiquidityPage: React.FC = () => {
       }
     });
 
-    console.log('Token symbol map:', tokenSymbolMap);
+    logger.info('Token symbol map:', tokenSymbolMap);
 
     const positions: Pool[] = tokenAs.map((tokenA, index) => {
       const tokenB = tokenBs[index] || ('0x0' as Address);
@@ -116,7 +117,7 @@ export const LiquidityPage: React.FC = () => {
       };
     });
 
-    console.log('Transformed positions:', positions);
+    logger.info('Transformed positions:', positions);
     setInitialPositions(positions);
     if (positions.length > 0 && !selectedPosition) {
       setSelectedPosition(positions[0]);

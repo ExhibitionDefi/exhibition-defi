@@ -9,6 +9,7 @@ import type {
   ProjectStatus,
 } from '@/types/project'
 import { ProjectStatusLabels } from '@/types/project'
+import { logger } from '@/utils/logger'
 
 /**
  * useProject
@@ -196,7 +197,7 @@ export function useProject(projectId?: string) {
 
       return projectDisplayData
     } catch (err) {
-      console.error('Failed to format project:', err)
+      logger.error('Failed to format project:', err)
       return undefined
     }
   }, [projectRaw, projectTokenInfoRaw, contributionTokenInfoRaw, parsedProjectId])

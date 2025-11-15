@@ -21,6 +21,7 @@ import {
   hasSuspiciousContent,
   logSanitization,
 } from '@/utils/sanitization'
+import { logger } from '@/utils/logger'
 
 interface CreateProjectFormProps {
   onSubmit: (data: CreateProjectFormData) => void
@@ -144,7 +145,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
         
         // Check for suspicious content
         if (hasSuspiciousContent(sanitizedValue)) {
-          console.warn('⚠️ Suspicious content detected in token name')
+          logger.warn('⚠️ Suspicious content detected in token name')
           return // Block the update
         }
         break
@@ -336,8 +337,6 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
       setCurrentStep(1)
       return
     }
-
-    console.log('✅ Submitting sanitized data:', sanitizedData)
     onSubmit(sanitizedData)
   }
 

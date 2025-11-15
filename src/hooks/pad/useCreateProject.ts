@@ -5,6 +5,7 @@ import { exhibitionAbi } from '@/generated/wagmi'
 import { EXHIBITION_ADDRESS } from '@/config/contracts'
 import { ExhibitionFormatters } from '@/utils/exFormatters'
 import { useMultiTransactionModal } from '@/components/common/MultiTransactionModal'
+import { logger } from '@/utils/logger'
 
 export interface CreateProjectFormData {
   // Project Token Details
@@ -83,8 +84,8 @@ export function useCreateProject() {
    * WITH COMPREHENSIVE DEBUG LOGGING
    */
   const prepareContractArgs = useCallback((formData: CreateProjectFormData) => {
-    console.log('🔧 ===== PREPARING CONTRACT ARGUMENTS =====')
-    console.log('📋 Raw Form Data:', formData)
+    logger.info('🔧 ===== PREPARING CONTRACT ARGUMENTS =====')
+    logger.info('📋 Raw Form Data:', formData)
 
     const {
       projectTokenName,
@@ -116,93 +117,93 @@ export function useCreateProject() {
     // Project token is ALWAYS 18 decimals (created by factory)
     const PROJECT_TOKEN_DECIMALS = 18
     
-    console.log('💰 Parsing Token Amounts...')
+    logger.info('💰 Parsing Token Amounts...')
     const parsedInitialSupply = ExhibitionFormatters.parseTokenAmount(
       initialTotalSupply,
       PROJECT_TOKEN_DECIMALS
     )
-    console.log(`  Initial Supply: ${initialTotalSupply} -> ${parsedInitialSupply.toString()}`)
+    logger.info(`  Initial Supply: ${initialTotalSupply} -> ${parsedInitialSupply.toString()}`)
     
     const parsedAmountForSale = ExhibitionFormatters.parseTokenAmount(
       amountTokensForSale,
       PROJECT_TOKEN_DECIMALS
     )
-    console.log(`  Amount For Sale: ${amountTokensForSale} -> ${parsedAmountForSale.toString()}`)
+    logger.info(`  Amount For Sale: ${amountTokensForSale} -> ${parsedAmountForSale.toString()}`)
     
     // Contribution token amounts use DYNAMIC decimals
-    console.log(`💵 Parsing Contribution Amounts (${contributionTokenDecimals} decimals)...`)
+    logger.info(`💵 Parsing Contribution Amounts (${contributionTokenDecimals} decimals)...`)
     const parsedFundingGoal = ExhibitionFormatters.parseTokenAmount(
       fundingGoal,
       contributionTokenDecimals
     )
-    console.log(`  Funding Goal: ${fundingGoal} -> ${parsedFundingGoal.toString()}`)
+    logger.info(`  Funding Goal: ${fundingGoal} -> ${parsedFundingGoal.toString()}`)
     
     const parsedSoftCap = ExhibitionFormatters.parseTokenAmount(
       softCap,
       contributionTokenDecimals
     )
-    console.log(`  Soft Cap: ${softCap} -> ${parsedSoftCap.toString()}`)
+    logger.info(`  Soft Cap: ${softCap} -> ${parsedSoftCap.toString()}`)
     
     const parsedMinContribution = ExhibitionFormatters.parseTokenAmount(
       minContribution,
       contributionTokenDecimals
     )
-    console.log(`  Min Contribution: ${minContribution} -> ${parsedMinContribution.toString()}`)
+    logger.info(`  Min Contribution: ${minContribution} -> ${parsedMinContribution.toString()}`)
     
     const parsedMaxContribution = ExhibitionFormatters.parseTokenAmount(
       maxContribution,
       contributionTokenDecimals
     )
-    console.log(`  Max Contribution: ${maxContribution} -> ${parsedMaxContribution.toString()}`)
+    logger.info(`  Max Contribution: ${maxContribution} -> ${parsedMaxContribution.toString()}`)
     
     // Token price is ALWAYS 18 decimals per contract requirement
-    console.log('💲 Parsing Token Price (ALWAYS 18 decimals)...')
+    logger.info('💲 Parsing Token Price (ALWAYS 18 decimals)...')
     const parsedTokenPrice = ExhibitionFormatters.parseTokenAmount(
       tokenPrice,
       18
     )
-    console.log(`  Token Price: ${tokenPrice} -> ${parsedTokenPrice.toString()}`)
+    logger.info(`  Token Price: ${tokenPrice} -> ${parsedTokenPrice.toString()}`)
     
     // Percentage conversion
-    console.log('📊 Parsing Percentage...')
+    logger.info('📊 Parsing Percentage...')
     const parsedLiquidityPercentage = ExhibitionFormatters.parsePercentage(liquidityPercentage)
-    console.log(`  Liquidity %: ${liquidityPercentage}% -> ${parsedLiquidityPercentage.toString()} basis points`)
+    logger.info(`  Liquidity %: ${liquidityPercentage}% -> ${parsedLiquidityPercentage.toString()} basis points`)
     
     // Timestamp conversion
-    console.log('⏰ Parsing Timestamps...')
-    console.log(`  Start Time Input: ${startTime.toLocaleString()}`)
-    console.log(`  End Time Input: ${endTime.toLocaleString()}`)
+    logger.info('⏰ Parsing Timestamps...')
+    logger.info(`  Start Time Input: ${startTime.toLocaleString()}`)
+    logger.info(`  End Time Input: ${endTime.toLocaleString()}`)
     
     const parsedStartTime = dateToUnixTimestamp(startTime)
     const parsedEndTime = dateToUnixTimestamp(endTime)
     
-    console.log(`  Start Time Unix: ${parsedStartTime.toString()} (${new Date(Number(parsedStartTime) * 1000).toLocaleString()})`)
-    console.log(`  End Time Unix: ${parsedEndTime.toString()} (${new Date(Number(parsedEndTime) * 1000).toLocaleString()})`)
+    logger.info(`  Start Time Unix: ${parsedStartTime.toString()} (${new Date(Number(parsedStartTime) * 1000).toLocaleString()})`)
+    logger.info(`  End Time Unix: ${parsedEndTime.toString()} (${new Date(Number(parsedEndTime) * 1000).toLocaleString()})`)
     
     // Duration conversion (DAYS -> SECONDS)
-    console.log('⏳ Parsing Durations (converting DAYS to SECONDS)...')
+    logger.info('⏳ Parsing Durations (converting DAYS to SECONDS)...')
     const parsedLockDuration = ExhibitionFormatters.parseDurationToSeconds(lockDuration)
-    console.log(`  Lock Duration: ${lockDuration} days -> ${parsedLockDuration.toString()} seconds`)
+    logger.info(`  Lock Duration: ${lockDuration} days -> ${parsedLockDuration.toString()} seconds`)
     
     const parsedVestingCliff = vestingEnabled 
       ? ExhibitionFormatters.parseDurationToSeconds(vestingCliff)
       : 0n
-    console.log(`  Vesting Cliff: ${vestingCliff} days -> ${parsedVestingCliff.toString()} seconds`)
+    logger.info(`  Vesting Cliff: ${vestingCliff} days -> ${parsedVestingCliff.toString()} seconds`)
     
     const parsedVestingDuration = vestingEnabled
       ? ExhibitionFormatters.parseDurationToSeconds(vestingDuration)
       : 0n
-    console.log(`  Vesting Duration: ${vestingDuration} days -> ${parsedVestingDuration.toString()} seconds`)
+    logger.info(`  Vesting Duration: ${vestingDuration} days -> ${parsedVestingDuration.toString()} seconds`)
     
     const parsedVestingInterval = vestingEnabled
       ? ExhibitionFormatters.parseDurationToSeconds(vestingInterval)
       : 0n
-    console.log(`  Vesting Interval: ${vestingInterval} days -> ${parsedVestingInterval.toString()} seconds`)
+    logger.info(`  Vesting Interval: ${vestingInterval} days -> ${parsedVestingInterval.toString()} seconds`)
     
     const parsedVestingInitialRelease = vestingEnabled
       ? ExhibitionFormatters.parsePercentage(vestingInitialRelease)
       : 0n
-    console.log(`  Vesting Initial Release: ${vestingInitialRelease}% -> ${parsedVestingInitialRelease.toString()} basis points`)
+    logger.info(`  Vesting Initial Release: ${vestingInitialRelease}% -> ${parsedVestingInitialRelease.toString()} basis points`)
 
     const args = [
       projectTokenName,
@@ -227,8 +228,8 @@ export function useCreateProject() {
       parsedVestingInitialRelease,
     ] as const
 
-    console.log('✅ Final Contract Arguments:', args)
-    console.log('===== PREPARATION COMPLETE =====\n')
+    logger.info('✅ Final Contract Arguments:', args)
+    logger.info('===== PREPARATION COMPLETE =====\n')
 
     return args
   }, [])
@@ -239,7 +240,7 @@ export function useCreateProject() {
   const createProject = useCallback(
     async (formData: CreateProjectFormData) => {
       try {
-        console.log('🚀 CREATING PROJECT...')
+        logger.info('🚀 CREATING PROJECT...')
         
         // Show modal
         modalState.show('create')
@@ -247,7 +248,7 @@ export function useCreateProject() {
         // Prepare contract arguments with full validation
         const args = prepareContractArgs(formData)
 
-        console.log('📤 Sending transaction to contract...')
+        logger.info('📤 Sending transaction to contract...')
         
         // Execute transaction
         writeContract({
@@ -257,7 +258,7 @@ export function useCreateProject() {
           args,
         })
       } catch (err) {
-        console.error('❌ Failed to create project:', err)
+        logger.error('❌ Failed to create project:', err)
         modalState.hide()
         throw err
       }

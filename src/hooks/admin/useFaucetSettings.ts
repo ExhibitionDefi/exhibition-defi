@@ -2,6 +2,7 @@ import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { exhibitionAbi } from '@/generated/wagmi';
 import { EXHIBITION_ADDRESS } from '@/config/contracts';
 import { parseUnits } from 'viem';
+import { logger } from '@/utils/logger';
 
 interface UseFaucetSettingsReturn {
   // Set EXH Amount
@@ -86,7 +87,7 @@ export function useFaucetSettings(): UseFaucetSettingsReturn {
         args: [amountInWei],
       });
     } catch (error) {
-      console.error('Failed to set EXH amount:', error);
+      logger.error('Failed to set EXH amount:', error);
     }
   };
 
@@ -100,7 +101,7 @@ export function useFaucetSettings(): UseFaucetSettingsReturn {
         args: [amountInWei],
       });
     } catch (error) {
-      console.error('Failed to set USDT amount:', error);
+      logger.error('Failed to set USDT amount:', error);
     }
   };
 
@@ -113,7 +114,7 @@ export function useFaucetSettings(): UseFaucetSettingsReturn {
         args: [BigInt(seconds)],
       });
     } catch (error) {
-      console.error('Failed to set cooldown:', error);
+      logger.error('Failed to set cooldown:', error);
     }
   };
 

@@ -7,6 +7,7 @@
 
 import { useMemo, useState } from 'react'
 import { escapeHtml, textToSafeHtml, truncate } from '@/utils/sanitization'
+import { logger } from '@/utils/logger'
 
 /* ------------------------------------------------------------
  * 🧱 SafeHtml Component
@@ -61,7 +62,7 @@ export function SafeLink({ href, children, className = '' }: SafeLinkProps) {
   const isSafeProtocol = isHttp && !href.toLowerCase().startsWith('javascript:')
 
   if (!isSafeProtocol) {
-    console.warn('Blocked unsafe link:', href)
+    logger.warn('Blocked unsafe link:', href)
     return <span className={className}>{children}</span>
   }
 
@@ -76,7 +77,7 @@ export function SafeLink({ href, children, className = '' }: SafeLinkProps) {
           new URL(href)
         } catch {
           e.preventDefault()
-          console.warn('Invalid URL blocked:', href)
+          logger.warn('Invalid URL blocked:', href)
         }
       }}
     >
@@ -114,7 +115,7 @@ export function SafeImage({
     lower.startsWith('javascript:') ||
     (!lower.startsWith('http://') && !lower.startsWith('https://'))
   ) {
-    console.warn('Blocked unsafe image source:', src)
+    logger.warn('Blocked unsafe image source:', src)
     return <>{fallback || null}</>
   }
 
@@ -174,7 +175,7 @@ export function SafeAddressDisplay({
       if (onCopySuccess) {
         onCopySuccess(address)
       } else {
-        console.log('Address copied:', displayAddress)
+        logger.info('Address copied:', displayAddress)
       }
 
       // Reset copied state after 2 seconds
@@ -185,7 +186,7 @@ export function SafeAddressDisplay({
       if (onCopyError) {
         onCopyError(error)
       } else {
-        console.error('Failed to copy address:', error)
+        logger.error('Failed to copy address:', error)
       }
     }
   }

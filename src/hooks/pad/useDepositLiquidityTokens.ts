@@ -8,6 +8,7 @@ import { EXHIBITION_ADDRESS, EXPLORER_URL } from '@/config/contracts'
 import type { Hash, Address } from 'viem'
 import type { ProjectDisplayData } from '@/types/project'
 import { useTokenApproval } from '../useTokenApproval'
+import { logger } from '@/utils/logger'
 
 type Step = 'idle' | 'approving' | 'submitting' | 'confirming' | 'confirmed' | 'error'
 
@@ -138,7 +139,7 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
     return BigInt(0)
   }, [externalAmount, pendingDeposit])
 
-  console.log('💰 Amount for approval updated:', {
+  logger.info('💰 Amount for approval updated:', {
     amountForApproval: amountForApproval.toString(),
     pendingDeposit: pendingDeposit ? `${pendingDeposit.projectId}:${pendingDeposit.amount}` : 'none',
     externalAmount: externalAmount?.toString() ?? 'none'
@@ -288,7 +289,7 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
       setShowStatus(true)
       setStep('idle')
 
-      console.log('🚀 executeDeposit called', { 
+      logger.info('🚀 executeDeposit called', { 
         projectId: projectId.toString(), 
         amount: amount.toString(),
         needsApproval,
@@ -345,7 +346,7 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
         const currentAllowanceValue = currentAllowance ?? BigInt(0)
         const needsApprovalNow = depositAmount > currentAllowanceValue
 
-        console.log('🔍 Direct approval check:', {
+        logger.info('🔍 Direct approval check:', {
           amount: depositAmount.toString(),
           currentAllowance: currentAllowanceValue.toString(),
           needsApprovalNow,
@@ -360,12 +361,12 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
             toast.loading('Requesting approval...')
           }
 
-          console.log('📝 Initiating approval flow - waiting for state to propagate...')
+          logger.info('📝 Initiating approval flow - waiting for state to propagate...')
 
           // Wait for React to process state updates
           await new Promise(resolve => setTimeout(resolve, 100))
 
-          console.log('📝 Submitting approval with explicit amount')
+          logger.info('📝 Submitting approval with explicit amount')
 
           try {
             // 🔥 KEY FIX: Pass amount directly to submitApproval
@@ -373,13 +374,13 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
             
             if (approvalTxHash) {
               setApprovalHash(approvalTxHash)
-              console.log('✅ Approval hash received:', approvalTxHash)
+              logger.info('✅ Approval hash received:', approvalTxHash)
             }
             // Note: Don't clear pendingDeposit here - the useEffect watching 
             // isApprovalSuccess will handle the deposit execution and cleanup
           } catch (approvalErr) {
             const e = approvalErr as Error
-            console.error('❌ Approval error:', e)
+            logger.error('❌ Approval error:', e)
             setTxError(e)
             setStep('error')
             setShowStatus(true)
@@ -400,7 +401,7 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
             return Promise.reject(e)
           }
         } else {
-          console.log('✅ Sufficient allowance, proceeding to deposit')
+          logger.info('✅ Sufficient allowance, proceeding to deposit')
           setTransactionType('deposit')
           setPendingDeposit(null)
           await executeDepositOnly(projectId, depositAmount)
@@ -432,7 +433,7 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
   useEffect(() => {
     if (!hash) return
 
-    console.log('🟡 Transaction submitted, setting step to confirming')
+    logger.info('🟡 Transaction submitted, setting step to confirming')
     setTxHash(hash as Hash)
     setStep('confirming')
     setShowStatus(true)
@@ -446,7 +447,7 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
   // React to receipt confirmation (transition: confirming → confirmed)
   useEffect(() => {
     if (isConfirmed && step === 'confirming') {
-      console.log('✅ Deposit confirmed, setting step to confirmed')
+      logger.info('✅ Deposit confirmed, setting step to confirmed')
       setStep('confirmed')
       setShowStatus(true)
 
@@ -477,32 +478,32 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
   // Auto-reset UX after success/error
   useEffect(() => {
     if (step === 'confirmed' || (isApprovalSuccess && !pendingDeposit)) {
-      console.log('⏱️ Starting auto-close timer (10s)')
+      logger.info('⏱️ Starting auto-close timer (10s)')
       const t = setTimeout(() => {
-        console.log('⏱️ Auto-closing modal and resetting state')
+        logger.info('⏱️ Auto-closing modal and resetting state')
         setShowStatus(false)
         setApprovalHash(undefined)
         setTransactionType(null)
         setStep('idle')
       }, 10_000)
       return () => {
-        console.log('⏱️ Cleanup: clearing auto-close timer')
+        logger.info('⏱️ Cleanup: clearing auto-close timer')
         clearTimeout(t)
       }
     }
     
     // ✅ Also auto-close on error after 10 seconds
     if (step === 'error') {
-      console.log('⏱️ Starting error auto-close timer (10s)')
+      logger.info('⏱️ Starting error auto-close timer (10s)')
       const t = setTimeout(() => {
-        console.log('⏱️ Auto-closing error modal and resetting state')
+        logger.info('⏱️ Auto-closing error modal and resetting state')
         setShowStatus(false)
         setApprovalHash(undefined)
         setTransactionType(null)
         setStep('idle')
       }, 10_000)
       return () => {
-        console.log('⏱️ Cleanup: clearing error auto-close timer')
+        logger.info('⏱️ Cleanup: clearing error auto-close timer')
         clearTimeout(t)
       }
     }

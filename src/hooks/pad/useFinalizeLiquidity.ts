@@ -6,6 +6,7 @@ import { EXHIBITION_ADDRESS } from '@/config/contracts'
 import type { Hash } from 'viem'
 import type { TransactionType } from '@/components/common/MultiTransactionModal'
 import { toast } from 'sonner'
+import { logger } from '@/utils/logger'
 
 /**
  * Button state for UI feedback
@@ -159,7 +160,7 @@ export function useFinalizeLiquidity(
           args: [projectId],
         })
       } catch (err) {
-        console.error('Failed to execute finalize liquidity:', err)
+        logger.error('Failed to execute finalize liquidity:', err)
         if (showToast) {
           toast.error('Failed to initiate transaction')
         }

@@ -3,6 +3,7 @@ import { ExternalLink, X } from 'lucide-react'
 import { AMMFormatters } from '@/utils/ammFormatters'
 import { useAccount, useSignMessage } from 'wagmi'
 import { verifyWallet } from '@/utils/api'
+import { logger } from '@/utils/logger'
 
 export type TransactionType = 
   | 'approval' 
@@ -149,15 +150,15 @@ export const MultiTransactionModal: React.FC<MultiTransactionModalProps> = ({
           const response = await verifyWallet(address, sig, signMessageText)
         
           if (response.success) {
-            console.log('✅ Wallet verified with backend')
+            logger.info('✅ Backend verification succeeded')
             setIsBackendVerified(true)
           } else {
             const errorMsg = response.message || response.error || 'Verification failed'
-            console.error('❌ Backend verification failed:', errorMsg)
+            logger.error('❌ Backend verification failed:', errorMsg)
             setVerificationError(errorMsg)
           }
         } catch (err) {
-          console.error('❌ Backend verification error:', err)
+          logger.error('❌ Backend verification error:', err)
           setVerificationError(err instanceof Error ? err.message : 'Failed to verify with backend')
         } finally {
           setIsVerifying(false)
