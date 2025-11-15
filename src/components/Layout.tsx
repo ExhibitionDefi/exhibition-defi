@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { lazy, Suspense, useMemo, useCallback } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { 
   Home, 
@@ -14,10 +14,16 @@ import {
 import { clsx } from 'clsx'
 import { useAccount } from 'wagmi'
 import { useMultiTransactionModal } from '@/components/common/MultiTransactionModal'
-import { MultiTransactionModal } from '@/components/common/MultiTransactionModal'
 import type { TransactionType } from '@/components/common/MultiTransactionModal'
 import { getCurrentUser, logout } from '@/utils/api'
 import exhLogo from '@/assets/010.svg'
+
+// ✅ Lazy load the heavy MultiTransactionModal
+const MultiTransactionModal = lazy(() => 
+  import('@/components/common/MultiTransactionModal').then(module => ({
+    default: module.MultiTransactionModal
+  }))
+)
 
 interface LayoutProps {
   children: React.ReactNode
@@ -26,6 +32,32 @@ interface LayoutProps {
   disablePadding?: boolean
   headerClassName?: string
 }
+
+// ✅ Memoize navigation item component to prevent unnecessary re-renders
+const NavigationItem = React.memo<{
+  item: { name: string; href: string; icon: React.ComponentType<{ className?: string }> }
+  isActive: boolean
+  onClick?: () => void
+}>(({ item, isActive, onClick }) => {
+  const Icon = item.icon
+  return (
+    <Link
+      to={item.href}
+      onClick={onClick}
+      className={clsx(
+        'flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+        isActive
+          ? 'bg-[var(--neon-blue)]/20 text-[var(--neon-blue)] border border-[var(--neon-blue)] shadow-[0_0_4px_var(--neon-blue)]/30'
+          : 'text-[var(--metallic-silver)] hover:text-[var(--silver-light)] hover:bg-[var(--silver-dark)]/10'
+      )}
+    >
+      <Icon className="h-4 w-4" />
+      <span>{item.name}</span>
+    </Link>
+  )
+})
+
+NavigationItem.displayName = 'NavigationItem'
 
 export const Layout: React.FC<LayoutProps> = ({ 
   children, 
@@ -43,7 +75,8 @@ export const Layout: React.FC<LayoutProps> = ({
 
   const customMessage = "Welcome to Exhibition, a verifiable token launchpad and DEX with dedicated liquidity lock, built on Nexus verifiable network for the AI era."
 
-  const navigation = [
+  // ✅ Memoize navigation array - it never changes
+  const navigation = useMemo(() => [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Projects', href: '/projects', icon: Rocket },
     { name: 'Create Project', href: '/create', icon: PlusCircle },
@@ -52,51 +85,50 @@ export const Layout: React.FC<LayoutProps> = ({
     { name: 'Liquidity', href: '/liquidity', icon: Droplets },
     { name: 'Faucet', href: '/faucet', icon: Droplets },
     { name: 'Admin', href: '/admin', icon: Settings },
-  ]
+  ], [])
 
-  const isActivePath = (path: string) => {
+  // ✅ Memoize the active path checker
+  const isActivePath = useCallback((path: string) => {
     if (path === '/') {
       return location.pathname === '/'
     }
     return location.pathname.startsWith(path)
-  }
+  }, [location.pathname])
 
-  const mainContainerClasses = clsx(
+  // ✅ Memoize container classes
+  const mainContainerClasses = useMemo(() => clsx(
     !disableContainer && 'max-w-7xl mx-auto',
     !disablePadding && 'px-4 sm:px-6 lg:px-8 py-10',
     mainClassName
-  )
+  ), [disableContainer, disablePadding, mainClassName])
+
+  // ✅ Memoize mobile menu close handler
+  const handleMobileMenuClose = useCallback(() => {
+    setIsMobileMenuOpen(false)
+  }, [])
 
   // ✅ Check backend auth on mount/wallet change
   React.useEffect(() => {
-    console.log('🔍 Layout: Connection changed', { isConnected, address })
-    
     if (isConnected && address) {
       const checkAuth = async () => {
         setIsCheckingAuth(true)
-        console.log('🔍 Layout: Checking auth for', address)
         
         try {
           const response = await getCurrentUser()
-          console.log('🔍 Layout: Auth response', response)
           
           // ✅ CHECK: JWT address must match connected wallet
           if (response.success && response.data?.address.toLowerCase() === address.toLowerCase()) {
-            console.log('✅ User authenticated:', response.data?.address)
             setVerified(true)
           } else if (response.success && response.data?.address.toLowerCase() !== address.toLowerCase()) {
             // JWT is for different wallet, clear it and re-verify
-            console.log('⚠️  JWT is for different wallet, clearing and re-verifying')
             await logout()
             setVerified(false)
             show('verify-wallet' as TransactionType)
           } else {
-            console.log('⚠️  No valid JWT, showing verification modal')
             setVerified(false)
             show('verify-wallet' as TransactionType)
           }
         } catch (error) {
-          console.log('❌ Auth check failed:', error)
           setVerified(false)
           show('verify-wallet' as TransactionType)
         } finally {
@@ -106,7 +138,6 @@ export const Layout: React.FC<LayoutProps> = ({
       
       checkAuth()
     } else {
-      console.log('🔍 Layout: Not connected, setting verified=false')
       setVerified(false)
     }
   }, [isConnected, address, show])
@@ -118,13 +149,10 @@ export const Layout: React.FC<LayoutProps> = ({
         try {
           const response = await getCurrentUser()
           if (response.success && response.data?.address.toLowerCase() === address.toLowerCase()) {
-            console.log('✅ Re-check: User authenticated')
             setVerified(true)
-          } else {
-            console.log('⚠️  Re-check: Address mismatch or not authenticated')
           }
         } catch (error) {
-          console.log('⚠️  Re-check: Still not authenticated')
+          // Silent fail on re-check
         }
       }
       
@@ -132,10 +160,19 @@ export const Layout: React.FC<LayoutProps> = ({
     }
   }, [isOpen, isConnected, address, verified])
 
-  // ✅ NEW LOGIC: Show content when NOT connected OR when verified
-  const shouldShowContent = !isConnected || (isConnected && verified)
-  const shouldShowVerificationModal = isConnected && !verified && !isCheckingAuth
-  const shouldShowLoadingSpinner = isConnected && isCheckingAuth
+  // ✅ Memoize visibility flags
+  const shouldShowContent = useMemo(
+    () => !isConnected || (isConnected && verified),
+    [isConnected, verified]
+  )
+  const shouldShowVerificationModal = useMemo(
+    () => isConnected && !verified && !isCheckingAuth,
+    [isConnected, verified, isCheckingAuth]
+  )
+  const shouldShowLoadingSpinner = useMemo(
+    () => isConnected && isCheckingAuth,
+    [isConnected, isCheckingAuth]
+  )
 
   return (
     <div className="min-h-screen bg-[var(--deep-black)]">
@@ -153,30 +190,20 @@ export const Layout: React.FC<LayoutProps> = ({
                   src={exhLogo}
                   alt="EXH logo"
                   className="w-8 h-8 rounded-lg shadow-[0_0_8px_var(--neon-blue)]/40"
+                  loading="eager"
                 />
               </Link>
             </div>
 
-            {/* Desktop Navigation - Always visible */}
+            {/* Desktop Navigation */}
             <nav className="hidden md:flex space-x-1">
-              {navigation.map((item) => {
-                const Icon = item.icon
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={clsx(
-                      'flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                      isActivePath(item.href)
-                        ? 'bg-[var(--neon-blue)]/20 text-[var(--neon-blue)] border border-[var(--neon-blue)] shadow-[0_0_4px_var(--neon-blue)]/30'
-                        : 'text-[var(--metallic-silver)] hover:text-[var(--silver-light)] hover:bg-[var(--silver-dark)]/10'
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.name}</span>
-                  </Link>
-                )
-              })}
+              {navigation.map((item) => (
+                <NavigationItem
+                  key={item.href}
+                  item={item}
+                  isActive={isActivePath(item.href)}
+                />
+              ))}
             </nav>
 
             {/* Right Side */}
@@ -186,10 +213,11 @@ export const Layout: React.FC<LayoutProps> = ({
                 <w3m-button />
               </div>
 
-              {/* Mobile Menu Button - Always visible */}
+              {/* Mobile Menu Button */}
               <button
                 className="md:hidden p-2 rounded-lg text-[var(--metallic-silver)] hover:text-[var(--silver-light)] hover:bg-[var(--silver-dark)]/20 flex-shrink-0"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Toggle menu"
               >
                 {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
@@ -197,29 +225,18 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
         </div>
 
-        {/* Mobile Navigation - Always visible */}
+        {/* Mobile Navigation */}
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-[var(--silver-dark)] bg-[var(--charcoal)]">
             <div className="px-4 py-2 space-y-1">
-              {navigation.map((item) => {
-                const Icon = item.icon
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={clsx(
-                      'flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                      isActivePath(item.href)
-                        ? 'bg-[var(--neon-blue)]/20 text-[var(--neon-blue)] border border-[var(--neon-blue)]'
-                        : 'text-[var(--metallic-silver)] hover:text-[var(--silver-light)] hover:bg-[var(--silver-dark)]/10'
-                    )}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.name}</span>
-                  </Link>
-                )
-              })}
+              {navigation.map((item) => (
+                <NavigationItem
+                  key={item.href}
+                  item={item}
+                  isActive={isActivePath(item.href)}
+                  onClick={handleMobileMenuClose}
+                />
+              ))}
             </div>
             
             {/* Mobile Wallet Button */}
@@ -246,13 +263,20 @@ export const Layout: React.FC<LayoutProps> = ({
           {/* Verification Modal - Show when connected but not verified */}
           {shouldShowVerificationModal && (
             <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
-              <MultiTransactionModal 
-                isOpen={isOpen}
-                onClose={hide}
-                transactionType={transactionType}
-                message={customMessage}
-                signMessageText={customMessage}
-              />
+              <Suspense fallback={
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--neon-blue)] mx-auto mb-4"></div>
+                  <p className="text-[var(--silver-light)]">Loading...</p>
+                </div>
+              }>
+                <MultiTransactionModal 
+                  isOpen={isOpen}
+                  onClose={hide}
+                  transactionType={transactionType}
+                  message={customMessage}
+                  signMessageText={customMessage}
+                />
+              </Suspense>
             </div>
           )}
 
