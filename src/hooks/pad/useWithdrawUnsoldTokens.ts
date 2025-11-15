@@ -40,6 +40,55 @@ interface UseWithdrawUnsoldTokensOptions {
   showToast?: boolean
 }
 
+/**
+ * Helper to calculate tokens allocated using the same logic as TokenCalculationLib
+ * This mimics the contract's calculateTokensDue function
+ */
+function calculateTokensAllocated(
+  totalRaised: bigint,
+  tokenPrice: bigint,
+  contributionDecimals: number,
+  projectDecimals: number
+): bigint {
+  if (totalRaised === 0n || tokenPrice === 0n) return 0n
+
+  try {
+    // Scale contribution to 18 decimals
+    const contributionIn18Decimals = scaleToDecimals(totalRaised, contributionDecimals, 18)
+    
+    // Calculate tokens in 18 decimals: (contribution * 1e18) / price
+    const tokensIn18Decimals = (contributionIn18Decimals * BigInt(1e18)) / tokenPrice
+    
+    if (tokensIn18Decimals === 0n) return 0n
+
+    // Scale back to project token decimals
+    return scaleToDecimals(tokensIn18Decimals, 18, projectDecimals)
+  } catch {
+    return 0n
+  }
+}
+
+/**
+ * Helper to scale amounts between different decimal places
+ */
+function scaleToDecimals(
+  amount: bigint,
+  fromDecimals: number,
+  toDecimals: number
+): bigint {
+  if (fromDecimals === toDecimals) return amount
+
+  if (fromDecimals < toDecimals) {
+    const decimalDiff = toDecimals - fromDecimals
+    const scaleFactor = BigInt(10 ** decimalDiff)
+    return amount * scaleFactor
+  } else {
+    const decimalDiff = fromDecimals - toDecimals
+    const scaleFactor = BigInt(10 ** decimalDiff)
+    return amount / scaleFactor
+  }
+}
+
 export function useWithdrawUnsoldTokens(options: UseWithdrawUnsoldTokensOptions = {}) {
   const { 
     project,
@@ -73,6 +122,9 @@ export function useWithdrawUnsoldTokens(options: UseWithdrawUnsoldTokensOptions 
   // Toast tracking refs to prevent duplicates
   const hasShownSubmitToast = useRef(false)
   const hasShownConfirmedToast = useRef(false)
+  
+  // Store withdrawn amount in ref to persist across re-renders
+  const withdrawnAmountRef = useRef<bigint>(0n)
 
   // Transaction status
   const transactionStatus: TxStatus = useMemo(() => ({
@@ -99,7 +151,7 @@ export function useWithdrawUnsoldTokens(options: UseWithdrawUnsoldTokensOptions 
     address.toLowerCase() === project.projectOwner.toLowerCase()
   )
 
-  // Calculate token amounts
+  // Calculate token amounts - FIXED to match contract logic
   const tokenInfo: TokenInfo = useMemo(() => {
     if (!project) {
       return {
@@ -109,11 +161,34 @@ export function useWithdrawUnsoldTokens(options: UseWithdrawUnsoldTokensOptions 
       }
     }
 
-    const tokensAllocated = project.tokenPrice > 0n 
-      ? project.totalRaised / project.tokenPrice 
-      : 0n
-    
     const tokensForSale = project.amountTokensForSale
+    const projectStatus = Number(project.status)
+
+    // For Failed or Refundable projects, ALL tokens for sale are considered "unsold"
+    // because the contract returns the full balance
+    if (projectStatus === ProjectStatus.Failed || projectStatus === ProjectStatus.Refundable) {
+      return {
+        tokensForSale,
+        tokensAllocated: 0n, // No tokens were allocated since project failed
+        unsoldTokensAmount: tokensForSale, // All tokens are unsold
+      }
+    }
+
+    // For successful projects (reached soft cap), calculate actual allocation
+    // Get decimals from project data (assuming you have these fields)
+    // If not available, default to 18 for both
+    const contributionDecimals = project.contributionTokenDecimals ?? 18
+    const projectDecimals = 18
+
+    // Calculate tokens allocated using the same logic as the contract
+    const tokensAllocated = calculateTokensAllocated(
+      project.totalRaised,
+      project.tokenPrice,
+      contributionDecimals,
+      projectDecimals
+    )
+    
+    // Unsold = tokens for sale - tokens allocated
     const unsoldTokensAmount = tokensForSale > tokensAllocated 
       ? tokensForSale - tokensAllocated 
       : 0n
@@ -208,6 +283,9 @@ export function useWithdrawUnsoldTokens(options: UseWithdrawUnsoldTokensOptions 
 
     setStep('submitting')
     try {
+      // Capture the amount RIGHT BEFORE withdrawal in a ref
+      withdrawnAmountRef.current = tokenInfo.unsoldTokensAmount
+      
       await writeContract({
         address: EXHIBITION_ADDRESS,
         abi: exhibitionAbi,
@@ -269,6 +347,7 @@ export function useWithdrawUnsoldTokens(options: UseWithdrawUnsoldTokensOptions 
         setStep('idle')
         setTxHash(undefined)
         setTxError(null)
+        withdrawnAmountRef.current = 0n
         hasShownSubmitToast.current = false
         hasShownConfirmedToast.current = false
       }, 10000)
@@ -283,6 +362,7 @@ export function useWithdrawUnsoldTokens(options: UseWithdrawUnsoldTokensOptions 
     setTxHash(undefined)
     setTxError(null)
     setShowStatus(false)
+    withdrawnAmountRef.current = 0n
     hasShownSubmitToast.current = false
     hasShownConfirmedToast.current = false
   }, [showToast])
@@ -351,6 +431,9 @@ export function useWithdrawUnsoldTokens(options: UseWithdrawUnsoldTokensOptions 
     
     // Token info (calculated in hook)
     tokenInfo,
+    
+    // Withdrawn amount (captured before withdrawal and persisted in ref)
+    withdrawnAmount: withdrawnAmountRef.current,
     
     // Actions
     reset,
