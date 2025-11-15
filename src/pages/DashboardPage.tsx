@@ -1,14 +1,18 @@
-import React from 'react'
+import React, { lazy, Suspense } from 'react'
 import { useAccount } from 'wagmi'
 import { LayoutDashboard, Plus, TrendingUp, Wallet, DollarSign, Activity, Zap, Target, Award, Eye } from 'lucide-react'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
-import { ProjectCard } from '../components/project/ProjectCard'
 import { Link } from 'react-router-dom'
 import ExhibitionFormatters from '../utils/exFormatters'
 import { useUserProjects } from '@/hooks/pad/useUserProjects'
 import { useProject } from '@/hooks/useProject'
+
+// ✅ Lazy load ProjectCard for better performance
+const ProjectCard = lazy(() => import('../components/project/ProjectCard').then(module => ({
+  default: module.ProjectCard
+})))
 
 // Component to display a single contribution with project logo
 const ContributionCard: React.FC<{ projectId: string; amount: string | bigint; index: number }> = ({ 
@@ -33,6 +37,7 @@ const ContributionCard: React.FC<{ projectId: string; amount: string | bigint; i
               src={project.projectTokenLogoURI}
               alt={`${project.tokenName || 'Project'} logo`}
               className="w-12 h-12 rounded-lg object-cover border border-[var(--metallic-silver)]/20 flex-shrink-0"
+              loading="lazy"
               onError={(e) => {
                 e.currentTarget.style.display = 'none'
               }}
@@ -72,8 +77,11 @@ const ContributionCard: React.FC<{ projectId: string; amount: string | bigint; i
   )
 }
 
+// ✅ Memoize ContributionCard to prevent unnecessary re-renders
+const MemoizedContributionCard = React.memo(ContributionCard)
+
 export const DashboardPage: React.FC = () => {
-  const { isConnected} = useAccount()
+  const { isConnected } = useAccount()
   
   // Use the new hook that fetches everything
   const {
@@ -82,6 +90,44 @@ export const DashboardPage: React.FC = () => {
     totalRaised,
     isLoading,
   } = useUserProjects()
+
+  // ✅ Memoize sorted projects to avoid re-sorting on every render
+  const sortedProjects = React.useMemo(() => {
+    if (!userProjects) return []
+    
+    return [...userProjects].sort((a, b) => {
+      const getStatusPriority = (status: number) => {
+        if (status === 1) return 1 // Active
+        if (status === 0) return 2 // Upcoming
+        if (status === 5) return 3 // Claimable
+        if (status === 2) return 4 // Successful
+        if (status === 3) return 5 // Completed
+        return 6 // Failed, Refundable, etc.
+      }
+      
+      const aPriority = getStatusPriority(a.status)
+      const bPriority = getStatusPriority(b.status)
+      
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority
+      }
+      
+      const aRaised = BigInt(a.totalRaised || 0)
+      const bRaised = BigInt(b.totalRaised || 0)
+      return bRaised > aRaised ? 1 : bRaised < aRaised ? -1 : 0
+    })
+  }, [userProjects])
+
+  // ✅ Memoize sorted contributions
+  const sortedContributions = React.useMemo(() => {
+    if (!userContributions) return []
+    
+    return [...userContributions].sort((a, b) => {
+      const aAmount = BigInt(a.amount || 0)
+      const bAmount = BigInt(b.amount || 0)
+      return bAmount > aAmount ? 1 : bAmount < aAmount ? -1 : 0
+    })
+  }, [userContributions])
 
   if (!isConnected) {
     return (
@@ -154,7 +200,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div>
               <p className="text-3xl font-bold mb-1" style={{ color: 'var(--silver-light)' }}>
-                {userProjects?.length || 0}
+                {sortedProjects.length}
               </p>
               <p className="text-sm" style={{ color: 'var(--metallic-silver)' }}>
                 Your Projects
@@ -163,7 +209,7 @@ export const DashboardPage: React.FC = () => {
             <div className="w-full bg-[var(--charcoal)] rounded-full h-2">
               <div 
                 className="bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-blue)]/70 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min((userProjects?.length || 0) * 20, 100)}%` }}
+                style={{ width: `${Math.min(sortedProjects.length * 20, 100)}%` }}
               ></div>
             </div>
           </div>
@@ -180,7 +226,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div>
               <p className="text-3xl font-bold mb-1" style={{ color: 'var(--silver-light)' }}>
-                {userContributions?.length || 0}
+                {sortedContributions.length}
               </p>
               <p className="text-sm" style={{ color: 'var(--metallic-silver)' }}>
                 Contributions Made
@@ -189,7 +235,7 @@ export const DashboardPage: React.FC = () => {
             <div className="w-full bg-[var(--charcoal)] rounded-full h-2">
               <div 
                 className="bg-gradient-to-r from-[var(--neon-orange)] to-[var(--neon-orange)]/70 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min((userContributions?.length || 0) * 25, 100)}%` }}
+                style={{ width: `${Math.min(sortedContributions.length * 25, 100)}%` }}
               ></div>
             </div>
           </div>
@@ -233,10 +279,10 @@ export const DashboardPage: React.FC = () => {
               Your Projects
             </h2>
           </div>
-          {userProjects && userProjects.length > 0 && (
+          {sortedProjects.length > 0 && (
             <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--metallic-silver)' }}>
               <div className="w-2 h-2 rounded-full bg-[var(--neon-blue)] animate-pulse"></div>
-              <span>{userProjects.length} Active</span>
+              <span>{sortedProjects.length} Active</span>
             </div>
           )}
         </div>
@@ -249,46 +295,28 @@ export const DashboardPage: React.FC = () => {
             </div>
             <p style={{ color: 'var(--metallic-silver)' }}>Loading your projects...</p>
           </div>
-        ) : userProjects && userProjects.length > 0 ? (
+        ) : sortedProjects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...userProjects]
-              .sort((a, b) => {
-                // Define status priority for dashboard (Active and Upcoming need attention first)
-                const getStatusPriority = (status: number) => {
-                  if (status === 1) return 1 // Active
-                  if (status === 0) return 2 // Upcoming
-                  if (status === 5) return 3 // Claimable
-                  if (status === 2) return 4 // Successful
-                  if (status === 3) return 5 // Completed
-                  return 6 // Failed, Refundable, etc.
-                }
-                
-                const aPriority = getStatusPriority(a.status)
-                const bPriority = getStatusPriority(b.status)
-                
-                // First sort by status priority
-                if (aPriority !== bPriority) {
-                  return aPriority - bPriority
-                }
-                
-                // Then sort by totalRaised desc within same status
-                const aRaised = BigInt(a.totalRaised || 0)
-                const bRaised = BigInt(b.totalRaised || 0)
-                return bRaised > aRaised ? 1 : bRaised < aRaised ? -1 : 0
-              })
-              .map((project, index) => (
-                <div 
-                  key={project.id.toString()}
-                  className="transform transition-all duration-300 hover:scale-[1.02]"
-                  style={{
-                    animationDelay: `${index * 150}ms`
-                  }}
+            {sortedProjects.map((project, index) => (
+              <div 
+                key={project.id.toString()}
+                className="transform transition-all duration-300 hover:scale-[1.02]"
+                style={{
+                  animationDelay: `${index * 150}ms`
+                }}
+              >
+                <Suspense 
+                  fallback={
+                    <div className="bg-[var(--charcoal)] rounded-xl p-6 h-64 flex items-center justify-center border border-[var(--silver-dark)]/20">
+                      <LoadingSpinner size="sm" />
+                    </div>
+                  }
                 >
                   <ProjectCard project={project} />
-                </div>
-              ))}
+                </Suspense>
+              </div>
+            ))}
           </div>
-          
         ) : (
           <Card className="text-center py-12 bg-gradient-to-br from-[var(--charcoal)]/60 to-[var(--deep-black)]/60 border border-[var(--neon-orange)]/30">
             <div className="space-y-6">
@@ -327,10 +355,10 @@ export const DashboardPage: React.FC = () => {
               Your Contributions
             </h2>
           </div>
-          {userContributions && userContributions.length > 0 && (
+          {sortedContributions.length > 0 && (
             <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--metallic-silver)' }}>
               <div className="w-2 h-2 rounded-full bg-[var(--neon-orange)] animate-pulse"></div>
-              <span>{userContributions.length} Active</span>
+              <span>{sortedContributions.length} Active</span>
             </div>
           )}
         </div>
@@ -343,24 +371,17 @@ export const DashboardPage: React.FC = () => {
             </div>
             <p style={{ color: 'var(--metallic-silver)' }}>Loading your contributions...</p>
           </div>
-        ) : userContributions && userContributions.length > 0 ? (
+        ) : sortedContributions.length > 0 ? (
           <div className="space-y-4">
-            {[...userContributions]
-              .sort((a, b) => {
-                const aAmount = BigInt(a.amount || 0)
-                const bAmount = BigInt(b.amount || 0)
-                return bAmount > aAmount ? 1 : bAmount < aAmount ? -1 : 0
-              })
-              .map(({ projectId, amount }, index) => (
-                <ContributionCard
-                  key={projectId}
-                  projectId={projectId}
-                  amount={amount}
-                  index={index}
-                />
-              ))}
+            {sortedContributions.map(({ projectId, amount }, index) => (
+              <MemoizedContributionCard
+                key={projectId}
+                projectId={projectId}
+                amount={amount}
+                index={index}
+              />
+            ))}
           </div>
-
         ) : (
           <Card className="text-center py-12 bg-gradient-to-br from-[var(--charcoal)]/60 to-[var(--deep-black)]/60 border border-[var(--neon-blue)]/30">
             <div className="space-y-6">

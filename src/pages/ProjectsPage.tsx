@@ -1,6 +1,5 @@
-import React from 'react'
+import React, { lazy, Suspense, useState, useEffect, useRef } from 'react'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
-import { ProjectCard } from '../components/project/ProjectCard'
 import { ProjectFilters } from '../components/project/ProjectFilters'
 import { useProjects } from '../hooks/useProjects'
 import { useProjectStore } from '../stores/projectStore'
@@ -8,20 +7,28 @@ import { Button } from '../components/ui/Button'
 import { Search, TrendingUp, AlertCircle } from 'lucide-react'
 import { ProjectStatus } from '@/types/project'
 
+// ✅ Lazy load ProjectCard
+const ProjectCard = lazy(() => import('../components/project/ProjectCard').then(module => ({
+  default: module.ProjectCard
+})))
+
+const PROJECTS_PER_LOAD = 12 // Load 12 at a time
+
 export const ProjectsPage: React.FC = () => {
   const { projects: allProjects, isLoading, error } = useProjects()
   const { searchQuery, statusFilter } = useProjectStore()
+  
+  const [displayCount, setDisplayCount] = useState(PROJECTS_PER_LOAD)
+  const loadMoreRef = useRef<HTMLDivElement>(null)
 
-  // Apply filters and default sort by contribution (totalRaised desc)
+  // Apply filters
   const filteredProjects = React.useMemo(() => {
     let filtered = allProjects
 
-    // Status filter
     if (statusFilter !== null) {
       filtered = filtered.filter(p => p.status === statusFilter)
     }
 
-    // Search query on tokenName, tokenSymbol, projectOwner (address)
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(p => 
@@ -31,27 +38,23 @@ export const ProjectsPage: React.FC = () => {
       )
     }
 
-    // Sort by status priority first (Active > Upcoming > Claimable > others), then by totalRaised desc
     filtered.sort((a, b) => {
-      // Define status priority (lower number = higher priority)
       const getStatusPriority = (status: number) => {
         if (status === ProjectStatus.Active) return 1
         if (status === ProjectStatus.Upcoming) return 2
         if (status === ProjectStatus.Claimable) return 3
         if (status === ProjectStatus.Successful) return 4
         if (status === ProjectStatus.Completed) return 5
-        return 6 // Failed, Refundable, etc.
+        return 6
       }
       
       const aPriority = getStatusPriority(a.status)
       const bPriority = getStatusPriority(b.status)
       
-      // First sort by status priority
       if (aPriority !== bPriority) {
         return aPriority - bPriority
       }
       
-      // Then sort by totalRaised desc within same status
       if (a.totalRaised > b.totalRaised) return -1
       if (a.totalRaised < b.totalRaised) return 1
       return 0
@@ -60,7 +63,44 @@ export const ProjectsPage: React.FC = () => {
     return filtered
   }, [allProjects, statusFilter, searchQuery])
 
-  // Stats based on all projects (unfiltered)
+  // Reset display count when filters change
+  useEffect(() => {
+    setDisplayCount(PROJECTS_PER_LOAD)
+  }, [searchQuery, statusFilter])
+
+  // Projects to display (only show displayCount number)
+  const displayedProjects = React.useMemo(() => {
+    return filteredProjects.slice(0, displayCount)
+  }, [filteredProjects, displayCount])
+
+  const hasMore = displayCount < filteredProjects.length
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!hasMore || isLoading) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setDisplayCount(prev => prev + PROJECTS_PER_LOAD)
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    const currentRef = loadMoreRef.current
+    if (currentRef) {
+      observer.observe(currentRef)
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef)
+      }
+    }
+  }, [hasMore, isLoading])
+
+  // Stats
   const stats = React.useMemo(() => {
     const totalProjects = allProjects.length
     const completedCount = allProjects.filter(p => p.status === ProjectStatus.Completed).length
@@ -72,7 +112,7 @@ export const ProjectsPage: React.FC = () => {
     ).length
 
     return { totalProjects, completedCount, successfulCount, liveCount }
-  }, [allProjects])
+  }, [allProjects.length])
 
   if (isLoading) {
     return (
@@ -193,7 +233,7 @@ export const ProjectsPage: React.FC = () => {
         <div className="flex items-center space-x-3">
           <div className="w-1 h-1 rounded-full bg-[var(--neon-blue)] drop-shadow-[0_0_3px_var(--neon-blue)] animate-pulse"></div>
           <p className="text-sm font-medium" style={{ color: 'var(--silver-light)' }}>
-            Showing {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'}
+            Showing {displayedProjects.length} of {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'}
           </p>
         </div>
       </div>
@@ -215,19 +255,48 @@ export const ProjectsPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project, index) => (
-            <div 
-              key={project.id.toString()}
-              className="transform transition-all duration-300 hover:scale-[1.02]"
-              style={{
-                animationDelay: `${index * 100}ms`
-              }}
-            >
-              <ProjectCard project={project} />
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {displayedProjects.map((project, index) => (
+              <div 
+                key={project.id.toString()}
+                className="transform transition-all duration-300 hover:scale-[1.02]"
+                style={{
+                  animationDelay: `${index * 100}ms`
+                }}
+              >
+                <Suspense 
+                  fallback={
+                    <div className="bg-[var(--charcoal)] rounded-xl p-6 h-64 flex items-center justify-center border border-[var(--silver-dark)]/20">
+                      <LoadingSpinner size="sm" />
+                    </div>
+                  }
+                >
+                  <ProjectCard project={project} />
+                </Suspense>
+              </div>
+            ))}
+          </div>
+
+          {/* Infinite Scroll Trigger */}
+          {hasMore && (
+            <div ref={loadMoreRef} className="flex justify-center py-8">
+              <LoadingSpinner size="md" />
+              <p className="ml-3 text-sm" style={{ color: 'var(--metallic-silver)' }}>
+                Loading more projects...
+              </p>
             </div>
-          ))}
-        </div>
+          )}
+
+          {/* End of Results */}
+          {!hasMore && filteredProjects.length > PROJECTS_PER_LOAD && (
+            <div className="text-center py-8">
+              <p className="text-sm" style={{ color: 'var(--metallic-silver)' }}>
+                You've reached the end of the list
+              </p>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

@@ -260,6 +260,8 @@ export const ProjectDetailPage: React.FC = () => {
               projectId={project.id}
               tokenSymbol={project.tokenSymbol}
               tokenDecimals={project.tokenDecimals}
+              projectTokenLogoURI={project.projectTokenLogoURI}
+              tokenName={project.tokenName}
               buttonState={withdrawUnsoldTokens.buttonState}
               isWithdrawalUnlocked={withdrawUnsoldTokens.isWithdrawalUnlocked}
               withdrawalUnlocksAt={withdrawUnsoldTokens.withdrawalUnlocksAt}
@@ -267,9 +269,13 @@ export const ProjectDetailPage: React.FC = () => {
               tokensForSale={withdrawUnsoldTokens.tokenInfo.tokensForSale}
               tokensAllocated={withdrawUnsoldTokens.tokenInfo.tokensAllocated}
               onWithdraw={withdrawUnsoldTokens.withdrawUnsoldTokens}
+              projectStatus={Number(project.status)}
+              hasWithdrawn={withdrawUnsoldTokens.isConfirmed}
+              txHash={withdrawUnsoldTokens.hash}
+              withdrawnAmount={withdrawUnsoldTokens.withdrawnAmount}
             />
           )}
-
+          
           {/* CONTRIBUTE FORM - Show when Active and NOT owner and NOT refund scenario */}
           {project.status === ProjectStatus.Active && !isProjectOwner && !requestRefund.canRefund && (
             <ContributeForm 
