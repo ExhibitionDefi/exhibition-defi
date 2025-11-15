@@ -148,11 +148,11 @@ export const AddLiquidityForm: React.FC = () => {
                 <div className="flex items-center gap-1 flex-wrap">
                   <span className="whitespace-nowrap">Balance:</span>
                   <SafeHtml 
-                    content={`${AMMFormatters.formatTokenAmountSync(
+                    content={AMMFormatters.formatTokenAmountSync(
                       addLiquidity.balanceA.value,
                       addLiquidity.tokenAInfo.decimals,
                       6
-                    )} ${safeTokenASymbol}`}
+                    )}
                     as="span"
                     className="text-[var(--silver-light)] truncate"
                   />
@@ -173,7 +173,7 @@ export const AddLiquidityForm: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <button
               onClick={() => setShowTokenSelector('tokenA')}
-              className="border-opacity-50 rounded-xl p-2 sm:p-3 hover:border-[var(--neon-blue)] hover:border-opacity-80 transition-all duration-300 group flex-shrink-0 w-full sm:w-auto border border-[var(--silver-dark)]"
+              className="rounded-xl p-2 sm:p-3 hover:border-[var(--neon-blue)] hover:border-opacity-80 transition-all duration-300 group flex-shrink-0 w-full sm:w-auto"
             >
               <div className="flex items-center space-x-2 justify-center sm:justify-start">
                 {addLiquidity.tokenAInfo ? (
@@ -219,7 +219,7 @@ export const AddLiquidityForm: React.FC = () => {
               });
             }}
             disabled={!addLiquidity.state.tokenA || !addLiquidity.state.tokenB}
-            className="bg-[var(--deep-black)] border-2 border-[var(--silver-dark)] border-opacity-50 rounded-full p-2 sm:p-3 hover:border-[var(--neon-blue)] hover:border-opacity-80 disabled:opacity-50 transition-all duration-300 group"
+            className="bg-[var(--deep-black)] p-2 sm:p-3 disabled:opacity-50 transition-all duration-300 group"
             aria-label="Swap token positions"
           >
             <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--silver-light)] group-hover:text-[var(--neon-blue)] transition-colors duration-300" />
@@ -236,11 +236,11 @@ export const AddLiquidityForm: React.FC = () => {
                 <div className="flex items-center gap-1 flex-wrap">
                   <span className="whitespace-nowrap">Balance:</span>
                   <SafeHtml 
-                    content={`${AMMFormatters.formatTokenAmountSync(
+                    content={AMMFormatters.formatTokenAmountSync(
                       addLiquidity.balanceB.value,
                       addLiquidity.tokenBInfo.decimals,
                       6
-                    )} ${safeTokenBSymbol}`}
+                    )}
                     as="span"
                     className="text-[var(--silver-light)] truncate"
                   />
@@ -261,7 +261,7 @@ export const AddLiquidityForm: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <button
               onClick={() => setShowTokenSelector('tokenB')}
-              className="border-opacity-50 rounded-xl p-2 sm:p-3 hover:border-[var(--neon-orange)] hover:border-opacity-80 transition-all duration-300 group flex-shrink-0 w-full sm:w-auto border border-[var(--silver-dark)]"
+              className="border-opacity-50 rounded-xl p-2 sm:p-3 hover:border-[var(--neon-orange)] hover:border-opacity-80 transition-all duration-300 group flex-shrink-0 w-full sm:w-auto"
             >
               <div className="flex items-center space-x-2 justify-center sm:justify-start">
                 {addLiquidity.tokenBInfo ? (

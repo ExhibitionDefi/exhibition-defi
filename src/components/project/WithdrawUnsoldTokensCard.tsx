@@ -1,5 +1,5 @@
 // src/components/project/WithdrawUnsoldTokensCard.tsx
-import React, { useMemo } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { AlertCircle, Clock, CheckCircle2 } from 'lucide-react'
@@ -26,6 +26,8 @@ interface WithdrawUnsoldTokensCardProps {
   hasWithdrawn?: boolean
   txHash?: `0x${string}`
   onWithdraw: () => void
+  projectStatus?: number
+  withdrawnAmount?: bigint // Amount that was actually withdrawn
 }
 
 export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> = ({
@@ -43,7 +45,18 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
   hasWithdrawn = false,
   txHash,
   onWithdraw,
+  projectStatus,
+  withdrawnAmount,
 }) => {
+
+  const [savedWithdrawnAmount, setSavedWithdrawnAmount] = useState<bigint | null>(null)
+  useEffect(() => {
+    if (hasWithdrawn && savedWithdrawnAmount === null && withdrawnAmount && withdrawnAmount > 0n) {
+      setSavedWithdrawnAmount(withdrawnAmount)
+      console.log('💾 Saved withdrawn amount:', withdrawnAmount.toString())
+    }
+  }, [hasWithdrawn, withdrawnAmount, savedWithdrawnAmount])
+
   // ✅ Sanitize token symbol for display
   const safeTokenSymbol = useMemo(() => 
     sanitizeText(tokenSymbol), 
@@ -54,6 +67,13 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
   const formattedUnsoldTokens = formatUnits(unsoldTokensAmount, tokenDecimals)
   const formattedTokensForSale = formatUnits(tokensForSale, tokenDecimals)
   const formattedTokensAllocated = formatUnits(tokensAllocated, tokenDecimals)
+  
+  // ✅ Format withdrawn amount (use this for success message)
+  const amountForDisplay = savedWithdrawnAmount !== null ? savedWithdrawnAmount : (withdrawnAmount || unsoldTokensAmount)
+  const formattedWithdrawnAmount = formatUnits(amountForDisplay, tokenDecimals)
+
+  // ✅ Check if project is failed/refundable (status 5 or 6)
+  const isFailedProject = projectStatus === 5 || projectStatus === 6
 
   // ✅ Safe number formatting helper
   const formatDisplayNumber = (value: string, maxDecimals: number = 2) => {
@@ -111,7 +131,7 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
           </div>
         </div>
 
-        {/* Token Statistics */}
+        {/* Token Statistics - Updated to show correct data based on project status */}
         <div className="grid grid-cols-3 gap-3 p-4 bg-[var(--charcoal)] rounded-lg">
           <div>
             <p className="text-xs text-[var(--silver-dark)] mb-1">For Sale</p>
@@ -120,13 +140,17 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
             </p>
           </div>
           <div>
-            <p className="text-xs text-[var(--silver-dark)] mb-1">Allocated</p>
+            <p className="text-xs text-[var(--silver-dark)] mb-1">
+              {isFailedProject ? 'Sold' : 'Allocated'}
+            </p>
             <p className="text-sm font-medium text-[var(--silver-light)]">
               {formatDisplayNumber(formattedTokensAllocated)}
             </p>
           </div>
           <div>
-            <p className="text-xs text-[var(--silver-dark)] mb-1">Unsold</p>
+            <p className="text-xs text-[var(--silver-dark)] mb-1">
+              {isFailedProject ? 'To Return' : 'Unsold'}
+            </p>
             <p className="text-sm font-medium text-[var(--neon-blue)]">
               {formatDisplayNumber(formattedUnsoldTokens)}
             </p>
@@ -144,7 +168,7 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
                   Withdrawal Successful!
                 </p>
                 <SafeHtml 
-                  content={`${formatDisplayNumber(formattedUnsoldTokens)} ${safeTokenSymbol} tokens have been returned to your wallet`}
+                  content={`${formatDisplayNumber(formattedWithdrawnAmount)} ${safeTokenSymbol} tokens have been returned to your wallet`}
                   as="p"
                   className="text-xs text-[var(--silver-dark)]"
                 />
@@ -200,7 +224,7 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
             </div>
           )}
 
-          {/* Info Box */}
+          {/* Info Box - Updated messaging based on project status */}
           {!hasWithdrawn && (
             <div className="bg-gradient-to-r from-[var(--charcoal)] to-transparent p-4 rounded-lg border border-[var(--silver-dark)] border-opacity-20">
               <div className="flex items-start space-x-3">
@@ -212,8 +236,17 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
                   <ul className="text-xs text-[var(--silver-dark)] space-y-1 pl-4 list-disc">
                     <li>Project must have ended</li>
                     <li>1-day timelock period must have passed</li>
-                    <li>Available for failed projects or when hard cap not reached</li>
-                    <li>Unsold tokens will be returned to your wallet</li>
+                    {isFailedProject ? (
+                      <>
+                        <li>Project failed to reach soft cap</li>
+                        <li>All tokens for sale will be returned to your wallet</li>
+                      </>
+                    ) : (
+                      <>
+                        <li>Available when hard cap not reached</li>
+                        <li>Only unsold tokens will be returned to your wallet</li>
+                      </>
+                    )}
                   </ul>
                 </div>
               </div>
@@ -239,7 +272,10 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
         {hasWithdrawn && (
           <div className="pt-2 text-center">
             <p className="text-sm text-[var(--silver-dark)]">
-              All unsold tokens have been withdrawn
+              {isFailedProject 
+                ? 'All tokens have been returned' 
+                : 'All unsold tokens have been withdrawn'
+              }
             </p>
           </div>
         )}

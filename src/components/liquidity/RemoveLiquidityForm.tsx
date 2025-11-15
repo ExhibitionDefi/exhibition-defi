@@ -250,7 +250,7 @@ export const RemoveLiquidityForm: React.FC<RemoveLiquidityFormProps> = ({
             }}
             value={removeLiquidity.selectedPosition ? `${removeLiquidity.selectedPosition.tokenA}-${removeLiquidity.selectedPosition.tokenB}` : ''}
             disabled={!positions.length}
-            className="w-full p-2 bg-[var(--charcoal)] border-[var(--silver-dark)] border-opacity-30 text-[var(--silver-light)] rounded mb-2"
+            className="w-full p-2 bg-[var(--charcoal)] border border-[var(--silver-dark)] border-opacity-30 text-[var(--silver-light)] rounded mb-2"
           >
             <option value="" disabled={!positions.length}>
               {positions.length ? 'Select a position' : 'No positions available'}

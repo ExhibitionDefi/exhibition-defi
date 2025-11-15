@@ -12,7 +12,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { exhibitionAmmAbi } from '@/generated/wagmi';
 import { CONTRACT_ADDRESSES } from '../../config/contracts';
 import { AMMFormatters } from '../../utils/ammFormatters';
-import { SafeHtml } from '../SafeHtml';
+import { SafeHtml, SafeImage } from '../SafeHtml';
 
 // 🆕 Import Factory ABI (you'll need to add this)
 import { exhibitionFactoryAbi } from '@/generated/wagmi';
@@ -337,24 +337,29 @@ const PoolRow: React.FC<PoolRowProps> = ({ pool, onSelect }) => {
         {/* 🆕 Token Logo Display */}
         <div className="flex items-center -space-x-2">
           {pool.logoURIA && (
-            <img
+            <SafeImage
               src={pool.logoURIA}
               alt={pool.symbolA}
               className="w-8 h-8 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)]"
-              onError={(e) => {
-                // Fallback if image fails to load
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
+              fallback={
+                <div className="w-8 h-8 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs text-[var(--silver-dark)]">
+                  ?
+                </div>
+              }
+              onError={() => console.warn('Failed to load token A logo:', pool.logoURIA)}
             />
           )}
           {pool.logoURIB && (
-            <img
+            <SafeImage
               src={pool.logoURIB}
               alt={pool.symbolB}
               className="w-8 h-8 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)]"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
+              fallback={
+                <div className="w-8 h-8 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs text-[var(--silver-dark)]">
+                  ?
+                </div>
+              }
+              onError={() => console.warn('Failed to load token B logo:', pool.logoURIB)}
             />
           )}
         </div>
