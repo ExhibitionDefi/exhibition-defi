@@ -132,10 +132,8 @@ export const Layout: React.FC<LayoutProps> = ({
     }
   }, [isOpen, isConnected, address, verified])
 
-  // ✅ CRITICAL: Determine if user can access the app
-  // User MUST be connected AND verified to see content
-  const canAccessApp = isConnected && verified
-  const shouldShowConnectPrompt = !isConnected
+  // ✅ NEW LOGIC: Show content when NOT connected OR when verified
+  const shouldShowContent = !isConnected || (isConnected && verified)
   const shouldShowVerificationModal = isConnected && !verified && !isCheckingAuth
   const shouldShowLoadingSpinner = isConnected && isCheckingAuth
 
@@ -159,29 +157,27 @@ export const Layout: React.FC<LayoutProps> = ({
               </Link>
             </div>
 
-            {/* Desktop Navigation - Only show if user can access */}
-            {canAccessApp && (
-              <nav className="hidden md:flex space-x-1">
-                {navigation.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className={clsx(
-                        'flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                        isActivePath(item.href)
-                          ? 'bg-[var(--neon-blue)]/20 text-[var(--neon-blue)] border border-[var(--neon-blue)] shadow-[0_0_4px_var(--neon-blue)]/30'
-                          : 'text-[var(--metallic-silver)] hover:text-[var(--silver-light)] hover:bg-[var(--silver-dark)]/10'
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span>{item.name}</span>
-                    </Link>
-                  )
-                })}
-              </nav>
-            )}
+            {/* Desktop Navigation - Always visible */}
+            <nav className="hidden md:flex space-x-1">
+              {navigation.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={clsx(
+                      'flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                      isActivePath(item.href)
+                        ? 'bg-[var(--neon-blue)]/20 text-[var(--neon-blue)] border border-[var(--neon-blue)] shadow-[0_0_4px_var(--neon-blue)]/30'
+                        : 'text-[var(--metallic-silver)] hover:text-[var(--silver-light)] hover:bg-[var(--silver-dark)]/10'
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{item.name}</span>
+                  </Link>
+                )
+              })}
+            </nav>
 
             {/* Right Side */}
             <div className="flex items-center justify-end gap-1 md:gap-3"> 
@@ -190,21 +186,19 @@ export const Layout: React.FC<LayoutProps> = ({
                 <w3m-button />
               </div>
 
-              {/* Mobile Menu Button - Only show if user can access */}
-              {canAccessApp && (
-                <button
-                  className="md:hidden p-2 rounded-lg text-[var(--metallic-silver)] hover:text-[var(--silver-light)] hover:bg-[var(--silver-dark)]/20 flex-shrink-0"
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                >
-                  {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                </button>
-              )}
+              {/* Mobile Menu Button - Always visible */}
+              <button
+                className="md:hidden p-2 rounded-lg text-[var(--metallic-silver)] hover:text-[var(--silver-light)] hover:bg-[var(--silver-dark)]/20 flex-shrink-0"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
+                {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Mobile Navigation - Only show if user can access */}
-        {canAccessApp && isMobileMenuOpen && (
+        {/* Mobile Navigation - Always visible */}
+        {isMobileMenuOpen && (
           <div className="md:hidden border-t border-[var(--silver-dark)] bg-[var(--charcoal)]">
             <div className="px-4 py-2 space-y-1">
               {navigation.map((item) => {
@@ -239,38 +233,17 @@ export const Layout: React.FC<LayoutProps> = ({
       {/* Main Content */}
       <div className="pt-16">
         <main className={mainContainerClasses}>
-          {/* ✅ OPTION 1: Block everything until verified */}
-          {shouldShowConnectPrompt && (
-            <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] text-center px-4">
-                <img
-                  src={exhLogo}
-                  alt="EXH logo"
-                  className="w-20 h-20 rounded-2xl shadow-[0_0_30px_var(--neon-blue)]/40 mb-6"
-                />
-              <h1 className="text-3xl font-bold text-[var(--silver-light)] mb-4">
-                Welcome to Exhibition
-              </h1>
-              <p className="text-[var(--silver-dark)] mb-8 max-w-md">
-                A verifiable token launchpad and DEX with dedicated liquidity lock, built on Nexus verifiable network for the AI era.
-              </p>
-              <div className="bg-[var(--charcoal)] border border-[var(--silver-dark)] rounded-xl p-6">
-                <p className="text-[var(--silver-light)] mb-4">
-                  Connect your wallet to get started
-                </p>
-                <w3m-button />
-              </div>
-            </div>
-          )}
-
+          {/* Loading Spinner - Checking auth after wallet connection */}
           {shouldShowLoadingSpinner && (
             <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--neon-blue)] mx-auto mb-4"></div>
-                <p className="text-[var(--silver-light)]">Checking authentication...</p>
+                <p className="text-[var(--silver-light)]">Verifying wallet...</p>
               </div>
             </div>
           )}
 
+          {/* Verification Modal - Show when connected but not verified */}
           {shouldShowVerificationModal && (
             <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
               <MultiTransactionModal 
@@ -283,8 +256,8 @@ export const Layout: React.FC<LayoutProps> = ({
             </div>
           )}
 
-          {/* ✅ ONLY render children when fully authenticated */}
-          {canAccessApp && children}
+          {/* ✅ Content - Show when NOT connected OR when verified */}
+          {shouldShowContent && children}
         </main>
       </div>
     </div>
