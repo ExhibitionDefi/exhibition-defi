@@ -192,6 +192,9 @@ export const Layout: React.FC<LayoutProps> = ({
                   className="w-8 h-8 rounded-lg shadow-[0_0_8px_var(--neon-blue)]/40"
                   loading="eager"
                 />
+                <span className="text-sm text-[var(--neon-orange)] underline underline-offset-4 decoration-current">
+                  TESTNET
+                </span>
               </Link>
             </div>
 
