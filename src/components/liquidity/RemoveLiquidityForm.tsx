@@ -6,7 +6,7 @@ import { useRemoveLiquidity } from '@/hooks/amm/useRemoveLiquidity';
 import { AMMFormatters } from '@/utils/ammFormatters';
 import { SafeHtml } from '@/components/SafeHtml';
 import { sanitizeText } from '@/utils/sanitization';
-import type { Pool } from '@/components/liquidity/PoolList';
+import type { Pool } from './PoolList';
 
 interface RemoveLiquidityFormProps {
   positions: Pool[];

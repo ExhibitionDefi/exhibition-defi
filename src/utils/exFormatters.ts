@@ -1,5 +1,6 @@
 import { formatUnits, isAddressEqual, zeroAddress, parseUnits, getAddress, isAddress, type Address } from 'viem';
 import type { ProjectFormData } from '../types/project'
+import { logger } from './logger';
 
 // ========================================
 // ENUMS AND TYPES
@@ -162,28 +163,28 @@ export function debugContractParams(
   const endTime = Number(contractParams[11]);
   const lockDuration = Number(contractParams[14]);
 
-  console.log('=== CONTRACT VALIDATION DEBUG ===');
-  console.log('Current timestamp:', now);
-  console.log('Start timestamp:', startTime);
-  console.log('End timestamp:', endTime);
-  console.log('Time until start:', startTime - now, 'seconds');
-  console.log('Project duration:', endTime - startTime, 'seconds');
-  console.log('Lock duration:', lockDuration, 'seconds');
+  logger.info('=== CONTRACT VALIDATION DEBUG ===');
+  logger.info('Current timestamp:', now);
+  logger.info('Start timestamp:', startTime);
+  logger.info('End timestamp:', endTime);
+  logger.info('Time until start:', startTime - now, 'seconds');
+  logger.info('Project duration:', endTime - startTime, 'seconds');
+  logger.info('Lock duration:', lockDuration, 'seconds');
   
   // Check against contract constants
   const MIN_START_DELAY = 15 * 60; // 15 minutes
   const MAX_PROJECT_DURATION = 7 * 24 * 60 * 60; // 7 days
   const MIN_LOCK_DURATION = 14 * 24 * 60 * 60; // 14 days
   
-  console.log('=== VALIDATION CHECKS ===');
-  console.log('Start delay check:', startTime - now > MIN_START_DELAY, 
+  logger.info('=== VALIDATION CHECKS ===');
+  logger.info('Start delay check:', startTime - now > MIN_START_DELAY, 
               `(need > ${MIN_START_DELAY}, have ${startTime - now})`);
-  console.log('Project duration check:', endTime - startTime <= MAX_PROJECT_DURATION,
+  logger.info('Project duration check:', endTime - startTime <= MAX_PROJECT_DURATION,
               `(need <= ${MAX_PROJECT_DURATION}, have ${endTime - startTime})`);
-  console.log('Lock duration check:', lockDuration >= MIN_LOCK_DURATION,
+  logger.info('Lock duration check:', lockDuration >= MIN_LOCK_DURATION,
               `(need >= ${MIN_LOCK_DURATION}, have ${lockDuration})`);
   
-  console.log('=== ALL PARAMETERS ===');
+  logger.info('=== ALL PARAMETERS ===');
   contractParams.forEach((param, index) => {
     const paramNames = [
       'projectTokenName', 'projectTokenSymbol', 'initialTotalSupply', 'projectTokenLogoURI',
@@ -191,7 +192,7 @@ export function debugContractParams(
       'tokenPrice', 'startTime', 'endTime', 'amountTokensForSale', 'liquidityPercentage',
       'lockDuration', 'vestingEnabled', 'vestingCliff', 'vestingDuration', 'vestingInterval', 'vestingInitialRelease'
     ];
-    console.log(`${index}: ${paramNames[index]} =`, param);
+    logger.info(`${index}: ${paramNames[index]} =`, param);
   });
 }
 
@@ -245,7 +246,7 @@ export const parseTokenAmount = (amount: string, decimals: number): bigint => {
     // Parse to bigint with decimals using viem
     return parseUnits(cleanAmount, decimals)
   } catch (error) {
-    console.error('Failed to parse token amount:', { amount, decimals, error })
+    logger.error('Failed to parse token amount:', { amount, decimals, error })
     throw new Error(`Invalid token amount: ${amount}`)
   }
 }
@@ -283,7 +284,7 @@ export const parsePercentage = (percentage: string): bigint => {
     // Multiply by 100 to get basis points
     return BigInt(Math.floor(pct * 100))
   } catch (error) {
-    console.error('Failed to parse percentage:', { percentage, error })
+    logger.error('Failed to parse percentage:', { percentage, error })
     throw new Error(`Invalid percentage: ${percentage}`)
   }
 }
@@ -822,11 +823,11 @@ export const parseDurationToSeconds = (days: string): bigint => {
     // Example: 14 days = 14 * 86,400 = 1,209,600 seconds
     const seconds = Math.floor(daysNum * 24 * 60 * 60)
     
-    console.log(`📅 Duration conversion: ${days} days → ${seconds} seconds`)
+    logger.info(`📅 Duration conversion: ${days} days → ${seconds} seconds`)
     
     return BigInt(seconds)
   } catch (error) {
-    console.error('Failed to parse duration:', { days, error })
+    logger.error('Failed to parse duration:', { days, error })
     throw new Error(`Invalid duration: ${days}`)
   }
 }
@@ -1006,8 +1007,8 @@ export function prepareProjectCreationParams(
   }
 ): ProjectCreationParamsTuple {
   try {
-    console.log('Input params:', params);
-    console.log('Token decimals:', tokenDecimals);
+    logger.info('Input params:', params);
+    logger.info('Token decimals:', tokenDecimals);
 
     // Validate required fields
     if (!params.projectTokenName?.trim()) throw new Error('Project token name is required');
@@ -1065,7 +1066,7 @@ export function prepareProjectCreationParams(
       params.vestingEnabled && params.vestingInitialRelease ? parsePercentage(params.vestingInitialRelease) : 0n
     ];
 
-    console.log('Prepared contract params:', result);
+    logger.info('Prepared contract params:', result);
     
     // Additional validation
     if (result[5] <= 0n) throw new Error('Funding goal must be greater than 0'); // fundingGoal
@@ -1076,7 +1077,7 @@ export function prepareProjectCreationParams(
 
     return result;
   } catch (error) {
-    console.error('Error preparing project creation params:', error);
+    logger.error('Error preparing project creation params:', error);
     throw new Error(`Invalid form data: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -2509,17 +2510,18 @@ export function createTransactionSummary(
  * Log project state for debugging
  */
 export function logProjectState(project: Project, label: string = 'Project State'): void {
-  console.group(label);
-  console.log('Project Owner:', formatAddress(project.projectOwner));
-  console.log('Status:', formatProjectStatus(project.status));
-  console.log('Funding Progress:', `${calculateProgress(project.totalRaised, project.fundingGoal).toFixed(2)}%`);
-  console.log('Total Raised:', formatTokenAmount(project.totalRaised, 18));
-  console.log('Funding Goal:', formatTokenAmount(project.fundingGoal, 18));
-  console.log('Soft Cap:', formatTokenAmount(project.softCap, 18));
-  console.log('Time Remaining:', formatDuration(calculateTimeRemaining(project.endTime)));
-  console.log('Vesting Enabled:', project.vestingEnabled);
-  console.log('Liquidity Added:', project.liquidityAdded);
-  console.groupEnd();
+  // logger.group / logger.groupEnd are not present on the Logger type, use simple info markers instead
+  logger.info(`=== ${label} ===`);
+  logger.info('Project Owner:', formatAddress(project.projectOwner));
+  logger.info('Status:', formatProjectStatus(project.status));
+  logger.info('Funding Progress:', `${calculateProgress(project.totalRaised, project.fundingGoal).toFixed(2)}%`);
+  logger.info('Total Raised:', formatTokenAmount(project.totalRaised, 18));
+  logger.info('Funding Goal:', formatTokenAmount(project.fundingGoal, 18));
+  logger.info('Soft Cap:', formatTokenAmount(project.softCap, 18));
+  logger.info('Time Remaining:', formatDuration(calculateTimeRemaining(project.endTime)));
+  logger.info('Vesting Enabled:', project.vestingEnabled);
+  logger.info('Liquidity Added:', project.liquidityAdded);
+  logger.info(`=== End ${label} ===`);
 }
 
 // ========================================

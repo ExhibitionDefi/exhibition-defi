@@ -404,7 +404,7 @@ export function logSanitization(
 ): void {
   if (process.env.NODE_ENV === 'development') {
     if (original !== sanitized) {
-      console.warn(`[SANITIZED] ${field}:`, { original, sanitized })
+      logger.warn(`[SANITIZED] ${field}:`, { original, sanitized })
     }
   }
 }

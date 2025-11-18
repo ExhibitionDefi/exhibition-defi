@@ -43,8 +43,16 @@ const COMMON_TOKENS: Token[] = [
   },
 ].filter((token) => token.address !== AMMFormatters.CONSTANTS.ZERO_ADDRESS);
 
-export const AddLiquidityForm: React.FC = () => {
-  const addLiquidity = useAddLiquidity();
+// ✅ Add props interface to accept hook from parent
+interface AddLiquidityFormProps {
+  addLiquidity?: ReturnType<typeof useAddLiquidity>;
+}
+
+export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity: addLiquidityProp }) => {
+  // ✅ Fallback to default hook if not provided (for standalone usage)
+  const defaultAddLiquidity = useAddLiquidity();
+  const addLiquidity = addLiquidityProp || defaultAddLiquidity;
+  
   const [showTokenSelector, setShowTokenSelector] = useState<'tokenA' | 'tokenB' | null>(null);
   const [customTokens, setCustomTokens] = useState<Token[]>([]);
 
@@ -201,7 +209,7 @@ export const AddLiquidityForm: React.FC = () => {
               placeholder="0.0"
               value={addLiquidity.state.amountA}
               onChange={(e) => handleAmountChange(e.target.value, 'A')}
-              maxLength={30} // ✅ Prevent DoS
+              maxLength={30}
               className="flex-1 bg-transparent text-base sm:text-lg font-bold text-[var(--silver-light)] placeholder:text-[var(--silver-dark)] border-0 outline-none text-center sm:text-right"
             />
           </div>
@@ -289,7 +297,7 @@ export const AddLiquidityForm: React.FC = () => {
               placeholder="0.0"
               value={addLiquidity.state.amountB}
               onChange={(e) => handleAmountChange(e.target.value, 'B')}
-              maxLength={30} // ✅ Prevent DoS
+              maxLength={30}
               className="flex-1 bg-transparent text-base sm:text-lg font-bold text-[var(--silver-light)] placeholder:text-[var(--silver-dark)] border-0 outline-none text-center sm:text-right"
             />
           </div>

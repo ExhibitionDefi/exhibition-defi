@@ -29,13 +29,13 @@ const isValidAddress = (address: any): address is Address => {
   return typeof address === 'string' && address.length > 0 && isAddress(address);
 };
 
-export const useAddLiquidity = () => {
+export const useAddLiquidity = (initialTokenA?: Address | null, initialTokenB?: Address | null) => {
   const { address } = useAccount();
 
   // Initialize with default tokens from environment variables
   const [state, setState] = useState<AddLiquidityState>(() => {
-    const defaultTokenA = import.meta.env.VITE_EXH_ADDRESS as Address;
-    const defaultTokenB = import.meta.env.VITE_EXUSDT_ADDRESS as Address;
+    const defaultTokenA = initialTokenA || import.meta.env.VITE_EXH_ADDRESS as Address;
+    const defaultTokenB = initialTokenB || import.meta.env.VITE_EXUSDT_ADDRESS as Address;
     
     return {
       tokenA: isValidAddress(defaultTokenA) ? defaultTokenA : undefined,

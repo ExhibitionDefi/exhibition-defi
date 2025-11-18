@@ -1,5 +1,6 @@
 import { type Address, formatUnits, getContract, type PublicClient } from 'viem';
 import type { LiquidityPool, LiquidityLock, UserPortfolio } from '../types/amm.ts';
+import { logger } from './logger.ts';
 
 // ================================
 //     CONSTANTS
@@ -377,7 +378,7 @@ export const initializeAMMFormatters = (config: ContractConfig): void => {
  */
 export const getTokenDecimals = async (tokenAddress: Address): Promise<number> => {
   if (!contractConfig) {
-    console.warn('AMM Formatters not initialized, using default decimals');
+    logger.warn('AMM Formatters not initialized, using default decimals');
     return AMM_CONSTANTS.DEFAULT_DECIMALS;
   }
 
@@ -404,7 +405,7 @@ export const getTokenDecimals = async (tokenAddress: Address): Promise<number> =
 
     return decimals;
   } catch (error) {
-    console.warn(`Failed to fetch decimals for ${tokenAddress}:`, error);
+    logger.warn(`Failed to fetch decimals for ${tokenAddress}:`, error);
     return AMM_CONSTANTS.DEFAULT_DECIMALS;
   }
 };
@@ -414,7 +415,7 @@ export const getTokenDecimals = async (tokenAddress: Address): Promise<number> =
  */
 export const getTokenSymbol = async (tokenAddress: Address): Promise<string> => {
   if (!contractConfig) {
-    console.warn('AMM Formatters not initialized');
+    logger.warn('AMM Formatters not initialized');
     return 'Unknown';
   }
 
@@ -448,7 +449,7 @@ export const getTokenSymbol = async (tokenAddress: Address): Promise<string> => 
 
     return symbol;
   } catch (error) {
-    console.warn(`Failed to fetch symbol for ${tokenAddress}:`, error);
+    logger.warn(`Failed to fetch symbol for ${tokenAddress}:`, error);
     return 'Unknown';
   }
 };
@@ -458,7 +459,7 @@ export const getTokenSymbol = async (tokenAddress: Address): Promise<string> => 
  */
 export const getTokensInfo = async (tokenAddresses: Address[]): Promise<Record<Address, TokenInfo>> => {
   if (!contractConfig) {
-    console.warn('AMM Formatters not initialized');
+    logger.warn('AMM Formatters not initialized');
     return {};
   }
 
@@ -497,7 +498,7 @@ export const getTokensInfo = async (tokenAddresses: Address[]): Promise<Record<A
         result[address] = tokenInfo;
       });
     } catch (error) {
-      console.warn('Failed to fetch tokens info:', error);
+      logger.warn('Failed to fetch tokens info:', error);
       
       // Fallback to individual calls or default values
       for (const address of uncachedTokens) {
@@ -559,7 +560,7 @@ export const formatTokenAmountPrecise = (
 
     return formatted;
   } catch (error) {
-    console.warn('Error in formatTokenAmountPrecise:', error);
+    logger.warn('Error in formatTokenAmountPrecise:', error);
     return '0';
   }
 };
@@ -686,7 +687,7 @@ export const formatPoolRatio = (
     
     return formatUQ112x112(ratio, AMM_CONSTANTS.RATIO_PRECISION_DECIMALS, displayDecimals);
   } catch (error) {
-    console.warn('Error calculating pool ratio:', error);
+    logger.warn('Error calculating pool ratio:', error);
     return '0';
   }
 };
@@ -846,7 +847,7 @@ export const calculatePriceImpactPrecise = (
     
     return PrecisionMath.calculatePercentage(priceDiff, currentPriceEncoded, 2);
   } catch (error) {
-    console.warn('Error calculating price impact:', error);
+    logger.warn('Error calculating price impact:', error);
     return BigInt(0);
   }
 };
@@ -925,7 +926,7 @@ export const calculateAPRPrecise = (
     // Annualized APR = dailyAPR * 365
     return dailyAPR * BigInt(365);
   } catch (error) {
-    console.warn('Error calculating APR:', error);
+    logger.warn('Error calculating APR:', error);
     return BigInt(0);
   }
 };
@@ -984,7 +985,7 @@ export const calculateConstantProduct = (reserve0: bigint, reserve1: bigint): bi
   try {
     return reserve0 * reserve1;
   } catch (error) {
-    console.warn('Overflow in constant product calculation:', error);
+    logger.warn('Overflow in constant product calculation:', error);
     return BigInt(0);
   }
 };

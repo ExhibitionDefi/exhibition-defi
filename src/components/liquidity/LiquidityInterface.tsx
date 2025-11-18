@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Minus, Settings } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
@@ -6,13 +6,20 @@ import { AddLiquidityForm } from './AddLiquidityForm';
 import { RemoveLiquidityForm } from './RemoveLiquidityForm';
 import { useAddLiquidity } from '@/hooks/amm/useAddLiquidity';
 import { useRemoveLiquidity } from '@/hooks/amm/useRemoveLiquidity';
-import type { Pool } from '@/components/liquidity/PoolList';
+import type { Pool } from './PoolList';
+import type { Address } from 'viem';
 
 interface LiquidityInterfaceProps {
   className?: string;
   initialPositions?: Pool[];
   selectedPosition?: Pool | null;
   onSelectPosition?: (position: Pool | null) => void;
+  initialMode?: 'add' | 'remove';
+  preSelectedTokenA?: Address | null;
+  preSelectedTokenB?: Address | null;
+  addLiquidity?: ReturnType<typeof useAddLiquidity>;
+  removeLiquidity?: ReturnType<typeof useRemoveLiquidity>;
+  onModeChange?: (mode: 'add' | 'remove') => void;
 }
 
 export const LiquidityInterface: React.FC<LiquidityInterfaceProps> = ({
@@ -20,18 +27,37 @@ export const LiquidityInterface: React.FC<LiquidityInterfaceProps> = ({
   initialPositions = [],
   selectedPosition,
   onSelectPosition,
+  initialMode = 'add',
+  preSelectedTokenA,
+  preSelectedTokenB,
+  addLiquidity: addLiquidityProp,
+  removeLiquidity: removeLiquidityProp,
+  onModeChange,
 }) => {
-  const [mode, setMode] = useState<'add' | 'remove'>('add');
+  const [mode, setMode] = useState<'add' | 'remove'>(initialMode);
   const [showSettings, setShowSettings] = useState(false);
 
-  const addLiquidity = useAddLiquidity();
-  const removeLiquidity = useRemoveLiquidity();
+  // ✅ Use passed hooks or create defaults
+  const defaultAddLiquidity = useAddLiquidity(preSelectedTokenA, preSelectedTokenB);
+  const addLiquidity = addLiquidityProp || defaultAddLiquidity;
+  
+  const defaultRemoveLiquidity = useRemoveLiquidity();
+  const removeLiquidity = removeLiquidityProp || defaultRemoveLiquidity;
 
   // Get the current active hook based on mode
   const currentHook = mode === 'add' ? addLiquidity : removeLiquidity;
 
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
+
+  // ✅ Handle mode change and notify parent
+  const handleModeChange = (newMode: 'add' | 'remove') => {
+    setMode(newMode);
+    onModeChange?.(newMode);
+  };
+
   return (
-    // MOBILE FIX: Changed max-w-md to responsive width
     <div className={`w-full max-w-[95vw] sm:max-w-lg md:max-w-md mx-auto px-2 sm:px-0 ${className}`}>
       {/* Main Liquidity Card */}
       <div className="bg-[var(--deep-black)] border border-[var(--charcoal)] rounded-2xl p-4 sm:p-6 shadow-2xl">
@@ -50,11 +76,11 @@ export const LiquidityInterface: React.FC<LiquidityInterfaceProps> = ({
           </div>
         </div>
 
-        {/* Mode Switch - MOBILE FIX: Better mobile sizing */}
+        {/* Mode Switch */}
         <div className="flex space-x-1 bg-[var(--charcoal)] p-1.5 sm:p-2 rounded-lg border border-[var(--silver-dark)] border-opacity-30 mb-4 sm:mb-6">
           <Button
             variant={mode === 'add' ? 'default' : 'ghost'}
-            onClick={() => setMode('add')}
+            onClick={() => handleModeChange('add')} // ✅ Use new handler
             disabled={currentHook.state.isProcessing}
             className={`flex-1 transition-all duration-300 text-sm sm:text-base py-2 sm:py-2.5 ${
               mode === 'add'
@@ -68,7 +94,7 @@ export const LiquidityInterface: React.FC<LiquidityInterfaceProps> = ({
           </Button>
           <Button
             variant={mode === 'remove' ? 'default' : 'ghost'}
-            onClick={() => setMode('remove')}
+            onClick={() => handleModeChange('remove')} // ✅ Use new handler
             disabled={currentHook.state.isProcessing}
             className={`flex-1 transition-all duration-300 text-sm sm:text-base py-2 sm:py-2.5 ${
               mode === 'remove'
@@ -84,7 +110,7 @@ export const LiquidityInterface: React.FC<LiquidityInterfaceProps> = ({
 
         {/* Render Form Based on Mode */}
         {mode === 'add' ? (
-          <AddLiquidityForm />
+          <AddLiquidityForm addLiquidity={addLiquidity} />
         ) : (
           <RemoveLiquidityForm
             positions={initialPositions}

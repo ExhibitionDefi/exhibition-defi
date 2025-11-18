@@ -1,179 +1,150 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAccount, useReadContracts } from 'wagmi';
+import { useNavigate } from 'react-router-dom';
+import { Plus, TrendingUp, Droplet } from 'lucide-react';
 import { exhibitionAmmAbi } from '@/generated/wagmi';
 import { CONTRACT_ADDRESSES } from '@/config/contracts';
-import { LiquidityInterface } from '@/components/liquidity/LiquidityInterface';
-import { PoolList } from '@/components/liquidity/PoolList';
 import { Button } from '@/components/ui/Button';
-import type { Pool } from '@/components/liquidity/PoolList';
+import { Card } from '@/components/ui/Card';
+import { PoolList } from '@/components/liquidity/PoolList';
 import type { Address } from 'viem';
-import { logger } from '@/utils/logger';
 
 export const LiquidityPage: React.FC = () => {
   const { address } = useAccount();
+  const navigate = useNavigate();
   const [showMyPositions, setShowMyPositions] = useState(false);
-  const [initialPositions, setInitialPositions] = useState<Pool[]>([]);
-  const [selectedPosition, setSelectedPosition] = useState<Pool | null>(null);
 
-  // Fetch user portfolio when address is available
-  const { data: portfolioData, isLoading, error } = useReadContracts({
+  // Fetch global pool statistics
+  const { data: statsData } = useReadContracts({
     contracts: [
       {
         address: CONTRACT_ADDRESSES.AMM,
         abi: exhibitionAmmAbi,
-        functionName: 'getUserPortfolio',
-        args: address ? [address, BigInt(0), BigInt(50)] : undefined,
+        functionName: 'getPoolsPaginated',
+        args: [BigInt(0), BigInt(100)],
       },
     ],
     query: {
-      enabled: !!address,
       refetchInterval: 30_000,
       staleTime: 15_000,
     },
   });
 
-  // Extract portfolio result
-  const portfolioResult = portfolioData?.[0]?.result as
-    | [Address[], Address[], bigint[], bigint[]]
+  const allPoolsResult = statsData?.[0]?.result as
+    | [Address[], Address[], bigint, boolean]
     | undefined;
 
-  // Gather all unique tokens from portfolio
-  const allTokens = useMemo(() => {
-    if (!portfolioResult) return [];
+  // Calculate overview statistics
+  const overviewStats = useMemo(() => {
+    const totalPools = allPoolsResult?.[2] ? Number(allPoolsResult[2]) : 0;
+    
+    // Placeholder values for TVL and Volume
+    const tvl = '0';
+    const volume24h = '0';
 
-    const tokens = new Set<Address>();
-    const [tokenAs, tokenBs] = portfolioResult;
-
-    tokenAs?.forEach((token: Address) => tokens.add(token));
-    tokenBs?.forEach((token: Address) => tokens.add(token));
-
-    return Array.from(tokens);
-  }, [portfolioResult]);
-
-  // Fetch token info for all tokens in portfolio
-  const { data: tokensInfoData } = useReadContracts({
-    contracts: [
-      {
-        address: CONTRACT_ADDRESSES.AMM,
-        abi: exhibitionAmmAbi,
-        functionName: 'getTokensInfo',
-        args: allTokens.length > 0 ? [allTokens] : undefined,
-      },
-    ],
-    query: {
-      enabled: allTokens.length > 0,
-      refetchInterval: 120_000,
-      staleTime: 60_000,
-    },
-  });
-
-  const tokensInfo = tokensInfoData?.[0]?.result as
-    | readonly [readonly string[], readonly bigint[], readonly bigint[]]
-    | undefined;
-
-  // Transform portfolio data into Pool array with correct symbols
-  useEffect(() => {
-    if (!portfolioResult || !address || !tokensInfo) {
-      logger.info('Missing data:', { portfolioResult: !!portfolioResult, address: !!address, tokensInfo: !!tokensInfo });
-      setInitialPositions([]);
-      setSelectedPosition(null);
-      return;
-    }
-
-    logger.info('Portfolio data:', portfolioResult);
-    logger.info('Tokens info:', tokensInfo);
-
-    const [tokenAs, tokenBs, lpBalances, sharePercentages] = portfolioResult;
-    const [symbols] = tokensInfo;
-
-    // Create token symbol map
-    const tokenSymbolMap: Record<Address, string> = {};
-    allTokens.forEach((token, index) => {
-      if (symbols[index]) {
-        tokenSymbolMap[token] = symbols[index];
-      }
-    });
-
-    logger.info('Token symbol map:', tokenSymbolMap);
-
-    const positions: Pool[] = tokenAs.map((tokenA, index) => {
-      const tokenB = tokenBs[index] || ('0x0' as Address);
-      const lpBalance = lpBalances[index] || BigInt(0);
-      const sharePercentage = sharePercentages[index] || BigInt(0);
-
-      const symbolA = tokenSymbolMap[tokenA] || 'Unknown';
-      const symbolB = tokenSymbolMap[tokenB] || 'Unknown';
-
-      return {
-        tokenA,
-        tokenB,
-        symbolA,
-        symbolB,
-        reserveA: BigInt(0),
-        reserveB: BigInt(0),
-        totalLPSupply: BigInt(0),
-        userLPBalance: lpBalance,
-        userShare: Number(sharePercentage) / 100,
-      };
-    });
-
-    logger.info('Transformed positions:', positions);
-    setInitialPositions(positions);
-    if (positions.length > 0 && !selectedPosition) {
-      setSelectedPosition(positions[0]);
-    }
-  }, [portfolioResult, address, tokensInfo, allTokens, selectedPosition]);
+    return {
+      totalPools,
+      tvl,
+      volume24h,
+    };
+  }, [allPoolsResult]);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4 text-[var(--silver-light)] bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)] bg-clip-text text-transparent">Liquidity Pools</h1>
-          <p className="text-[var(--metallic-silver)]">
-            Provide liquidity to earn trading fees
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Liquidity Interface */}
-          <div>
-            {isLoading && <div className="text-[var(--silver-light)]">Loading positions...</div>}
-            {error && <div className="text-[var(--neon-orange)]">Error: {error.message}</div>}
-            <LiquidityInterface
-              initialPositions={initialPositions}
-              selectedPosition={selectedPosition}
-              onSelectPosition={setSelectedPosition}
-            />
-          </div>
-
-          {/* Pool List */}
-          <div>
-            <div className="mb-4 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-[var(--silver-light)]">
-                {showMyPositions ? 'Your Positions' : 'All Pools'}
-              </h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowMyPositions(!showMyPositions)}
-              >
-                {showMyPositions ? 'Show All Pools' : 'Show My Positions'}
-              </Button>
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+      <div className="w-full mx-auto">
+        {/* Header Section - Responsive Layout */}
+        <div className="mb-6 sm:mb-8">
+          {/* Top Row: Title + Stats Cards */}
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4 sm:mb-6">
+            {/* Left: Title + Subtitle */}
+            <div className="flex-shrink-0">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 text-[var(--silver-light)] bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)] bg-clip-text text-transparent">
+                Liquidity Pools
+              </h1>
+              <p className="text-sm sm:text-base text-[var(--metallic-silver)]">
+                Add liquidity to earn trading fees from swaps
+              </p>
             </div>
 
-            <PoolList
-              showUserPositionsOnly={showMyPositions}
-              onSelectPool={(tokenA, tokenB) => {
-                const position = initialPositions.find(
-                  (p) => p.tokenA === tokenA && p.tokenB === tokenB
-                );
-                if (position) {
-                  setSelectedPosition(position);
-                }
-              }}
-            />
+            {/* Right: Stats Cards */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:flex-shrink-0">
+              {/* TVL Card */}
+              <Card className="p-4 sm:p-5 bg-gradient-to-br from-[var(--deep-black)] to-[var(--charcoal)] border-[var(--silver-dark)] border-opacity-30 min-w-[140px] sm:min-w-[160px] lg:w-[200px]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs sm:text-sm text-[var(--metallic-silver)]">TVL</span>
+                  <Droplet className="w-4 h-4 text-[var(--neon-blue)]" />
+                </div>
+                <div className="text-lg sm:text-xl font-bold text-[var(--silver-light)] truncate">
+                  ${overviewStats.tvl}
+                </div>
+                <div className="text-xs text-[var(--neon-blue)] mt-1">
+                  {overviewStats.totalPools} pools
+                </div>
+              </Card>
+
+              {/* Volume Card */}
+              <Card className="p-4 sm:p-5 bg-gradient-to-br from-[var(--deep-black)] to-[var(--charcoal)] border-[var(--silver-dark)] border-opacity-30 min-w-[140px] sm:min-w-[160px] lg:w-[200px]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs sm:text-sm text-[var(--metallic-silver)]">Volume (24h)</span>
+                  <TrendingUp className="w-4 h-4 text-[var(--neon-orange)]" />
+                </div>
+                <div className="text-lg sm:text-xl font-bold text-[var(--silver-light)] truncate">
+                  ${overviewStats.volume24h}
+                </div>
+                <div className="text-xs text-[var(--neon-orange)] mt-1">
+                  +0%
+                </div>
+              </Card>
+            </div>
+          </div>
+
+          {/* Bottom Row: Title + Buttons */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            {/* Left: Pool View Title */}
+            <div className="flex items-center space-x-2">
+              <h2 className="text-lg sm:text-xl font-semibold text-[var(--silver-light)]">
+                {showMyPositions ? 'Your Positions' : 'All Pools'}
+              </h2>
+            </div>
+
+            {/* Right: Buttons */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              {address && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowMyPositions(!showMyPositions)}
+                  className="border-[var(--silver-dark)] border-opacity-30 text-[var(--silver-light)] hover:bg-[var(--charcoal)] text-sm"
+                >
+                  {showMyPositions ? 'Show All Pools' : 'My Positions'}
+                </Button>
+              )}
+              <Button
+                onClick={() => navigate('/liquidity/manage')}
+                className="bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-blue)] hover:from-[var(--neon-blue)] hover:to-[var(--neon-orange)] text-white text-sm"
+                size="sm"
+              >
+                <Plus className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">New Position</span>
+                <span className="xs:hidden">New</span>
+              </Button>
+            </div>
           </div>
         </div>
+
+        {/* Pool List */}
+        <PoolList
+          showUserPositionsOnly={showMyPositions}
+          onNavigateToAdd={(tokenA: Address, tokenB: Address) => {
+            navigate(`/liquidity/manage?tokenA=${tokenA}&tokenB=${tokenB}&mode=add`);
+          }}
+          onNavigateToRemove={(tokenA: Address, tokenB: Address) => {
+            navigate(`/liquidity/manage?tokenA=${tokenA}&tokenB=${tokenB}&mode=remove`);
+          }}
+          onNavigateToSwap={(tokenA: Address, tokenB: Address) => {
+            navigate(`/swap?tokenA=${tokenA}&tokenB=${tokenB}`);
+          }}
+        />
       </div>
     </div>
   );

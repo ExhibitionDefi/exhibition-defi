@@ -1,7 +1,16 @@
+// src/pages/SwapPage.tsx
 import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { SwapInterface } from '@/components/swap/SwapInterface';
+import type { Address } from 'viem';
 
 export const SwapPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  
+  // Read token addresses from URL parameters
+  const tokenAParam = searchParams.get('tokenA') as Address | null;
+  const tokenBParam = searchParams.get('tokenB') as Address | null;
+
   return (
     <div className="container mx-auto px-4 py-8 min-h-screen bg-[var(--deep-black)]">
       <div className="max-w-2xl mx-auto">
@@ -18,7 +27,10 @@ export const SwapPage: React.FC = () => {
             <div className="h-1 w-8 bg-gradient-to-l from-[var(--neon-orange)] to-transparent rounded-full"></div>
           </div>
         </div>
-        <SwapInterface />
+        <SwapInterface 
+          defaultTokenIn={tokenAParam || undefined}
+          defaultTokenOut={tokenBParam || undefined}
+        />
       </div>
     </div>
   );
