@@ -345,7 +345,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
       case 1:
         return (
           <div className="space-y-8">
-            <div className="border-l-4 border-[var(--neon-blue)] pl-4">
+            <div className="border border-l-4 border-[var(--neon-blue)] pl-4">
               <h3 className="text-2xl font-bold text-[var(--silver-light)] mb-2">
                 Project Token Details
               </h3>
@@ -1173,13 +1173,12 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
       className="
         space-y-8 
         w-full 
-        max-w-full 
         sm:max-w-lg 
         md:max-w-xl 
         lg:max-w-2xl 
         xl:max-w-3xl 
         mx-auto 
-        px-4
+        px-0 sm:px-4
       "
     >
       {error && (
@@ -1188,7 +1187,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
         </Alert>
       )}
 
-      <div className="bg-[var(--charcoal)] border border-[var(--silver-dark)]/20 rounded-2xl p-6 sm:p-8 md:p-10">
+      <div className="bg-[var(--charcoal)] rounded-2xl p-6 sm:p-8 md:p-10">
         {renderStepContent()}
       </div>
 
