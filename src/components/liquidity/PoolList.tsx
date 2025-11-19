@@ -478,7 +478,7 @@ const PoolRow: React.FC<PoolRowProps> = ({ pool, showUserPosition = false, onAdd
           <div className="hidden lg:block h-6 w-px bg-[var(--silver-dark)] opacity-30" />
 
           {/* Pool Stats - Grid on Mobile, Inline on Desktop */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex lg:items-center gap-3 sm:gap-5 lg:gap-8 xl:gap-32 flex-1 min-w-0 text-xs sm:text-base lg:text-lg">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex lg:items-center gap-3 sm:gap-5 lg:gap-8 xl:gap-32 flex-1 min-w-0 text-sm sm:text-base lg:text-lg">
             <div className="min-w-0">
               <div className="text-[var(--silver-dark)] mb-0.5 lg:mb-0 truncate">Liquidity</div>
               <div className="font-medium text-[var(--silver-light)] truncate">
