@@ -1,8 +1,8 @@
 import { defineChain } from 'viem'
 
 // 1. Define variables for cleaner configuration below
-const NEXUS_TESTNET_RPC_URLS = [
-  import.meta.env.VITE_NEXUS_TESTNET_RPC_URL,
+const NEXUS_TESTNET_WALLET_RPC_URL = [
+  import.meta.env.VITE_NEXUS_TESTNET_WALLET_RPC_URL,
   import.meta.env.VITE_NEXUS_ALCHEMY_RPC_URL,
 ].filter(Boolean); // HTTP RPC Endpoints
 
@@ -22,12 +22,12 @@ export const nexusTestnet = defineChain({
   },
   rpcUrls: {
     public: {
-      http: NEXUS_TESTNET_RPC_URLS,
+      http: NEXUS_TESTNET_WALLET_RPC_URL,
       // ⭐ ADDITION 1: Use the WSS URL here for public connections
       webSocket: NEXUS_TESTNET_WS_URLS, 
     },
     default: {
-      http: NEXUS_TESTNET_RPC_URLS,
+      http: NEXUS_TESTNET_WALLET_RPC_URL,
       // ⭐ ADDITION 2: Use the WSS URL here for default connections
       webSocket: NEXUS_TESTNET_WS_URLS,
     },

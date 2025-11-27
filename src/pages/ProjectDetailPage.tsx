@@ -23,6 +23,7 @@ import { useFinalizeLiquidity } from '../hooks/pad/useFinalizeLiquidity'
 import { useContributeToProject } from '../hooks/pad/useContributeToProject'
 import { useRequestRefund } from '../hooks/pad/useRequestRefund'
 import { useWithdrawUnsoldTokens } from '../hooks/pad/useWithdrawUnsoldTokens'
+import { useClaimTokens } from '../hooks/pad/useClaimTokens'
 import { ProjectStatus } from '../types/project'
 
 export const ProjectDetailPage: React.FC = () => {
@@ -95,6 +96,15 @@ export const ProjectDetailPage: React.FC = () => {
 
   // Initialize withdraw unsold tokens hook
   const withdrawUnsoldTokens = useWithdrawUnsoldTokens({
+    project,
+    onConfirmed: () => {
+      refetch()
+    },
+    showToast: true,
+  })
+
+  // Initialize claim tokens hook
+  const claimTokens = useClaimTokens({
     project,
     onConfirmed: () => {
       refetch()
@@ -307,7 +317,17 @@ export const ProjectDetailPage: React.FC = () => {
               onRefetch={refetch}
               canFinalize={canFinalize}
               finalizeButtonState={finalize.buttonState}
+              finalizeIsLoading={finalize.isLoading} 
               onFinalize={finalize.executeFinalize}
+              onClaimTokens={claimTokens.claimTokens}
+              claimIsLoading={claimTokens.isLoading}
+              claimIsConfirming={claimTokens.isConfirming}
+              claimIsConfirmed={claimTokens.isConfirmed}
+              claimError={claimTokens.error}
+              claimHash={claimTokens.hash}
+              // Vesting timing data
+              nextClaimDate={claimTokens.nextClaimDate}
+              availableAmount={claimTokens.availableAmount}
             />
           )}
         </div>
@@ -416,6 +436,19 @@ export const ProjectDetailPage: React.FC = () => {
         isMainSuccess={withdrawUnsoldTokens.isConfirmed}
         isError={withdrawUnsoldTokens.isError}
         error={withdrawUnsoldTokens.error}
+      />
+
+      {/* Claim Tokens Modal */}
+      <MultiTransactionModal
+        isOpen={claimTokens.transactionStatus.show}
+        onClose={claimTokens.reset}
+        transactionType={claimTokens.transactionType}
+        mainHash={claimTokens.hash}
+        isMainPending={claimTokens.isPending}
+        isMainConfirming={claimTokens.isConfirming}
+        isMainSuccess={claimTokens.isConfirmed}
+        isError={claimTokens.isError}
+        error={claimTokens.error}
       />
     </div>
   )

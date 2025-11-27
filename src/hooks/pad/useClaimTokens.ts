@@ -1,30 +1,34 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { exhibitionAbi } from '@/generated/wagmi'
-import { EXHIBITION_ADDRESS, EXPLORER_URL } from '@/config/contracts'
+import { EXHIBITION_ADDRESS } from '@/config/contracts'
 import { useTokenInfo } from '@/hooks/useTokenInfo'
 import type { ProjectDisplayData } from '@/types/project'
 import { ProjectStatus } from '@/types/project'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import type { Hash } from 'viem'
+import type { TransactionType } from '@/components/common/MultiTransactionModal'
+import { logger } from '@/utils/logger'
 
-type Step = 'idle' | 'submitting' | 'confirming' | 'confirmed' | 'error'
-
+/**
+ * Button state for UI feedback
+ */
 interface ButtonState {
   text: string
   disabled: boolean
-  loading: boolean
 }
 
-interface TxStatus {
+/**
+ * Transaction status for modal display
+ */
+interface TransactionStatus {
   show: boolean
-  hash?: `0x${string}`
-  isPending?: boolean
-  isConfirming?: boolean
-  isSuccess?: boolean
-  isError?: boolean
-  error?: Error | null
-  message?: string
+  hash?: Hash
+  isPending: boolean
+  isConfirming: boolean
+  isSuccess: boolean
+  isError: boolean
+  error: Error | null
 }
 
 interface UserVestingInfo {
@@ -55,32 +59,32 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
 
   const { isConnected, address } = useAccount()
   
+  // State for modal visibility
+  const [showModal, setShowModal] = useState(false)
+  
   const {
     writeContract,
     data: hash,
-    isPending: wagmiIsPending,
-    isError: wagmiIsError,
-    error: wagmiError,
+    isPending,
+    isError: isWriteError,
+    error: writeError,
+    reset: resetWrite,
   } = useWriteContract()
   
   const {
     isLoading: isConfirming,
     isSuccess: isConfirmed,
-    isError: receiptError,
+    isError: isReceiptError,
+    error: receiptError,
   } = useWaitForTransactionReceipt({ hash })
 
-  const [step, setStep] = useState<Step>('idle')
-  const [txHash, setTxHash] = useState<Hash | undefined>(undefined)
-  const [txError, setTxError] = useState<Error | null>(null)
-  const [showStatus, setShowStatus] = useState(false)
+  // Combine error states
+  const isError = isWriteError || isReceiptError
+  const error = writeError || receiptError
   
   const [vestingInfo, setVestingInfo] = useState<UserVestingInfo | null>(null)
   const [availableAmount, setAvailableAmount] = useState<bigint>(0n)
   const [nextClaimDate, setNextClaimDate] = useState<Date | null>(null)
-
-  // 🔥 Toast tracking refs to prevent duplicates
-  const hasShownSubmitToast = useRef(false)
-  const hasShownConfirmedToast = useRef(false)
 
   // Get project token info
   const { 
@@ -136,24 +140,6 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
     }
   }, [userVestingData, userContribution, project, address])
 
-  // Transaction status
-  const transactionStatus: TxStatus = useMemo(() => ({
-    show: showStatus,
-    hash: txHash as `0x${string}` | undefined,
-    isPending: step === 'submitting' || wagmiIsPending,
-    isConfirming: step === 'confirming' || isConfirming,
-    isSuccess: step === 'confirmed' || isConfirmed,
-    isError: step === 'error' || wagmiIsError || Boolean(receiptError),
-    error: txError ?? (wagmiError as Error | undefined) ?? null,
-    message:
-      step === 'submitting' ? 'Submitting claim...' :
-      step === 'confirming' ? 'Waiting for confirmation...' :
-      step === 'confirmed' ? 'Claimed successfully' :
-      step === 'error' ? txError?.message ?? 'Transaction failed' : undefined,
-  }), [showStatus, txHash, step, wagmiIsPending, isConfirming, isConfirmed, wagmiIsError, receiptError, txError, wagmiError])
-
-  const isLoading = step === 'submitting' || step === 'confirming' || wagmiIsPending || isConfirming
-
   // Check if user can claim tokens
   const validStatuses: number[] = [
     ProjectStatus.Successful,
@@ -176,24 +162,13 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
   const executeClaim = useCallback(async () => {
     if (!project) {
       const err = new Error('Project not loaded')
-      setTxError(err)
-      setStep('error')
       if (showToast) toast.error('Project not loaded')
       onError?.(err)
       return
     }
 
-    setTxError(null)
-    setTxHash(undefined)
-    setShowStatus(true)
-    setStep('idle')
-    hasShownSubmitToast.current = false
-    hasShownConfirmedToast.current = false
-
     if (!isConnected) {
       const err = new Error('Please connect your wallet')
-      setTxError(err)
-      setStep('error')
       if (showToast) toast.error('Please connect your wallet')
       onError?.(err)
       return
@@ -201,15 +176,14 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
 
     if (availableAmount <= 0n) {
       const err = new Error('No tokens available to claim')
-      setTxError(err)
-      setStep('error')
       if (showToast) toast.error('No tokens available to claim')
       onError?.(err)
       return
     }
 
-    setStep('submitting')
     try {
+      setShowModal(true)
+
       await writeContract({
         address: EXHIBITION_ADDRESS,
         abi: exhibitionAbi,
@@ -217,37 +191,37 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
         args: [BigInt(project.id)],
       })
       
-      if (showToast && !hasShownSubmitToast.current) {
-        toast.loading('Claim submitted — confirm in wallet')
-        hasShownSubmitToast.current = true
+      // Call onSuccess callback
+      if (onSuccess) {
+        onSuccess(hash)
+      }
+    } catch (err) {
+      logger.error('Failed to execute claim tokens:', err)
+      const error = err as Error
+      
+      if (showToast) {
+        toast.error('Failed to initiate transaction')
       }
       
-      onSuccess?.(txHash)
-      setStep('confirming')
-    } catch (err) {
-      const e = err as Error
-      setTxError(e)
-      setStep('error')
-      if (showToast) toast.error(e.message || 'Failed to claim')
-      onError?.(e)
+      if (onError) {
+        onError(error)
+      }
     }
-  }, [writeContract, isConnected, availableAmount, project, onSuccess, onError, showToast, txHash])
+  }, [writeContract, isConnected, availableAmount, project, onSuccess, onError, showToast, hash])
 
-  // Handle hash
-  useEffect(() => { 
-    if (hash) { 
-      setTxHash(hash)
-      setStep('confirming')
-    } 
-  }, [hash])
+  // Reset function
+  const reset = useCallback(() => {
+    setShowModal(false)
+    resetWrite()
+  }, [resetWrite])
 
-  // Handle confirmation
-  useEffect(() => { 
-    if (isConfirmed && step === 'confirming' && !hasShownConfirmedToast.current) { 
-      setStep('confirmed')
+  // Handle success
+  useEffect(() => {
+    if (isConfirmed && showModal) {
       if (showToast) {
-        toast.success('Tokens claimed successfully')
-        hasShownConfirmedToast.current = true
+        toast.success('Tokens claimed successfully!', {
+          description: 'Your tokens have been transferred to your wallet.',
+        })
       }
       
       // Refetch vesting info after successful claim
@@ -255,95 +229,92 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
         refetchVestingInfo()
       }, 2000)
       
-      onConfirmed?.(txHash)
-    } 
-  }, [isConfirmed, step, txHash, onConfirmed, showToast, refetchVestingInfo])
+      // Call success callback
+      if (onConfirmed) {
+        onConfirmed(hash)
+      }
 
-  // Handle errors
-  useEffect(() => { 
-    if (receiptError || wagmiIsError) { 
-      setTxError(wagmiError as Error)
-      setStep('error')
-      if (showToast) toast.error('Transaction failed')
-    } 
-  }, [receiptError, wagmiIsError, wagmiError, showToast])
-
-  // Auto-hide status after completion
-  useEffect(() => {
-    if (!showStatus) return
-    if (step === 'confirmed' || step === 'error') {
-      const t = setTimeout(() => {
-        setShowStatus(false)
-        setStep('idle')
-        setTxHash(undefined)
-        setTxError(null)
-        hasShownSubmitToast.current = false
-        hasShownConfirmedToast.current = false
-      }, 10000)
-      return () => clearTimeout(t)
+      // Auto-close modal after delay
+      setTimeout(() => {
+        reset()
+      }, 3000)
     }
-  }, [step, showStatus])
+  }, [isConfirmed, showModal, showToast, onConfirmed, hash, reset, refetchVestingInfo])
 
-  // Reset function
-  const reset = useCallback(() => {
-    if (showToast) toast.dismiss()
-    setStep('idle')
-    setTxHash(undefined)
-    setTxError(null)
-    setShowStatus(false)
-    hasShownSubmitToast.current = false
-    hasShownConfirmedToast.current = false
-  }, [showToast])
-
-  const closeModal = useCallback(() => {
-    toast.dismiss()
-    setShowStatus(false)
-    setTimeout(() => reset(), 100)
-  }, [reset])
+  // Handle error
+  useEffect(() => {
+    if (isError && error && showToast) {
+      const errorMessage = error.message || 'Transaction failed'
+      toast.error('Failed to claim tokens', {
+        description: errorMessage,
+      })
+      
+      if (onError) {
+        onError(error as Error)
+      }
+    }
+  }, [isError, error, showToast, onError])
 
   // Button state
-  const buttonState: ButtonState = useMemo(() => {
+  const buttonState: ButtonState = (() => {
     if (!project || !hasContributed) {
-      return { text: 'No Contribution', disabled: true, loading: false }
+      return { text: 'No Contribution', disabled: true }
     }
     
     const validStatuses: number[] = [ProjectStatus.Successful, ProjectStatus.Claimable, ProjectStatus.Completed]
     if (!validStatuses.includes(Number(project.status))) {
-      return { text: 'Not Available', disabled: true, loading: false }
+      return { text: 'Not Available', disabled: true }
     }
 
-    switch (step) {
-      case 'submitting':
-        return { text: 'Submitting...', disabled: true, loading: true }
-      case 'confirming':
-        return { text: 'Confirming...', disabled: true, loading: true }
-      case 'confirmed':
-        return { text: 'Claimed', disabled: true, loading: false }
-      case 'error':
-        return { text: 'Retry', disabled: false, loading: false }
-      default:
-        if (availableAmount > 0n) {
-          return { text: 'Claim Tokens', disabled: false, loading: false }
-        }
-        return { text: 'No Tokens Available', disabled: true, loading: false }
+    if (isPending) {
+      return { text: 'Confirming...', disabled: true }
     }
-  }, [step, project, hasContributed, availableAmount])
+    if (isConfirming) {
+      return { text: 'Processing...', disabled: true }
+    }
+    if (isConfirmed) {
+      return { text: 'Claimed!', disabled: true }
+    }
+    if (isError) {
+      return { text: 'Try Again', disabled: false }
+    }
+    
+    if (availableAmount > 0n) {
+      return { text: 'Claim Tokens', disabled: false }
+    }
+    return { text: 'No Tokens Available', disabled: true }
+  })()
+
+  // Transaction status for modal
+  const transactionStatus: TransactionStatus = {
+    show: showModal,
+    hash,
+    isPending,
+    isConfirming,
+    isSuccess: isConfirmed,
+    isError,
+    error,
+  }
 
   return {
     // Claim action
     claimTokens: executeClaim,
     
-    // Transaction state
-    hash: txHash,
-    isPending: step === 'submitting' || wagmiIsPending,
-    isConfirming: step === 'confirming' || isConfirming,
-    isConfirmed: step === 'confirmed' || isConfirmed,
-    isError: step === 'error' || wagmiIsError || Boolean(receiptError),
-    error: txError ?? wagmiError,
-    isLoading,
+    // Transaction data
+    hash,
     
-    // Transaction status
+    // Transaction states
+    isPending,
+    isConfirming,
+    isConfirmed,
+    isError,
+    error,
+    isLoading: isPending || isConfirming,
+    
+    // UI helpers
+    buttonState,
     transactionStatus,
+    transactionType: 'claim' as TransactionType,
     
     // Vesting data
     vestingInfo,
@@ -359,10 +330,7 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
     // User data
     userContribution: (userContribution as bigint) || 0n,
     
-    // Actions
+    // Control functions
     reset,
-    closeModal,
-    explorerUrl: EXPLORER_URL,
-    buttonState,
   }
 }

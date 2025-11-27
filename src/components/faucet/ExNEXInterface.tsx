@@ -1,5 +1,5 @@
 // src/components/exnex/ExNEXInterface.tsx
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { Coins, ArrowDownUp, CheckCircle, AlertCircle, ArrowDown, ArrowUp } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -11,7 +11,7 @@ interface ExNEXInterfaceProps {
   // From useExNEX hook
   balance: string
   totalSupply: string
-  nexBalance?: string // NEX balance for withdraw
+  nexBalance?: string
   isLoading: boolean
   isSuccess: boolean
   error: Error | null
@@ -52,6 +52,13 @@ export const ExNEXInterface: React.FC<ExNEXInterfaceProps> = ({
       totalSupply: sanitizeNumber(totalSupply, { min: 0, decimals: 4 }) ?? 0,
     }
   }, [balance, nexBalance, totalSupply])
+
+  useEffect(() => {
+  if (isSuccess) {
+    setAmount('')
+    setLocalError(null)
+  }
+  }, [isSuccess])
 
   const handleSubmit = async () => {
     // Sanitize input amount

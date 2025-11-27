@@ -451,6 +451,15 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
                     </span>
                   </div>
                 )}
+
+                {('vestingInterval' in project) && (
+                  <div className="flex justify-between">
+                    <span className="text-[var(--metallic-silver)]">Vesting Interval</span>
+                    <span className="font-medium text-[var(--silver-light)]">
+                      {ExhibitionFormatters.formatDuration(Number((project as any).vestingInterval || 0))}
+                    </span>
+                 </div>
+                )}
                 
                 {('vestingInitialRelease' in project) && (
                   <div className="flex justify-between">

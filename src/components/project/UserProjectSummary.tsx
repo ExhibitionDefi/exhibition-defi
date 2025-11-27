@@ -1,8 +1,8 @@
+// src/components/project/UserProjectSummary.tsx
 import React from 'react'
-import { Wallet, Gift, CheckCircle, Clock } from 'lucide-react'
+import { Wallet, Gift, CheckCircle, Clock, Calendar } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
-import { useClaimTokens } from '@/hooks/pad/useClaimTokens'
 import type { ProjectDisplayData, UserProjectSummary as UserSummaryType } from '@/types/project'
 import { ProjectStatus } from '@/types/project'
 import { ExhibitionFormatters } from '@/utils/exFormatters'
@@ -17,9 +17,19 @@ interface UserProjectSummaryProps {
   finalizeButtonState?: {
     text: string
     disabled: boolean
-    loading: boolean
   }
-  onFinalize?: (projectId: bigint) => Promise<void>
+  finalizeIsLoading?: boolean
+  onFinalize?: (projectId: bigint) => void
+  // Claim tokens props - all passed from parent
+  onClaimTokens?: () => void
+  claimIsLoading?: boolean
+  claimIsConfirming?: boolean
+  claimIsConfirmed?: boolean
+  claimError?: Error | null
+  claimHash?: `0x${string}`
+  // Vesting timing props
+  nextClaimDate?: Date | null
+  availableAmount?: bigint
 }
 
 export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({ 
@@ -28,23 +38,18 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
   onRefetch,
   canFinalize = false,
   finalizeButtonState,
+  finalizeIsLoading = false,
   onFinalize,
+  onClaimTokens,
+  claimIsLoading = false,
+  claimIsConfirming = false,
+  claimIsConfirmed = false,
+  claimError,
+  claimHash,
+  nextClaimDate,
+  availableAmount,
 }) => {
   const { address } = useAccount()
-  
-  // Only use claim tokens hook - refund is handled in separate component
-  const {
-    claimTokens,
-    hash: claimHash,
-    isLoading: isClaimLoading,
-    isConfirming: isClaimConfirming,
-    isConfirmed: isClaimConfirmed,
-    error: claimError,
-  } = useClaimTokens({
-    project,
-    onConfirmed: onRefetch,
-    showToast: true,
-  })
 
   // Calculate shouldShowFinalize BEFORE the early return
   const shouldShowFinalize = canFinalize && onFinalize && finalizeButtonState
@@ -60,6 +65,28 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
   // Modified early return: Allow rendering if finalize button should show
   if (userSummary.contributionAmount === 0n && !userSummary.userHasRefunded && !shouldShowFinalize) {
     return null // Don't show summary if user hasn't participated AND finalize isn't available
+  }
+
+  // Format next claim date
+  const formatNextClaimDate = (date: Date | null): string => {
+    if (!date) return 'N/A'
+    
+    const now = new Date()
+    const diff = date.getTime() - now.getTime()
+    
+    if (diff <= 0) return 'Available now'
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+    
+    if (days > 0) {
+      return `${days}d ${hours}h`
+    } else if (hours > 0) {
+      return `${hours}h ${minutes}m`
+    } else {
+      return `${minutes}m`
+    }
   }
 
   return (
@@ -115,7 +142,7 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
             {userSummary.tokensOwed > 0n && (
               <div className="border-t pt-4" style={{ borderColor: 'var(--charcoal)' }}>
                 <h4 className="font-medium mb-3" style={{ color: 'var(--silver-light)' }}>Token Vesting</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-4">
                   <div>
                     <p style={{ color: 'var(--silver-dark)' }}>Vested</p>
                     <p className="font-medium" style={{ color: 'var(--silver-light)' }}>
@@ -137,6 +164,35 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
                     </p>
                   </div>
                 </div>
+
+                {/* Next Claim Information */}
+                {nextClaimDate && userSummary.tokensAvailable === 0n && (
+                  <div className="p-3 rounded-lg border" style={{ 
+                    backgroundColor: 'rgba(21, 198, 230, 0.05)',
+                    borderColor: 'rgba(21, 198, 230, 0.2)'
+                  }}>
+                    <div className="flex items-start space-x-2">
+                      <Calendar className="h-5 w-5 mt-0.5 flex-shrink-0" style={{ color: 'var(--neon-blue)' }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium" style={{ color: 'var(--neon-blue)' }}>
+                          Next Claim Available
+                        </p>
+                        <div className="mt-1 space-y-1">
+                          <p className="text-xs" style={{ color: 'var(--silver-dark)' }}>
+                            Time: <span style={{ color: 'var(--silver-light)' }}>{formatNextClaimDate(nextClaimDate)}</span>
+                          </p>
+                          {availableAmount !== undefined && availableAmount > 0n && (
+                            <p className="text-xs" style={{ color: 'var(--silver-dark)' }}>
+                              Estimated Amount: <span style={{ color: 'var(--silver-light)' }}>
+                                {ExhibitionFormatters.formatLargeNumber(availableAmount)} {project.tokenSymbol}
+                              </span>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </>
@@ -169,7 +225,7 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
           )}
 
           {/* Claim Success Message */}
-          {isClaimConfirmed && (
+          {claimIsConfirmed && (
             <div className="flex items-center space-x-2 p-3 rounded-lg" style={{ 
               color: 'var(--neon-blue)', 
               backgroundColor: 'rgba(21, 198, 230, 0.1)' 
@@ -192,15 +248,15 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
           )}
 
           {/* Claim Button */}
-          {canClaim && (
+          {canClaim && onClaimTokens && (
             <Button
-              onClick={claimTokens}
+              onClick={onClaimTokens}
               className="w-full"
-              isLoading={isClaimLoading}
-              disabled={isClaimLoading || isClaimConfirming}
+              isLoading={claimIsLoading}
+              disabled={claimIsLoading || claimIsConfirming}
             >
               <Gift className="h-4 w-4 mr-2" />
-              {isClaimConfirming 
+              {claimIsConfirming 
                 ? 'Confirming...' 
                 : `Claim ${ExhibitionFormatters.formatLargeNumber(userSummary.tokensAvailable)} Tokens`
               }
@@ -234,10 +290,10 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
               </div>
               
               <Button
-                onClick={() => onFinalize(project.id)}
+                onClick={() => onFinalize?.(project.id)}
                 disabled={finalizeButtonState.disabled || !address}
                 className="w-full"
-                isLoading={finalizeButtonState.loading}
+                isLoading={finalizeIsLoading}
               >
                 <Clock className="h-4 w-4 mr-2" />
                 {!address 

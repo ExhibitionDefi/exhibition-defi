@@ -64,44 +64,6 @@ interface UseFinalizeLiquidityReturn {
   reset: () => void
 }
 
-/**
- * Enhanced hook for finalizing liquidity and releasing funds
- * 
- * This hook handles the finalizeLiquidityAndReleaseFunds transaction with:
- * - Transaction state management
- * - UI feedback (button states, modals, toasts)
- * - Liquidity deposit validation
- * - Error handling
- * - Success callbacks
- * 
- * @example
- * ```tsx
- * const finalizeLiquidity = useFinalizeLiquidity({
- *   onConfirmed: () => refetch(),
- *   showToast: true,
- * })
- * 
- * // In your component
- * <Button
- *   onClick={() => finalizeLiquidity.executeFinalize(projectId)}
- *   disabled={finalizeLiquidity.buttonState.disabled}
- * >
- *   {finalizeLiquidity.buttonState.text}
- * </Button>
- * 
- * <MultiTransactionModal
- *   isOpen={finalizeLiquidity.transactionStatus.show}
- *   onClose={finalizeLiquidity.reset}
- *   transactionType={finalizeLiquidity.transactionType}
- *   mainHash={finalizeLiquidity.hash}
- *   isMainPending={finalizeLiquidity.isPending}
- *   isMainConfirming={finalizeLiquidity.isConfirming}
- *   isMainSuccess={finalizeLiquidity.isConfirmed}
- *   isError={finalizeLiquidity.isError}
- *   error={finalizeLiquidity.error}
- * />
- * ```
- */
 export function useFinalizeLiquidity(
   options: UseFinalizeLiquidityOptions = {}
 ): UseFinalizeLiquidityReturn {
