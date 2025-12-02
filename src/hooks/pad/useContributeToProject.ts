@@ -1,4 +1,4 @@
-// src/hooks/projects/useContributrToProject
+// src/hooks/projects/useContributeToProject
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { useWriteContract, useWaitForTransactionReceipt, useAccount, useBalance } from 'wagmi'
@@ -56,7 +56,11 @@ export function useContributeToProject(options: UseContributeOptions = {}) {
   const tokenDecimals = useMemo(() => project?.tokenDecimals ?? 18, [project?.tokenDecimals])
   const tokenPrice = useMemo(() => project?.tokenPrice ?? BigInt(1), [project?.tokenPrice])
 
-  const { data: balanceData } = useBalance({ address, token: contribTokenAddr })
+  // 🔥 FIX: Add refetch function from useBalance
+  const { data: balanceData, refetch: refetchBalance } = useBalance({ 
+    address, 
+    token: contribTokenAddr 
+  })
   const balanceBigInt = balanceData?.value ?? BigInt(0)
   const balance = formatUnits(balanceBigInt, contribDecimals)
 
@@ -102,7 +106,6 @@ export function useContributeToProject(options: UseContributeOptions = {}) {
   const [hasProcessedApproval, setHasProcessedApproval] = useState(false)
   const [inputError, setInputError] = useState<string | null>(null)
 
-  // 🔥 FIX: Use refs to track if toasts have been shown
   const hasShownApprovalToast = useRef(false)
   const hasShownContributeToast = useRef(false)
   const hasShownConfirmedToast = useRef(false)
@@ -132,14 +135,12 @@ export function useContributeToProject(options: UseContributeOptions = {}) {
     }
   }, [approvalWriteState?.data, approvalHash])
 
-  // 🔥 FIX: Only show approval success toast ONCE
   useEffect(() => {
     if (!showStatus || hasProcessedApproval || hasShownApprovalToast.current) return
     if (isApprovalSuccess && pendingContrib && step === 'approving') {
       setHasProcessedApproval(true)
       setTransactionType('contribute')
       
-      // ✅ TOAST 
       if (showToast) {
         toast.dismiss()
         toast.success('Approval confirmed! Now contributing...')
@@ -208,7 +209,6 @@ export function useContributeToProject(options: UseContributeOptions = {}) {
         args: [project!.id, amount],
       })
       
-      // 🔥 FIX: Only show toast once
       if (showToast && !hasShownContributeToast.current) {
         toast.loading('Contribution submitted — confirm in wallet')
         hasShownContributeToast.current = true
@@ -232,7 +232,6 @@ export function useContributeToProject(options: UseContributeOptions = {}) {
     setStep('idle')
     setHasProcessedApproval(false)
     
-    // 🔥 FIX: Reset toast flags
     hasShownApprovalToast.current = false
     hasShownContributeToast.current = false
     hasShownConfirmedToast.current = false
@@ -278,16 +277,14 @@ export function useContributeToProject(options: UseContributeOptions = {}) {
     setContributionAmount('')
   }
 
-  // 🔥 FIX: Removed duplicate toast from hash useEffect
   useEffect(() => { 
     if (hash) { 
       setTxHash(hash)
       setStep('confirming')
-      // Toast already shown in executeContributeOnly
     } 
   }, [hash])
 
-  // 🔥 FIX: Only show confirmed toast once
+  // 🔥 FIX: Refetch balance after successful contribution
   useEffect(() => { 
     if (isConfirmed && step === 'confirming' && !hasShownConfirmedToast.current) { 
       setStep('confirmed')
@@ -296,8 +293,13 @@ export function useContributeToProject(options: UseContributeOptions = {}) {
         hasShownConfirmedToast.current = true
       }
       onConfirmed?.(txHash)
+      
+      // 🎯 KEY FIX: Refetch the balance after successful contribution
+      setTimeout(() => {
+        refetchBalance()
+      }, 1000) // Small delay to ensure blockchain state is updated
     } 
-  }, [isConfirmed, step, txHash, onConfirmed, showToast])
+  }, [isConfirmed, step, txHash, onConfirmed, showToast, refetchBalance])
 
   useEffect(() => { 
     if (receiptError || wagmiIsError) { 
@@ -319,7 +321,6 @@ export function useContributeToProject(options: UseContributeOptions = {}) {
         setTxError(null)
         setPendingContrib(null)
         setHasProcessedApproval(false)
-        // Reset toast flags
         hasShownApprovalToast.current = false
         hasShownContributeToast.current = false
         hasShownConfirmedToast.current = false
@@ -338,7 +339,6 @@ export function useContributeToProject(options: UseContributeOptions = {}) {
     setApprovalHash(undefined)
     setPendingContrib(null)
     setHasProcessedApproval(false)
-    // Reset toast flags
     hasShownApprovalToast.current = false
     hasShownContributeToast.current = false
     hasShownConfirmedToast.current = false

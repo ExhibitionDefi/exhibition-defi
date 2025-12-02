@@ -138,7 +138,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
       case 'projectTokenName':
         // Text only: allow only letters and spaces
         sanitizedValue = value
-          .replace(/[^a-zA-Z\s]/g, '') // Only allow letters and space
+          .replace(/[^a-zA-Z0-9\s]/g, '') // Only allow letters and space
           .replace(/\s{2,}/g, ' ') // Replace multiple spaces with single space
           .slice(0, 100) // Limit length
         logSanitization(field, value, sanitizedValue)
