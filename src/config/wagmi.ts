@@ -1,7 +1,7 @@
 import { createAppKit } from '@reown/appkit/react'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 import { nexusTestnet } from './chains'
-import { cookieStorage, createStorage } from 'wagmi'
+import { cookieStorage, createStorage, http } from 'wagmi'
 import { getPublicClient } from 'wagmi/actions'
 import favicon from '@/assets/favicon-16x16.png'
 
@@ -12,7 +12,7 @@ if (!projectId) {
   throw new Error('VITE_REOWN_PROJECT_ID is not set')
 }
 
-// Set up the Wagmi Adapter (Config)
+// ✅ Set up the Wagmi Adapter with explicit backend proxy transport
 const wagmiAdapter = new WagmiAdapter({
   storage: createStorage({
     storage: cookieStorage,
@@ -20,6 +20,10 @@ const wagmiAdapter = new WagmiAdapter({
   ssr: false,
   networks: [nexusTestnet],
   projectId,
+  // 🆕 ADD THIS: Override transport to use your backend proxy
+  transports: {
+    [nexusTestnet.id]: http(import.meta.env.VITE_NEXUS_TESTNET_RPC_URL),
+  },
 })
 
 // Create AppKit with wallet-only authentication
@@ -29,7 +33,7 @@ createAppKit({
   metadata: {
     name: 'Exhibition defi',
     description: 'Decentralized Token Launchpad Integated with Dex on Nexus',
-    url: import.meta.env.VITE_APP_URL || 'https://localhost:5173',
+    url: import.meta.env.VITE_APP_URL || 'https://localhost:3000',
     icons: [favicon],
   },
   projectId,
