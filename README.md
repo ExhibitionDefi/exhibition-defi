@@ -1,6 +1,6 @@
 # Exhibition DeFi
 
-[Exhibition DeFi](https://exhibitiondefi.xyz) is a **secure launchpad** and **decentralized exchange (DEX)** built on the **Nexus Verifiable Layer 1 Network**. The platform is designed to provide transparency, fairness, and security for token launches and trading, ensuring contributors and project creators benefit from a trusted and automated environment.
+[Exhibition DeFi](https://app.exhibitiondefi.xyz) is a **secure launchpad** and **decentralized exchange (DEX)** built on the **Nexus Verifiable Layer 1 Network**. The platform is designed to provide transparency, fairness, and security for token launches and trading, ensuring contributors and project creators benefit from a trusted and automated environment.
 
 ---
 
@@ -40,7 +40,7 @@ Exhibition DeFi introduces a verified token ecosystem to power governance, tradi
 ---
 
 ## 🌐 Website
-- [Exhibition DeFi Platform](https://exhibitiondefi.xyz)
+- [Exhibition DeFi Platform](https://app.exhibitiondefi.xyz)
 
 ---
 
