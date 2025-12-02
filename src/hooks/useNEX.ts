@@ -62,8 +62,10 @@ export const useExNEX = (): UseExNEXReturn => {
     query: { enabled: isConnected && !!address },
   })
 
-  // Read total supply
-  const { data: totalSupplyData } = useReadContract({
+  const { 
+    data: totalSupplyData,
+    refetch: refetchTotalSupply
+  } = useReadContract({
     address: EXNEX_CONTRACT_ADDRESS as `0x${string}`,
     abi: exNeXAbi,
     functionName: 'totalSupply',
@@ -142,8 +144,9 @@ export const useExNEX = (): UseExNEXReturn => {
       // Refetch balances after successful transaction
       refetchBalance()
       refetchNexBalance()
+      refetchTotalSupply()
     }
-  }, [isDepositSuccess, isWithdrawSuccess, isApproveSuccess, refetchBalance, refetchNexBalance])
+  }, [isDepositSuccess, isWithdrawSuccess, isApproveSuccess, refetchBalance, refetchNexBalance, refetchTotalSupply])
 
   // Update current hash
   useEffect(() => {
