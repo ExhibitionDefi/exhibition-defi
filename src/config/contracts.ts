@@ -6,7 +6,7 @@ export const CONTRACT_ADDRESSES = {
   EXHIBITION: import.meta.env.VITE_EXHIBITION_ADDRESS as `0x${string}`,   
   AMM: import.meta.env.VITE_AMM_ADDRESS as `0x${string}`, 
   EXH: import.meta.env.VITE_EXH_ADDRESS as `0x${string}`, 
-  EXUSDT: import.meta.env.VITE_EXUSDT_ADDRESS as `0x${string}`, 
+  EXUSD: import.meta.env.VITE_EXUSD_ADDRESS as `0x${string}`, 
   EXNEX: import.meta.env.VITE_EXNEX_ADDRESS as `0x${string}`, 
   FACTORY: import.meta.env.VITE_FACTORY_ADDRESS as `0x${string}`,
 } as const
@@ -33,13 +33,13 @@ export const EXPLORER_URL = import.meta.env.VITE_NEXUS_TESTNET_EXPLORER_URL;
 export const EXHIBITION_ADDRESS = import.meta.env.VITE_EXHIBITION_ADDRESS as Address
 export const AMM_ADDRESS = import.meta.env.VITE_AMM_ADDRESS as Address
 export const EXH_ADDRESS = import.meta.env.VITE_EXH_ADDRESS as Address
-export const EXUSDT_ADDRESS = import.meta.env.VITE_EXUSDT_ADDRESS as Address
+export const EXUSD_ADDRESS = import.meta.env.VITE_EXUSD_ADDRESS as Address
 export const EXNEX_ADDRESS = import.meta.env.VITE_EXNEX_ADDRESS as Address
 export const FACTORY_ADDRESS = import.meta.env.VITE_FACTORY_ADDRESS as Address
 
 // Supported Tokens (flat exports)
 export const SUPPORTED_EXH = EXH_ADDRESS
-export const SUPPORTED_EXUSDT = EXUSDT_ADDRESS
+export const SUPPORTED_EXUSD = EXUSD_ADDRESS
 export const SUPPORTED_EXNEX = EXNEX_ADDRESS
 
 // AMM specific constants
@@ -51,8 +51,8 @@ export const MIN_LIQUIDITY_DISPLAY = '0.000001'
 export const COMMON_PAIRS = [
   {
     tokenA: EXH_ADDRESS as Address,
-    tokenB: EXUSDT_ADDRESS as Address,
-    symbol: 'EXH/exUSDT',
+    tokenB: EXUSD_ADDRESS as Address,
+    symbol: 'EXH/exUSD',
   },
   {
     tokenA: EXH_ADDRESS as Address,
@@ -61,7 +61,7 @@ export const COMMON_PAIRS = [
   },
   {
     tokenA: EXNEX_ADDRESS as Address,
-    tokenB: EXUSDT_ADDRESS as Address,
-    symbol: 'exNEX/exUSDT',
+    tokenB: EXUSD_ADDRESS as Address,
+    symbol: 'exNEX/exUSD',
   },
 ] as const

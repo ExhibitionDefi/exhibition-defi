@@ -28,10 +28,10 @@ const COMMON_TOKENS: Token[] = [
     decimals: 18,
   },
   {
-    address: (import.meta.env.VITE_EXUSDT_ADDRESS ) as Address,
-    symbol: 'exUSDT',
-    name: 'Exhibition USDT',
-    logoURI: '/tokens/exusdt.png',
+    address: (import.meta.env.VITE_EXUSD_ADDRESS ) as Address,
+    symbol: 'exUSD',
+    name: 'Exhibition USD',
+    logoURI: '/tokens/exusd.png',
     decimals: 6,
   },
   {

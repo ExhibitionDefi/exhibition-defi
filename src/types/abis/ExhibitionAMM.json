@@ -1,8 +1,186 @@
 [
     {
-        "inputs": [],
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_tradingFeeBps",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_protocolFeeBps",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "_feeRecipient",
+                "type": "address"
+            }
+        ],
         "stateMutability": "nonpayable",
         "type": "constructor"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            }
+        ],
+        "name": "OwnableInvalidOwner",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "OwnableUnauthorizedAccount",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "PoolAlreadyExists",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "PoolDoesNotExist",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ReentrancyGuardReentrantCall",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "SlippageTooHigh",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "TokenTransferFailed",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "Unauthorized",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "UnauthorizedPoolCreation",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ZeroAddress",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ZeroAddress",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ZeroAmount",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ZeroAmount",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ZeroLiquidity",
+        "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "tokenA",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "tokenB",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "earningsA",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "earningsB",
+                "type": "uint256"
+            }
+        ],
+        "name": "EarningsRealized",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "tokenA",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "tokenB",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "lpAmount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "reserveA",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "reserveB",
+                "type": "uint256"
+            }
+        ],
+        "name": "EarningsSnapshot",
+        "type": "event"
     },
     {
         "anonymous": false,
@@ -46,6 +224,31 @@
             }
         ],
         "name": "ExhibitionContractSet",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "tradingFee",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "protocolFee",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "feeRecipient",
+                "type": "address"
+            }
+        ],
+        "name": "FeeConfigUpdated",
         "type": "event"
     },
     {
@@ -264,6 +467,43 @@
             {
                 "indexed": false,
                 "internalType": "uint256",
+                "name": "amount0",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount1",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            }
+        ],
+        "name": "ProtocolFeesCollected",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "token0",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "token1",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
                 "name": "reserve0",
                 "type": "uint256"
             },
@@ -309,10 +549,26 @@
                 "internalType": "uint256",
                 "name": "amountOut",
                 "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "tradingFee",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "protocolFee",
+                "type": "uint256"
             }
         ],
         "name": "Swap",
         "type": "event"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "fallback"
     },
     {
         "inputs": [],
@@ -322,6 +578,93 @@
                 "internalType": "address",
                 "name": "",
                 "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "FEE_DENOMINATOR",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MAX_PROTOCOL_FEE",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MAX_TRADING_FEE",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "accumulatedProtocolFeesToken0",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "accumulatedProtocolFeesToken1",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -487,25 +830,110 @@
     {
         "inputs": [
             {
+                "internalType": "uint256",
+                "name": "amountIn",
+                "type": "uint256"
+            }
+        ],
+        "name": "calculateExpectedFees",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "tradingFee",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "protocolFee",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "lpFee",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "address",
-                "name": "",
+                "name": "_user",
                 "type": "address"
             },
             {
                 "internalType": "address",
-                "name": "",
+                "name": "_tokenA",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_tokenB",
                 "type": "address"
             }
         ],
-        "name": "blockTimestampLast",
+        "name": "calculateUnrealizedEarnings",
         "outputs": [
             {
-                "internalType": "uint32",
-                "name": "",
-                "type": "uint32"
+                "internalType": "uint256",
+                "name": "earningsA",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "earningsB",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "valueAtDeposit",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "currentValue",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "apy",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_tokenA",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_tokenB",
+                "type": "address"
+            }
+        ],
+        "name": "collectProtocolFees",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address[][]",
+                "name": "_tokenPairs",
+                "type": "address[][]"
+            }
+        ],
+        "name": "collectProtocolFeesMultiple",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -550,6 +978,64 @@
         "inputs": [
             {
                 "internalType": "address",
+                "name": "",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "cumulativeEarningsToken0",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "cumulativeEarningsToken1",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
                 "name": "_tokenA",
                 "type": "address"
             },
@@ -568,13 +1054,6 @@
             }
         ],
         "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "emergencyPause",
-        "outputs": [],
-        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -601,6 +1080,40 @@
         "type": "function"
     },
     {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_user",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_tokenA",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_tokenB",
+                "type": "address"
+            }
+        ],
+        "name": "estimateDailyEarnings",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "dailyEarningsA",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "dailyEarningsB",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [],
         "name": "exNEXADDRESS",
         "outputs": [
@@ -615,7 +1128,7 @@
     },
     {
         "inputs": [],
-        "name": "exUSDTADDRESS",
+        "name": "exUSDADDRESS",
         "outputs": [
             {
                 "internalType": "address",
@@ -647,6 +1160,63 @@
                 "internalType": "contract IExhibitionLPTokens",
                 "name": "",
                 "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "feeConfig",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "tradingFee",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "protocolFee",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "feeRecipient",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "feesEnabled",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "tokenA",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "tokenB",
+                "type": "address"
+            }
+        ],
+        "name": "getAccumulatedProtocolFees",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "fees0",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "fees1",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -689,6 +1259,108 @@
                 "internalType": "uint256",
                 "name": "amountOut",
                 "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_user",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_tokenA",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_tokenB",
+                "type": "address"
+            }
+        ],
+        "name": "getEarningsReport",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "unrealizedEarningsA",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "unrealizedEarningsB",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "realizedEarningsA",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "realizedEarningsB",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "totalEarningsA",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "totalEarningsB",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "currentValue",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "originalDeposit",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "apy",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "daysActive",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getFeeConfig",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "tradingFee",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "protocolFee",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "feeRecipient",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "feesEnabled",
+                "type": "bool"
             }
         ],
         "stateMutability": "view",
@@ -815,6 +1487,11 @@
                         "internalType": "uint256",
                         "name": "totalLPSupply",
                         "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "kLast",
+                        "type": "uint256"
                     }
                 ],
                 "internalType": "struct LiquidityPool[]",
@@ -904,6 +1581,11 @@
                     {
                         "internalType": "uint256",
                         "name": "totalLPSupply",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "kLast",
                         "type": "uint256"
                     }
                 ],
@@ -1039,6 +1721,50 @@
         "inputs": [
             {
                 "internalType": "address",
+                "name": "_user",
+                "type": "address"
+            },
+            {
+                "internalType": "address[][]",
+                "name": "_tokenPairs",
+                "type": "address[][]"
+            }
+        ],
+        "name": "getPortfolioEarnings",
+        "outputs": [
+            {
+                "internalType": "uint256[]",
+                "name": "unrealizedEarningsA",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "unrealizedEarningsB",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "realizedEarningsA",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "realizedEarningsB",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "apys",
+                "type": "uint256[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
                 "name": "_tokenA",
                 "type": "address"
             },
@@ -1053,6 +1779,40 @@
             {
                 "internalType": "uint256",
                 "name": "price",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_user",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_tokenA",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_tokenB",
+                "type": "address"
+            }
+        ],
+        "name": "getRealizedEarnings",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "realizedA",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "realizedB",
                 "type": "uint256"
             }
         ],
@@ -1189,6 +1949,35 @@
         "inputs": [
             {
                 "internalType": "address",
+                "name": "_tokenA",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_tokenB",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_owner",
+                "type": "address"
+            }
+        ],
+        "name": "getTimeUntilUnlock",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
                 "name": "_token",
                 "type": "address"
             }
@@ -1247,6 +2036,30 @@
                 "internalType": "uint256[]",
                 "name": "totalSupplies",
                 "type": "uint256[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "tokenA",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "tokenB",
+                "type": "address"
+            }
+        ],
+        "name": "getTotalFeesCollected",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "totalFees",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -1397,6 +2210,62 @@
                 "internalType": "uint256",
                 "name": "activePoolCount",
                 "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_user",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_tokenA",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_tokenB",
+                "type": "address"
+            }
+        ],
+        "name": "getUserSnapshots",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "reserveA",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "reserveB",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "lpAmount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "timestamp",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalLPSupply",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct ExhibitionAMMEarnings.LPSnapshot[]",
+                "name": "",
+                "type": "tuple[]"
             }
         ],
         "stateMutability": "view",
@@ -1572,6 +2441,65 @@
                 "internalType": "uint256",
                 "name": "totalLPSupply",
                 "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "kLast",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "lpSnapshots",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "reserveA",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "reserveB",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "lpAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "timestamp",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "totalLPSupply",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -1609,54 +2537,6 @@
                 "internalType": "bool",
                 "name": "",
                 "type": "bool"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "price0CumulativeLast",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "price1CumulativeLast",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -1764,11 +2644,11 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "_exUSDTAddress",
+                "name": "_exUSDAddress",
                 "type": "address"
             }
         ],
-        "name": "setExUSDTAddress",
+        "name": "setExUSDAddress",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -1795,6 +2675,42 @@
             }
         ],
         "name": "setExhibitionContract",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_tradingFeeBps",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_protocolFeeBps",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "_feeRecipient",
+                "type": "address"
+            }
+        ],
+        "name": "setFeeConfig",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bool",
+                "name": "_enabled",
+                "type": "bool"
+            }
+        ],
+        "name": "setFeesEnabled",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -1891,6 +2807,40 @@
         "name": "transferOwnership",
         "outputs": [],
         "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "twapData",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "price0CumulativeLast",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "price1CumulativeLast",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint32",
+                "name": "blockTimestampLast",
+                "type": "uint32"
+            }
+        ],
+        "stateMutability": "view",
         "type": "function"
     },
     {

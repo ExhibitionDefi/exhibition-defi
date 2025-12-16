@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, useState, useEffect, useRef } from 'react'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { ProjectFilters } from '../components/project/ProjectFilters'
-import { useProjects } from '../hooks/useProjects'
+import { useProjects } from '../hooks/launchpad/useProjects'
 import { useProjectStore } from '../stores/projectStore'
 import { Button } from '../components/ui/Button'
 import { Search, TrendingUp, AlertCircle } from 'lucide-react'
@@ -163,12 +163,13 @@ export const ProjectsPage: React.FC = () => {
       <div className="text-center space-y-6">
         <div className="relative">
           <h1 className="text-4xl font-bold mb-2" style={{ color: 'var(--silver-light)' }}>
-            Explore Projects
+            Live & Upcoming Launches
           </h1>
           <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)] rounded-full opacity-60"></div>
         </div>
         <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--metallic-silver)' }}>
-          Discover and contribute to innovative token projects shaping the future of decentralized finance
+          Browse primary-market launches with protocol-enforced liquidity,
+          deterministic finalization, and verifiable on-chain execution.
         </p>
 
         {/* Stats Banner */}

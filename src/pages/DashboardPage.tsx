@@ -6,8 +6,10 @@ import { Button } from '../components/ui/Button'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { Link } from 'react-router-dom'
 import ExhibitionFormatters from '../utils/exFormatters'
-import { useUserProjects } from '@/hooks/pad/useUserProjects'
-import { useProject } from '@/hooks/useProject'
+import { useUserProjects } from '@/hooks/launchpad/useUserProjects'
+import { useProject } from '@/hooks/launchpad/useProject'
+import { useLocalPricing } from '@/hooks/utilities/useLocalPricing'
+import { formatUnits } from 'viem'
 
 // ✅ Lazy load ProjectCard for better performance
 const ProjectCard = lazy(() => import('../components/project/ProjectCard').then(module => ({
@@ -87,9 +89,31 @@ export const DashboardPage: React.FC = () => {
   const {
     userProjects,
     userContributions,
-    totalRaised,
     isLoading,
   } = useUserProjects()
+
+  // Get pricing data
+  const { getTokenPrice, isReady: isPricingReady } = useLocalPricing()
+
+  // Calculate total raised in USD
+  const totalRaisedUSD = React.useMemo(() => {
+    if (!isPricingReady || !userProjects) return 0
+
+    let total = 0
+    userProjects.forEach(project => {
+      const raisedAmount = BigInt(project.totalRaised || 0)
+      if (raisedAmount > 0n && project.contributionTokenAddress) {
+        const tokenPrice = getTokenPrice(project.contributionTokenAddress)
+        
+        if (tokenPrice !== null) {
+          const raisedDecimal = parseFloat(formatUnits(raisedAmount, 18))
+          total += raisedDecimal * tokenPrice
+        }
+      }
+    })
+
+    return total
+  }, [userProjects, isPricingReady, getTokenPrice])
 
   // ✅ Memoize sorted projects to avoid re-sorting on every render
   const sortedProjects = React.useMemo(() => {
@@ -99,10 +123,10 @@ export const DashboardPage: React.FC = () => {
       const getStatusPriority = (status: number) => {
         if (status === 1) return 1 // Active
         if (status === 0) return 2 // Upcoming
-        if (status === 5) return 3 // Claimable
+        if (status === 4) return 3 // Claimable
         if (status === 2) return 4 // Successful
-        if (status === 3) return 5 // Completed
-        return 6 // Failed, Refundable, etc.
+        if (status === 6) return 5 // Completed
+        return 3 // Failed, Refundable, etc.
       }
       
       const aPriority = getStatusPriority(a.status)
@@ -251,16 +275,19 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div>
               <p className="text-3xl font-bold mb-1" style={{ color: 'var(--silver-light)' }}>
-                ${totalRaised.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                {isPricingReady 
+                  ? `$${totalRaisedUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  : '...'
+                }
               </p>
               <p className="text-sm" style={{ color: 'var(--metallic-silver)' }}>
-                Total Raised
+                Total Raised (USD)
               </p>
             </div>
             <div className="w-full bg-[var(--charcoal)] rounded-full h-2">
               <div 
                 className="bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)] h-2 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(totalRaised / 1000 * 10, 100)}%` }}
+                style={{ width: `${Math.min(totalRaisedUSD / 1000 * 10, 100)}%` }}
               ></div>
             </div>
           </div>

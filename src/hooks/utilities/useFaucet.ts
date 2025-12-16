@@ -1,6 +1,6 @@
 // src/hooks/useFaucet.ts
 import { useState, useEffect } from 'react'
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi'
 import { exhibitionAbi } from '@/generated/wagmi'
 import { EXHIBITION_ADDRESS } from '@/config/contracts'
 import { formatUnits } from 'viem'
@@ -8,7 +8,7 @@ import toast from 'react-hot-toast'
 
 interface FaucetSettings {
   exhAmount: bigint
-  usdtAmount: bigint
+  exUSDAmount: bigint
   cooldownSeconds: bigint
 }
 
@@ -16,7 +16,7 @@ interface UseFaucetReturn {
   // Settings
   faucetSettings: FaucetSettings | undefined
   exhAmountFormatted: string
-  usdtAmountFormatted: string
+  exusdAmountFormatted: string
   
   // Cooldown state
   lastRequestTime: bigint
@@ -42,6 +42,7 @@ interface UseFaucetReturn {
 export function useFaucet(): UseFaucetReturn {
   const { address } = useAccount()
   const [cooldownRemaining, setCooldownRemaining] = useState(0)
+  const publicClient = usePublicClient()
 
   // Fetch faucet settings
   const {
@@ -78,7 +79,7 @@ export function useFaucet(): UseFaucetReturn {
   const faucetSettings: FaucetSettings | undefined = faucetSettingsRaw
     ? {
         exhAmount: (faucetSettingsRaw as readonly [bigint, bigint, bigint])[0],
-        usdtAmount: (faucetSettingsRaw as readonly [bigint, bigint, bigint])[1],
+        exUSDAmount: (faucetSettingsRaw as readonly [bigint, bigint, bigint])[1],
         cooldownSeconds: (faucetSettingsRaw as readonly [bigint, bigint, bigint])[2],
       }
     : undefined
@@ -87,8 +88,8 @@ export function useFaucet(): UseFaucetReturn {
   const exhAmountFormatted = faucetSettings
     ? formatUnits(faucetSettings.exhAmount, 18)
     : '0'
-  const usdtAmountFormatted = faucetSettings
-    ? formatUnits(faucetSettings.usdtAmount, 6)
+  const exusdAmountFormatted = faucetSettings
+    ? formatUnits(faucetSettings.exUSDAmount, 6)
     : '0'
 
   // Write contract for requesting tokens
@@ -107,26 +108,44 @@ export function useFaucet(): UseFaucetReturn {
     hash: txHash,
   })
 
-  // Calculate cooldown
+  // Calculate cooldown using blockchain time
   useEffect(() => {
-    if (!faucetSettings || !lastRequestTime) {
+    if (!faucetSettings || lastRequestTime === undefined || !publicClient) {
       setCooldownRemaining(0)
       return
     }
 
-    const updateCooldown = () => {
-      const now = BigInt(Math.floor(Date.now() / 1000))
-      const timeSinceLastRequest = now - (lastRequestTime as bigint)
-      const remaining = Number(faucetSettings.cooldownSeconds - timeSinceLastRequest)
+    const updateCooldown = async () => {
+      const lastRequest = lastRequestTime as bigint
       
-      setCooldownRemaining(Math.max(0, remaining))
+      // If user has never requested (lastRequestTime = 0), they can request immediately
+      if (lastRequest === 0n) {
+        setCooldownRemaining(0)
+        return
+      }
+
+      try {
+        // Get blockchain's current timestamp from latest block
+        const latestBlock = await publicClient.getBlock({ blockTag: 'latest' })
+        const blockchainNow = latestBlock.timestamp
+        
+        // Calculate time since last request using blockchain time
+        const timeSinceLastRequest = blockchainNow - lastRequest
+        const remaining = Number(faucetSettings.cooldownSeconds - timeSinceLastRequest)
+        
+        setCooldownRemaining(Math.max(0, remaining))
+      } catch (error) {
+        console.error('Failed to get blockchain time for cooldown:', error)
+        // Fallback: set to 0 to allow retry
+        setCooldownRemaining(0)
+      }
     }
 
     updateCooldown()
-    const interval = setInterval(updateCooldown, 1000)
+    const interval = setInterval(updateCooldown, 5000) // Update every 5 seconds to match block time
 
     return () => clearInterval(interval)
-  }, [lastRequestTime, faucetSettings])
+  }, [lastRequestTime, faucetSettings, publicClient])
 
   // Determine if user can request
   const canRequestFaucet = cooldownRemaining === 0
@@ -159,11 +178,11 @@ export function useFaucet(): UseFaucetReturn {
   // Handle transaction success
   useEffect(() => {
     if (isTransactionSuccess) {
-      toast.success(`Faucet tokens claimed! You received ${exhAmountFormatted} EXH and ${usdtAmountFormatted} USDT`)
+      toast.success(`Faucet tokens claimed! You received ${exhAmountFormatted} EXH and ${exusdAmountFormatted} exUSD`)
       refetchLastRequest()
       refetchSettings()
     }
-  }, [isTransactionSuccess, exhAmountFormatted, usdtAmountFormatted, refetchLastRequest, refetchSettings])
+  }, [isTransactionSuccess, exhAmountFormatted, exusdAmountFormatted, refetchLastRequest, refetchSettings])
 
   // Handle errors
   useEffect(() => {
@@ -180,7 +199,7 @@ export function useFaucet(): UseFaucetReturn {
   return {
     faucetSettings,
     exhAmountFormatted,
-    usdtAmountFormatted,
+    exusdAmountFormatted,
     lastRequestTime: (lastRequestTime as bigint) ?? 0n,
     canRequestFaucet,
     cooldownRemaining,

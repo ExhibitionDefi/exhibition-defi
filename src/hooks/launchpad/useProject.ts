@@ -57,7 +57,7 @@ export function useProject(projectId?: string) {
   // Extract token addresses from project details
   useEffect(() => {
     if (projectRaw) {
-      const details = projectRaw as readonly [any, bigint, bigint, boolean, bigint, bigint]
+      const details = projectRaw as readonly [any, bigint, bigint, boolean, bigint, bigint, bigint]
       const projectData = details[0]
       setTokenAddresses({
         projectToken: projectData.projectToken,
@@ -130,7 +130,8 @@ export function useProject(projectId?: string) {
         bigint, // timeRemaining
         boolean, // canContribute
         bigint, // requiredLiquidityTokens
-        bigint // depositedLiquidityTokens
+        bigint, // depositedLiquidityTokens
+        bigint  // totalContributors
       ]
 
       const projectData = details[0]
@@ -138,7 +139,8 @@ export function useProject(projectId?: string) {
       const timeRemaining = details[2]
       const canContribute = details[3]
       const requiredLiquidityTokens = details[4] 
-      const depositedLiquidityTokens = details[5] 
+      const depositedLiquidityTokens = details[5]
+      const totalContributors = details[6]
 
       // Get token info
       const projectTokenInfo = projectTokenInfoRaw as
@@ -153,6 +155,7 @@ export function useProject(projectId?: string) {
         projectOwner: projectData.projectOwner,
         projectToken: projectData.projectToken,
         contributionTokenAddress: projectData.contributionTokenAddress,
+        totalContributors: Number(totalContributors),
 
         // Token metadata
         tokenName: projectTokenInfo?.name ?? '',

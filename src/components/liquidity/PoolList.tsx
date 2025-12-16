@@ -3,17 +3,17 @@ import type { Address } from 'viem';
 import { useAccount, useReadContracts } from 'wagmi';
 import { Search, Plus, Minus, ArrowLeftRight } from 'lucide-react';
 import { formatUnits } from 'viem';
-
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
-
 import { exhibitionAmmAbi, exhibitionFactoryAbi } from '@/generated/wagmi';
 import { CONTRACT_ADDRESSES } from '@/config/contracts';
 import { SafeHtml, SafeImage } from '../SafeHtml';
 import { logger } from '@/utils/logger';
+import { resolveTokenLogo } from '@/utils/tokenLogoResolver';
+import { useLocalPricing } from '@/hooks/utilities/useLocalPricing';
 
 export interface Pool {
   tokenA: Address;
@@ -53,6 +53,12 @@ export const PoolList: React.FC<PoolListProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize] = useState(10);
+
+  // ✨ Initialize pricing hook
+  const { calculateTVL, isReady: isPricingReady } = useLocalPricing({
+    maxHops: 4,
+    refetchInterval: 30_000,
+  });
 
   // Fetch pools data
   const { data: poolsData } = useReadContracts({
@@ -168,7 +174,7 @@ export const PoolList: React.FC<PoolListProps> = ({
     },
   });
 
-  // Create pools array
+  // ✨ Create pools array with integrated pricing
   const pools: Pool[] = useMemo(() => {
     if (!tokensInfo) return [];
 
@@ -180,8 +186,12 @@ export const PoolList: React.FC<PoolListProps> = ({
     allTokens.forEach((token, index) => {
       if (symbols[index]) tokenSymbolMap[token] = symbols[index];
       if (decimals[index]) tokenDecimalsMap[token] = Number(decimals[index]);
-      if (logoData?.[index]?.result) {
-        tokenLogoMap[token] = logoData[index].result as string;
+      
+      const onChainLogo = logoData?.[index]?.result as string | undefined;
+      const resolvedLogo = resolveTokenLogo(token, onChainLogo);
+      
+      if (resolvedLogo) {
+        tokenLogoMap[token] = resolvedLogo;
       }
     });
 
@@ -193,20 +203,27 @@ export const PoolList: React.FC<PoolListProps> = ({
       return tokenAs.map((tokenA: Address, index: number) => {
         const tokenB = tokenBs?.[index] || ('0x0' as Address);
         const reserves = (reservesData as any)?.[index]?.result as [bigint, bigint] | undefined;
+        const decimalsA = tokenDecimalsMap[tokenA] || 18;
+        const decimalsB = tokenDecimalsMap[tokenB] || 18;
+
+        // ✨ Calculate TVL using pricing hook
+        const tvl = isPricingReady && reserves
+          ? calculateTVL(tokenA, reserves[0], tokenB, reserves[1], decimalsA, decimalsB)
+          : 0;
 
         return {
           tokenA,
           tokenB,
           symbolA: tokenSymbolMap[tokenA] || 'Unknown',
           symbolB: tokenSymbolMap[tokenB] || 'Unknown',
-          decimalsA: tokenDecimalsMap[tokenA],
-          decimalsB: tokenDecimalsMap[tokenB],
+          decimalsA,
+          decimalsB,
           logoURIA: tokenLogoMap[tokenA] || '',
           logoURIB: tokenLogoMap[tokenB] || '',
           reserveA: reserves?.[0] || BigInt(0),
           reserveB: reserves?.[1] || BigInt(0),
           totalLPSupply: BigInt(0),
-          totalLiquidity: '0',
+          totalLiquidity: tvl.toString(),
           volume24h: '0',
           feeTier: '0.3%',
           userLPBalance: lpBalances?.[index] || BigInt(0),
@@ -223,20 +240,27 @@ export const PoolList: React.FC<PoolListProps> = ({
       return tokenAs.map((tokenA: Address, index: number) => {
         const tokenB = tokenBs?.[index] || ('0x0' as Address);
         const reserves = (reservesData as any)?.[index]?.result as [bigint, bigint] | undefined;
+        const decimalsA = tokenDecimalsMap[tokenA] || 18;
+        const decimalsB = tokenDecimalsMap[tokenB] || 18;
+
+        // ✨ Calculate TVL using pricing hook
+        const tvl = isPricingReady && reserves
+          ? calculateTVL(tokenA, reserves[0], tokenB, reserves[1], decimalsA, decimalsB)
+          : 0;
 
         return {
           tokenA,
           tokenB,
           symbolA: tokenSymbolMap[tokenA] || 'Unknown',
           symbolB: tokenSymbolMap[tokenB] || 'Unknown',
-          decimalsA: tokenDecimalsMap[tokenA],
-          decimalsB: tokenDecimalsMap[tokenB],
+          decimalsA,
+          decimalsB,
           logoURIA: tokenLogoMap[tokenA] || '',
           logoURIB: tokenLogoMap[tokenB] || '',
           reserveA: reserves?.[0] || BigInt(0),
           reserveB: reserves?.[1] || BigInt(0),
           totalLPSupply: BigInt(0),
-          totalLiquidity: '0',
+          totalLiquidity: tvl.toString(),
           volume24h: '0',
           feeTier: '0.3%',
         };
@@ -252,6 +276,8 @@ export const PoolList: React.FC<PoolListProps> = ({
     allTokens.length,
     Boolean(logoData),
     Boolean(reservesData),
+    isPricingReady,
+    calculateTVL,
   ]);
 
   // Filter pools
@@ -330,6 +356,8 @@ export const PoolList: React.FC<PoolListProps> = ({
               onAdd={() => onNavigateToAdd?.(pool.tokenA, pool.tokenB)}
               onRemove={() => onNavigateToRemove?.(pool.tokenA, pool.tokenB)}
               onSwap={() => onNavigateToSwap?.(pool.tokenA, pool.tokenB)}
+              isPricingReady={isPricingReady}
+              calculateTVL={calculateTVL}
             />
           ))}
         </div>
@@ -374,25 +402,34 @@ interface PoolRowProps {
   onAdd?: () => void;
   onRemove?: () => void;
   onSwap?: () => void;
+  isPricingReady: boolean;
+  calculateTVL: (
+    tokenA: Address,
+    amountA: bigint,
+    tokenB: Address,
+    amountB: bigint,
+    decimalsA: number,
+    decimalsB: number
+  ) => number;
 }
 
-const PoolRow: React.FC<PoolRowProps> = ({ pool, showUserPosition = false, onAdd, onRemove, onSwap }) => {
-  const formatLiquidity = (reserveA: bigint, reserveB: bigint, decimalsA?: number, decimalsB?: number) => {
-    if (!decimalsA || !decimalsB) return '$0';
+const PoolRow: React.FC<PoolRowProps> = ({ 
+  pool, 
+  showUserPosition = false, 
+  onAdd, 
+  onRemove, 
+  onSwap,
+  isPricingReady,
+}) => {
+  // ✨ Updated: Use actual TVL from pricing
+  const formatLiquidity = (tvl: string) => {
+    const value = parseFloat(tvl);
+    if (!isPricingReady || isNaN(value) || value === 0) return '$0';
     
-    try {
-      const amountA = parseFloat(formatUnits(reserveA, decimalsA));
-      const amountB = parseFloat(formatUnits(reserveB, decimalsB));
-      const total = amountA + amountB;
-      
-      // Format with K, M, B abbreviations
-      if (total >= 1_000_000_000) return `$${(total / 1_000_000_000).toFixed(2)}B`;
-      if (total >= 1_000_000) return `$${(total / 1_000_000).toFixed(2)}M`;
-      if (total >= 1_000) return `$${(total / 1_000).toFixed(2)}K`;
-      return `$${total.toFixed(2)}`;
-    } catch {
-      return '$0';
-    }
+    if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
+    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
+    if (value >= 1_000) return `$${(value / 1_000).toFixed(2)}K`;
+    return `$${value.toFixed(2)}`;
   };
 
   const formatNumber = (num: string) => {
@@ -406,6 +443,20 @@ const PoolRow: React.FC<PoolRowProps> = ({ pool, showUserPosition = false, onAdd
   const truncateSymbol = (symbol: string, maxLength: number = 8) => {
     if (symbol.length <= maxLength) return symbol;
     return symbol.substring(0, maxLength) + '...';
+  };
+
+  // ✨ Calculate user position value
+  const calculateUserPositionValue = () => {
+    if (!showUserPosition || !pool.userShare || !isPricingReady) return '$0';
+    
+    const totalTVL = parseFloat(pool.totalLiquidity);
+    if (isNaN(totalTVL) || totalTVL === 0) return '$0';
+    
+    const userValue = totalTVL * (pool.userShare / 100);
+    
+    if (userValue >= 1_000_000) return `$${(userValue / 1_000_000).toFixed(2)}M`;
+    if (userValue >= 1_000) return `$${(userValue / 1_000).toFixed(2)}K`;
+    return `$${userValue.toFixed(2)}`;
   };
 
   // Calculate placeholder APR (you'd calculate this from actual fees)
@@ -482,7 +533,7 @@ const PoolRow: React.FC<PoolRowProps> = ({ pool, showUserPosition = false, onAdd
             <div className="min-w-0">
               <div className="text-[var(--silver-dark)] mb-0.5 lg:mb-0 truncate">Liquidity</div>
               <div className="font-medium text-[var(--silver-light)] truncate">
-                {formatLiquidity(pool.reserveA, pool.reserveB, pool.decimalsA, pool.decimalsB)}
+                {formatLiquidity(pool.totalLiquidity)}
               </div>
             </div>
             <div className="min-w-0">
@@ -551,7 +602,9 @@ const PoolRow: React.FC<PoolRowProps> = ({ pool, showUserPosition = false, onAdd
                   </div>
                   <div className="min-w-0">
                     <span className="text-[var(--silver-dark)]">Value: </span>
-                    <span className="font-medium text-[var(--silver-light)] truncate">$0</span>
+                    <span className="font-medium text-[var(--silver-light)] truncate">
+                      {calculateUserPositionValue()}
+                    </span>
                   </div>
                   <div className="min-w-0">
                     <span className="text-[var(--silver-dark)]">Fees Earned: </span>

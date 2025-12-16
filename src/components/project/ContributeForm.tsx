@@ -12,6 +12,8 @@ import { CheckCircle2, TrendingUp } from 'lucide-react'
 import { SafeHtml, SafeAddressDisplay } from '../SafeHtml'
 import { sanitizeNumber, sanitizeText } from '../../utils/sanitization'
 import { logger } from '@/utils/logger'
+import { useLocalPricing } from '@/hooks/utilities/useLocalPricing'
+import type { Address } from 'viem'
 
 interface ContributeFormProps {
   project: ProjectDisplayData
@@ -54,6 +56,8 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
   onApprovalComplete,
   inputAmountBigInt
 }) => {
+  const { getTokenPriceUSD, isReady: isPricingReady } = useLocalPricing()
+
   // ✅ Sanitize token symbol for display
   const safeTokenSymbol = useMemo(() => 
     sanitizeText(contributionTokenSymbol), 
@@ -63,6 +67,47 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
   const safeProjectSymbol = useMemo(() => 
     sanitizeText(project.tokenSymbol), 
     [project.tokenSymbol]
+  )
+
+  // Calculate USD values
+  const getUSDValue = (tokenAmount: bigint, decimals: number, tokenAddress?: string): string => {
+    if (!isPricingReady || !tokenAddress) return ''
+    
+    try {
+      const tokenPrice = getTokenPriceUSD(tokenAddress as Address)
+      if (tokenPrice === 'N/A') return ''
+      
+      // Parse the price (remove $ and commas)
+      const priceValue = parseFloat(tokenPrice.replace(/[$,]/g, ''))
+      
+      // Convert token amount to decimal
+      const divisor = 10n ** BigInt(decimals)
+      const tokenAmountDecimal = Number(tokenAmount) / Number(divisor)
+      
+      // Calculate USD value
+      const usdValue = tokenAmountDecimal * priceValue
+      
+      return `$${usdValue.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`
+    } catch (error) {
+      return ''
+    }
+  }
+
+  // Calculate USD for input amount
+  const inputAmountUSD = getUSDValue(
+    inputAmountBigInt,
+    contributionTokenDecimals,
+    project.contributionTokenAddress
+  )
+
+  // Calculate USD for balance
+  const balanceUSD = getUSDValue(
+    balanceBigInt,
+    contributionTokenDecimals,
+    project.contributionTokenAddress
   )
 
   // ✅ Handle input change with sanitization
@@ -149,13 +194,20 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
       <div className="flex justify-between items-center p-3 bg-[var(--charcoal)] rounded-lg border border-[var(--silver-dark)] border-opacity-20 hover:border-opacity-40 transition-all duration-300">
         <span className="text-sm text-[var(--metallic-silver)]">Your Balance:</span>
         <div className="flex items-center space-x-2">
-          <span className="font-medium text-[var(--silver-light)]">
-            {ExhibitionFormatters.formatTokenWithSymbol(
-              balanceBigInt,
-              safeTokenSymbol,
-              contributionTokenDecimals
+          <div className="text-right">
+            <div className="font-medium text-[var(--silver-light)]">
+              {ExhibitionFormatters.formatTokenWithSymbol(
+                balanceBigInt,
+                safeTokenSymbol,
+                contributionTokenDecimals
+              )}
+            </div>
+            {balanceUSD && (
+              <div className="text-xs text-[var(--silver-dark)]">
+                ≈ {balanceUSD}
+              </div>
             )}
-          </span>
+          </div>
           {Number(balance) > 0 && (
             <Button
               type="button"
@@ -195,16 +247,23 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
           </div>
         </div>
 
-        {/* ✅ Sanitized Input */}
-        <Input
-          label={`Contribution Amount (${safeTokenSymbol})`}
-          type="text"
-          inputMode="decimal"
-          placeholder="0.0"
-          value={contributionAmount}
-          onChange={(e) => handleContributionChange(e.target.value)}
-          maxLength={50} // Prevent DoS
-        />
+        {/* ✅ Sanitized Input with USD display */}
+        <div>
+          <Input
+            label={`Contribution Amount (${safeTokenSymbol})`}
+            type="text"
+            inputMode="decimal"
+            placeholder="0.0"
+            value={contributionAmount}
+            onChange={(e) => handleContributionChange(e.target.value)}
+            maxLength={50} // Prevent DoS
+          />
+          {inputAmountUSD && inputAmountBigInt > 0n && (
+            <div className="mt-1 text-xs text-[var(--silver-dark)] text-right">
+              ≈ {inputAmountUSD}
+            </div>
+          )}
+        </div>
 
         {tokenAmountDue > 0n && (
           <div className="p-3 bg-gradient-to-r from-[var(--charcoal)] to-[var(--deep-black)] rounded-lg border border-[var(--neon-blue)] border-opacity-40 relative overflow-hidden">
@@ -238,7 +297,7 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
             >
               {contributionSuccess 
                 ? '✓ Contribution Complete' 
-                : `Contribute ${contributionAmount} ${safeTokenSymbol}`
+                : `Contribute ${contributionAmount} ${safeTokenSymbol}${inputAmountUSD ? ` (≈${inputAmountUSD})` : ''}`
               }
             </Button>
           </TokenApproval>

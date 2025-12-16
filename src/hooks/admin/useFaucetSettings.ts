@@ -13,13 +13,13 @@ interface UseFaucetSettingsReturn {
   exhAmountHash: `0x${string}` | undefined;
   exhAmountError: Error | null;
 
-  // Set USDT Amount
-  setUSDTAmount: (amount: string) => void;
-  isUSDTAmountLoading: boolean;
-  isUSDTAmountConfirming: boolean;
-  isUSDTAmountConfirmed: boolean;
-  usdtAmountHash: `0x${string}` | undefined;
-  usdtAmountError: Error | null;
+  // Set exUSD Amount
+  setexUSDAmount: (amount: string) => void;
+  isexUSDAmountLoading: boolean;
+  isexUSDAmountConfirming: boolean;
+  isexUSDAmountConfirmed: boolean;
+  exusdAmountHash: `0x${string}` | undefined;
+  exusdAmountError: Error | null;
 
   // Set Cooldown
   setCooldown: (seconds: number) => void;
@@ -46,19 +46,19 @@ export function useFaucetSettings(): UseFaucetSettingsReturn {
     hash: exhAmountHash,
   });
 
-  // USDT Amount
+  // exUSD Amount
   const {
-    writeContract: writeUSDTAmount,
-    data: usdtAmountHash,
-    isPending: isUSDTAmountPending,
-    error: usdtAmountWriteError,
+    writeContract: writeexUSDAmount,
+    data: exusdAmountHash,
+    isPending: isexUSDAmountPending,
+    error: exusdAmountWriteError,
   } = useWriteContract();
 
   const {
-    isLoading: isUSDTAmountConfirming,
-    isSuccess: isUSDTAmountConfirmed,
+    isLoading: isexUSDAmountConfirming,
+    isSuccess: isexUSDAmountConfirmed,
   } = useWaitForTransactionReceipt({
-    hash: usdtAmountHash,
+    hash: exusdAmountHash,
   });
 
   // Cooldown
@@ -91,17 +91,17 @@ export function useFaucetSettings(): UseFaucetSettingsReturn {
     }
   };
 
-  const setUSDTAmount = (amount: string) => {
+  const setexUSDAmount = (amount: string) => {
     try {
-      const amountInWei = parseUnits(amount, 6); // USDT has 6 decimals
-      writeUSDTAmount({
+      const amountInWei = parseUnits(amount, 6); // exUSD has 6 decimals
+      writeexUSDAmount({
         address: EXHIBITION_ADDRESS,
         abi: exhibitionAbi,
-        functionName: 'setFaucetAmountUSDT',
+        functionName: 'setFaucetAmountexUSD',
         args: [amountInWei],
       });
     } catch (error) {
-      logger.error('Failed to set USDT amount:', error);
+      logger.error('Failed to set exUSD amount:', error);
     }
   };
 
@@ -127,13 +127,13 @@ export function useFaucetSettings(): UseFaucetSettingsReturn {
     exhAmountHash,
     exhAmountError: exhAmountWriteError,
 
-    // USDT Amount
-    setUSDTAmount,
-    isUSDTAmountLoading: isUSDTAmountPending || isUSDTAmountConfirming,
-    isUSDTAmountConfirming,
-    isUSDTAmountConfirmed,
-    usdtAmountHash,
-    usdtAmountError: usdtAmountWriteError,
+    // exUSD Amount
+    setexUSDAmount,
+    isexUSDAmountLoading: isexUSDAmountPending || isexUSDAmountConfirming,
+    isexUSDAmountConfirming,
+    isexUSDAmountConfirmed,
+    exusdAmountHash,
+    exusdAmountError: exusdAmountWriteError,
 
     // Cooldown
     setCooldown,

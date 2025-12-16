@@ -34,8 +34,17 @@ export interface ProjectDisplayData {
   softCap: bigint
   totalRaised: bigint
   tokenPrice: bigint
+  
+  // 🆕 Actual corrected timestamps (for display)
+  // These are calculated from blockchain durations to work around Nexus's logical timestamp issue
   startTime: bigint
   endTime: bigint
+  
+  // 🆕 Original blockchain timestamps (optional, for debugging/reference)
+  // These are the raw logical timestamps from Nexus blockchain
+  blockchainStartTime?: bigint
+  blockchainEndTime?: bigint
+  
   amountTokensForSale: bigint
   totalProjectTokenSupply: bigint
   liquidityPercentage: bigint
@@ -63,8 +72,9 @@ export interface ProjectDisplayData {
   tokenDecimals?: number
   contributionTokenSymbol?: string
   contributionTokenDecimals?: number
+  totalContributors?: number
 
-  // 🆕 Liquidity fields
+  // Liquidity fields
   requiredLiquidityTokens: bigint
   depositedLiquidityTokens: bigint
 }
@@ -96,12 +106,11 @@ export interface ProjectCreationResult {
 export const ProjectStatus = {
   Upcoming: 0,
   Active: 1,
-  FundingEnded: 2,
-  Successful: 3,
-  Failed: 4,
-  Claimable: 5,
-  Refundable: 6,
-  Completed: 7,
+  Successful:2,
+  Failed: 3,
+  Claimable: 4,
+  Refundable: 5,
+  Completed: 6,
 } as const;
 
 export type ProjectStatus = typeof ProjectStatus[keyof typeof ProjectStatus];
@@ -109,7 +118,6 @@ export type ProjectStatus = typeof ProjectStatus[keyof typeof ProjectStatus];
 export const ProjectStatusLabels: Record<ProjectStatus, string> = {
   [ProjectStatus.Upcoming]: 'Upcoming',
   [ProjectStatus.Active]: 'Active',
-  [ProjectStatus.FundingEnded]: 'Funding Ended',
   [ProjectStatus.Successful]: 'Successful',
   [ProjectStatus.Failed]: 'Failed',
   [ProjectStatus.Claimable]: 'Claimable',

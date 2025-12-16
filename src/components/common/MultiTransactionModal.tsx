@@ -19,6 +19,7 @@ export type TransactionType =
   | 'request'
   | 'verify-wallet'
   | 'adding'
+  | 'emergency_refund'
   | null
 
 const TRANSACTION_TITLES: Record<Exclude<TransactionType, null>, string> = {
@@ -34,6 +35,7 @@ const TRANSACTION_TITLES: Record<Exclude<TransactionType, null>, string> = {
   create:  'Creating Project',
   request: 'Requesting Faucet Tokens',
   adding: 'Adding Liquidity',
+  'emergency_refund': 'Requesting Emergency Refund',
   'verify-wallet': 'Verifying Wallet Ownership',
 }
 
@@ -74,7 +76,7 @@ export const MultiTransactionModal: React.FC<MultiTransactionModalProps> = ({
   error = null,
   customTitle,
   message,
-  signMessageText = "Welcome to Exhibition, a verifiable token launchpad and DEX with dedicated liquidity lock, built on Nexus verifiable network for the AI era.",
+  signMessageText ="Welcome to Exhibition. A trustless launch infrastructure on Nexus Layer 1 where public sale funds secure liquidity by default. No market makers. No broken agreements.",
 }) => {
   const { address } = useAccount()
   const { signMessage, data: sig, isPending: signPending, isSuccess: signSuccess, error: signError } = useSignMessage()

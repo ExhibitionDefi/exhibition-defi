@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAccount } from 'wagmi'
 import { CreateProjectForm } from '@/components/project/CreateProjectForm'
 import { MultiTransactionModal } from '@/components/common/MultiTransactionModal'
-import { useCreateProject } from '@/hooks/pad/useCreateProject'
+import { useCreateProject } from '@/hooks/launchpad/useCreateProject'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Rocket, ArrowLeft, CheckCircle2, Wallet, ArrowRight } from 'lucide-react'
@@ -34,20 +34,18 @@ export const CreateProjectPage: React.FC = () => {
 
   const [formKey, setFormKey] = React.useState(0)
 
-  // ✅ FIXED: Redirect to project details page
+  // ✅ FIXED: Backup auto-redirect (reduced to 1 second)
   useEffect(() => {
     if (isSuccess && projectId !== null && projectId !== undefined) {
-      logger.info('🎯 Redirecting to project:', projectId)
+      logger.info('🎯 Backup redirect timer started for project:', projectId)
       
-      // Convert bigint to string for URL
       const projectIdStr = projectId.toString()
       
       const timer = setTimeout(() => {
         const route = `/projects/${projectIdStr}`
-        
-        logger.info('📍 Navigating to:', route)
+        logger.info('📍 Auto-navigating to:', route)
         navigate(route)
-      }, 3000)
+      }, 1000) // ✅ Reduced from 3000ms to 1000ms
       
       return () => clearTimeout(timer)
     }
@@ -59,13 +57,24 @@ export const CreateProjectPage: React.FC = () => {
     }
   }, [isSuccess])
 
+  // ✅ FIXED: Redirect on modal close
   const handleModalClose = () => {
+    // Store projectId before resetting
+    const savedProjectId = projectId
+    
     modalState.hide()
-    if (isSuccess || error) {
+    
+    if (isSuccess && savedProjectId !== null && savedProjectId !== undefined) {
+      // Navigate immediately on success
+      const projectIdStr = savedProjectId.toString()
+      const route = `/projects/${projectIdStr}`
+      logger.info('🔗 Redirecting on modal close to:', route)
+      navigate(route)
+    }
+    
+    if (error) {
       reset()
-      if (error) {
-        setFormKey(prev => prev + 1)
-      }
+      setFormKey(prev => prev + 1)
     }
   }
 
@@ -73,7 +82,7 @@ export const CreateProjectPage: React.FC = () => {
   const handleViewProject = () => {
     if (projectId !== null && projectId !== undefined) {
       const projectIdStr = projectId.toString()
-      const route = `/projects/${projectIdStr}` // ✅ Matches your route
+      const route = `/projects/${projectIdStr}`
       logger.info('🔗 Manual navigation to:', route)
       navigate(route)
     }
@@ -93,7 +102,7 @@ export const CreateProjectPage: React.FC = () => {
               Wallet Not Connected
             </h2>
             <p className="text-[var(--metallic-silver)] mb-8 leading-relaxed">
-              Please connect your wallet to access the project creation platform and launch your token on Exhibition.
+              Please connect your wallet to access the project creation platform and launch your project on Exhibition.
             </p>
             <Button 
               onClick={() => navigate('/')} 
@@ -128,7 +137,7 @@ export const CreateProjectPage: React.FC = () => {
                 onClick={() => navigate('/projects')}
                 className="hover:text-[var(--neon-blue)] transition-colors"
               >
-                Projects
+                Launches
               </button>
               <span>/</span>
               <span className="text-[var(--silver-light)]">Create</span>
@@ -143,11 +152,12 @@ export const CreateProjectPage: React.FC = () => {
               </div>
               <div className="flex-1">
                 <h1 className="text-4xl md:text-5xl font-bold text-[var(--silver-light)] mb-3">
-                  Create Launchpad Project
+                  Create a Token Launch
                 </h1>
                 <p className="text-lg text-[var(--metallic-silver)] leading-relaxed">
-                  Launch your token with Exhibition's decentralized launchpad. Configure your tokenomics, 
-                  set funding goals, and bring your project to life with complete transparency and security.
+                  Define and deploy a primary-market token launch on Exhibition.
+                  Total supply, sale allocation, funding, vesting, and liquidity parameters
+                  are enforced as immutable on-chain rules that instantiate the initial market.
                 </p>
               </div>
             </div>
@@ -160,8 +170,8 @@ export const CreateProjectPage: React.FC = () => {
                     <CheckCircle2 className="w-5 h-5 text-[var(--neon-blue)]" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[var(--silver-light)]">Secure & Trustless</p>
-                    <p className="text-xs text-[var(--metallic-silver)]">Smart contract verified</p>
+                    <p className="text-sm font-semibold text-[var(--silver-light)]">Protocol-Enforced</p>
+                    <p className="text-xs text-[var(--metallic-silver)]">Executed entirely on-chain</p>
                   </div>
                 </div>
               </div>
@@ -171,8 +181,8 @@ export const CreateProjectPage: React.FC = () => {
                     <CheckCircle2 className="w-5 h-5 text-[var(--neon-blue)]" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[var(--silver-light)]">Automated Liquidity</p>
-                    <p className="text-xs text-[var(--metallic-silver)]">Lock & pool creation</p>
+                    <p className="text-sm font-semibold text-[var(--silver-light)]">Liquidity Bootstrapping</p>
+                    <p className="text-xs text-[var(--metallic-silver)]">Created and locked at finalization</p>
                   </div>
                 </div>
               </div>
@@ -182,14 +192,38 @@ export const CreateProjectPage: React.FC = () => {
                     <CheckCircle2 className="w-5 h-5 text-[var(--neon-blue)]" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[var(--silver-light)]">Flexible Vesting</p>
-                    <p className="text-xs text-[var(--metallic-silver)]">Custom schedules</p>
+                    <p className="text-sm font-semibold text-[var(--silver-light)]">Deterministic Vesting</p>
+                    <p className="text-xs text-[var(--metallic-silver)]">Predefined unlock schedules</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Rules Section */}
+      <div className="mt-8 bg-[var(--charcoal)] border border-[var(--silver-dark)]/20 rounded-xl p-6">
+        <h4 className="text-lg font-semibold text-[var(--silver-light)] mb-3">
+          Before You Proceed
+        </h4>
+        <p className="text-sm text-[var(--metallic-silver)] mb-4">
+          Creating a launch configures immutable on-chain parameters. Ensure you have:
+        </p>
+        <ul className="space-y-2 text-sm text-[var(--metallic-silver)]">
+          <li className="flex items-start gap-2">
+            <span className="text-[var(--neon-blue)] mt-0.5">✓</span>
+            <span>A well-defined tokenomics and distribution plan</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-[var(--neon-blue)] mt-0.5">✓</span>
+            <span>Sufficient balance to cover deployment and transaction fees</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-[var(--neon-blue)] mt-0.5">✓</span>
+            <span>Reviewed all parameters prior to on-chain confirmation (parameters cannot be modified after submission)</span>
+          </li>
+        </ul>
       </div>
 
       {/* Main Content */}
@@ -247,11 +281,11 @@ export const CreateProjectPage: React.FC = () => {
                         </Button>
                       </div>
 
-                      {/* ✅ Auto-redirect indicator */}
+                      {/* ✅ Updated redirect indicator */}
                       <div className="flex items-center gap-2 mt-4">
                         <div className="w-2 h-2 rounded-full bg-[var(--neon-blue)] animate-pulse"></div>
                         <p className="text-sm font-medium text-[var(--neon-blue)]">
-                          Auto-redirecting to project page in 3 seconds...
+                          Close the transaction modal to view your project, or wait for auto-redirect...
                         </p>
                       </div>
                     </div>
@@ -268,30 +302,6 @@ export const CreateProjectPage: React.FC = () => {
             isSubmitting={isCreating}
             error={error}
           />
-
-          {/* Help Section */}
-          <div className="mt-8 bg-[var(--charcoal)] border border-[var(--silver-dark)]/20 rounded-xl p-6">
-            <h4 className="text-lg font-semibold text-[var(--silver-light)] mb-3">
-              Need Help?
-            </h4>
-            <p className="text-sm text-[var(--metallic-silver)] mb-4">
-              Creating a launchpad project involves multiple steps. Make sure you have:
-            </p>
-            <ul className="space-y-2 text-sm text-[var(--metallic-silver)]">
-              <li className="flex items-start gap-2">
-                <span className="text-[var(--neon-blue)] mt-0.5">✓</span>
-                <span>Sufficient funds for gas fees</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-[var(--neon-blue)] mt-0.5">✓</span>
-                <span>Tokens ready to deposit after project creation</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-[var(--neon-blue)] mt-0.5">✓</span>
-                <span>Reviewed all parameters carefully (they cannot be changed)</span>
-              </li>
-            </ul>
-          </div>
         </div>
       </div>
 
@@ -308,7 +318,7 @@ export const CreateProjectPage: React.FC = () => {
         error={error}
         message={
           isSuccess
-            ? 'Project created successfully! Redirecting to your project...'
+            ? 'Project created successfully! Close this modal to continue to your project.'
             : isConfirming
             ? 'Confirming project creation on the blockchain...'
             : 'Creating your launchpad project and deploying smart contracts...'

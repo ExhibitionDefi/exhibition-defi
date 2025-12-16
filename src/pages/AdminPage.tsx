@@ -40,7 +40,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
   
   // Faucet form states
   const [exhFaucetAmount, setExhFaucetAmount] = useState('');
-  const [usdtFaucetAmount, setUsdtFaucetAmount] = useState('');
+  const [exusdFaucetAmount, setexUsdFaucetAmount] = useState('');
   const [faucetCooldown, setFaucetCooldown] = useState('');
 
   // Enhanced loading state
@@ -185,17 +185,17 @@ const AdminPage: React.FC<AdminPageProps> = ({
     }
   };
 
-  const handleUpdateUSDTAmount = async () => {
-    if (!usdtFaucetAmount) return;
+  const handleUpdateExUSDAmount = async () => {
+    if (!exusdFaucetAmount) return;
     try {
-      faucetSettings.setUSDTAmount(usdtFaucetAmount);
+      faucetSettings.setexUSDAmount(exusdFaucetAmount);
       
-      if (faucetSettings.isUSDTAmountConfirmed) {
-        setUsdtFaucetAmount('');
+      if (faucetSettings.isexUSDAmountConfirmed) {
+        setexUsdFaucetAmount('');
         await adminSettings.refetch.faucetSettings();
       }
     } catch (error) {
-      logger.error('Failed to update USDT faucet amount:', error);
+      logger.error('Failed to update exUSD faucet amount:', error);
     }
   };
 
@@ -220,7 +220,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
     manageTokens.isAddLoading || 
     manageTokens.isRemoveLoading ||
     faucetSettings.isEXHAmountLoading ||
-    faucetSettings.isUSDTAmountLoading ||
+    faucetSettings.isexUSDAmountLoading ||
     faucetSettings.isCooldownLoading;
 
   // Enhanced admin dashboard
@@ -371,35 +371,35 @@ const AdminPage: React.FC<AdminPageProps> = ({
                 </Button>
               </div>
 
-              {/* USDT Amount */}
+              {/* exUSD Amount */}
               <div className="pt-4 border-t border-[var(--metallic-silver)]/20">
                 <label className="block text-sm font-medium mb-2" style={{ color: 'var(--silver-light)' }}>
-                  USDT Faucet Amount
+                  exUSD Faucet Amount
                 </label>
                 <div className="flex items-center space-x-3">
                   <Input
                     type="number"
                     min="0"
                     step="0.01"
-                    value={usdtFaucetAmount}
-                    onChange={(e) => setUsdtFaucetAmount(e.target.value)}
-                    placeholder={adminSettings.faucetSettings?.usdtAmount || '0'}
+                    value={exusdFaucetAmount}
+                    onChange={(e) => setexUsdFaucetAmount(e.target.value)}
+                    placeholder={adminSettings.faucetSettings?.exusdAmount || '0'}
                     className="flex-1 bg-[var(--charcoal)] border-[var(--metallic-silver)]/30 text-white focus:border-[var(--neon-blue)]/50"
                   />
                   <span className="text-sm px-3 py-2 bg-[var(--neon-blue)]/20 rounded-lg border border-[var(--neon-blue)]/30" style={{ color: 'var(--neon-blue)' }}>
-                    USDT
+                    exUSD
                   </span>
                 </div>
                 <p className="text-xs mt-1" style={{ color: 'var(--metallic-silver)' }}>
-                  Current: {adminSettings.faucetSettings?.usdtAmount || '0'} USDT
+                  Current: {adminSettings.faucetSettings?.exusdAmount || '0'} exUSD
                 </p>
                 <Button 
-                  onClick={handleUpdateUSDTAmount}
-                  disabled={!usdtFaucetAmount || isActionPending}
-                  isLoading={faucetSettings.isUSDTAmountLoading}
+                  onClick={handleUpdateExUSDAmount}
+                  disabled={!exusdFaucetAmount || isActionPending}
+                  isLoading={faucetSettings.isexUSDAmountLoading}
                   className="w-full mt-3 bg-gradient-to-r from-[var(--neon-blue)]/80 to-[var(--neon-blue)] hover:from-[var(--neon-blue)] hover:to-[var(--neon-blue)]/80"
                 >
-                  Update USDT Amount
+                  Update exUSD Amount
                 </Button>
               </div>
 

@@ -32,7 +32,7 @@ export const FinalizeLiquidityPreviewCard: React.FC<FinalizeLiquidityPreviewCard
   buttonState = { text: 'Finalize Liquidity & Release Funds', disabled: false },
 }) => {
   // Get contribution token decimals (assuming 18 for ERC20)
-  const contributionDecimals = 18
+  const contributionDecimals = project.contributionTokenDecimals
 
   // Calculate all amounts using the utility function
   const allocations = ExhibitionFormatters.calculateLiquidityAmounts(

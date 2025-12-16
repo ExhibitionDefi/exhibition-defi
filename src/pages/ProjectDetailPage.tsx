@@ -13,17 +13,18 @@ import { DepositProjectTokenCard } from '../components/project/DepositProjectTok
 import { FinalizeLiquidityPreviewCard } from '@/components/project/FinalizeLiquidityPreviewCard'
 import { WithdrawUnsoldTokensCard } from '../components/project/WithdrawUnsoldTokensCard'
 import { MultiTransactionModal } from '../components/common/MultiTransactionModal'
-import { useProject } from '../hooks/useProject'
+import { useProject } from '../hooks/launchpad/useProject'
 import { usePlatformSettings } from '@/hooks/admin/usePlatformSettings'
 import { useAccount } from 'wagmi'
-import { useFinalizeProject } from '../hooks/pad/useFinalizeProject'
-import { useDepositLiquidityTokens } from '../hooks/pad/useDepositLiquidityTokens'
-import { useDepositProjectTokens } from '../hooks/pad/useDepositProjectTokens'
-import { useFinalizeLiquidity } from '../hooks/pad/useFinalizeLiquidity'
-import { useContributeToProject } from '../hooks/pad/useContributeToProject'
-import { useRequestRefund } from '../hooks/pad/useRequestRefund'
-import { useWithdrawUnsoldTokens } from '../hooks/pad/useWithdrawUnsoldTokens'
-import { useClaimTokens } from '../hooks/pad/useClaimTokens'
+import { useBlockchainTime } from '@/hooks/utilities/useBlockchainTime'
+import { useFinalizeProject } from '../hooks/launchpad/useFinalizeProject'
+import { useDepositLiquidityTokens } from '../hooks/launchpad/useDepositLiquidityTokens'
+import { useDepositProjectTokens } from '../hooks/launchpad/useDepositProjectTokens'
+import { useFinalizeLiquidity } from '../hooks/launchpad/useFinalizeLiquidity'
+import { useContributeToProject } from '../hooks/launchpad/useContributeToProject'
+import { useRequestRefund } from '../hooks/launchpad/useRequestRefund'
+import { useWithdrawUnsoldTokens } from '../hooks/launchpad/useWithdrawUnsoldTokens'
+import { useClaimTokens } from '../hooks/launchpad/useClaimTokens'
 import { ProjectStatus } from '../types/project'
 
 export const ProjectDetailPage: React.FC = () => {
@@ -37,6 +38,9 @@ export const ProjectDetailPage: React.FC = () => {
     error,
     refetch,
   } = useProject(projectId)
+
+  // Fetch blockchain time for accurate time comparisons
+  const { timestampNumber: now } = useBlockchainTime()
 
   // Fetch platform settings for transaction preview
   const { platformFeePercentage, isLoading: isPlatformSettingsLoading } = usePlatformSettings()
@@ -141,8 +145,7 @@ export const ProjectDetailPage: React.FC = () => {
   // Check if liquidity tokens are deposited (for button state)
   const hasDepositedLiquidity = project.depositedLiquidityTokens >= project.requiredLiquidityTokens
 
-  // Calculate if finalize should show
-  const now = Math.floor(Date.now() / 1000)
+  // Calculate if finalize should show - USING BLOCKCHAIN TIME
   const projectHasEnded = now >= Number(project.endTime)
   const canFinalize = project.status === ProjectStatus.Active && projectHasEnded
   
@@ -214,8 +217,8 @@ export const ProjectDetailPage: React.FC = () => {
        project.depositedLiquidityTokens < project.requiredLiquidityTokens && (
         <DepositLiquidityCard
           projectId={project.id}
-          tokenSymbol={project.contributionTokenSymbol}
-          tokenDecimals={project.contributionTokenDecimals}
+          tokenSymbol={project.tokenSymbol}
+          tokenDecimals={project.tokenDecimals}
           liquidityInfo={depositLiquidity.liquidityInfo}
           buttonState={depositLiquidity.buttonState}
           isOwner={isProjectOwner}
@@ -234,7 +237,7 @@ export const ProjectDetailPage: React.FC = () => {
             liquidityPercentage: project.liquidityPercentage,
             tokenPrice: project.tokenPrice,
             tokenSymbol: project.tokenSymbol ?? 'TOKEN',
-            tokenDecimals: project.tokenDecimals ?? 18,
+            tokenDecimals: project.tokenDecimals=18,
             contributionTokenSymbol: project.contributionTokenSymbol ?? 'TOKEN',
             contributionTokenDecimals: project.contributionTokenDecimals ?? 18,
             contributionTokenAddress: project.contributionTokenAddress,
@@ -261,6 +264,9 @@ export const ProjectDetailPage: React.FC = () => {
               canRefund={requestRefund.canRefund}
               isLoading={requestRefund.isLoading}
               onRequestRefund={requestRefund.onRequestRefund}
+              canEmergencyRefund={requestRefund.canEmergencyRefund}  
+              isEmergencyRefund={requestRefund.isEmergencyRefund}
+              onRequestEmergencyRefund={requestRefund.onRequestEmergencyRefund}
             />
           )}
 
@@ -325,8 +331,8 @@ export const ProjectDetailPage: React.FC = () => {
               claimIsConfirmed={claimTokens.isConfirmed}
               claimError={claimTokens.error}
               claimHash={claimTokens.hash}
-              // Vesting timing data
-              nextClaimDate={claimTokens.nextClaimDate}
+              // Vesting timing data - now using blockchain time
+              timeUntilNextClaim={claimTokens.timeUntilNextClaim}
               availableAmount={claimTokens.availableAmount}
             />
           )}

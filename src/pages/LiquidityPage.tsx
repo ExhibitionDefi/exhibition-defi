@@ -1,12 +1,11 @@
-import React, { useState, useMemo } from 'react';
-import { useAccount, useReadContracts } from 'wagmi';
+import React, { useState } from 'react';
+import { useAccount } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
 import { Plus, TrendingUp, Droplet } from 'lucide-react';
-import { exhibitionAmmAbi } from '@/generated/wagmi';
-import { CONTRACT_ADDRESSES } from '@/config/contracts';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { PoolList } from '@/components/liquidity/PoolList';
+import { useTVLStats } from '@/hooks/amm/useTVLStats';
 import type { Address } from 'viem';
 
 export const LiquidityPage: React.FC = () => {
@@ -14,40 +13,8 @@ export const LiquidityPage: React.FC = () => {
   const navigate = useNavigate();
   const [showMyPositions, setShowMyPositions] = useState(false);
 
-  // Fetch global pool statistics
-  const { data: statsData } = useReadContracts({
-    contracts: [
-      {
-        address: CONTRACT_ADDRESSES.AMM,
-        abi: exhibitionAmmAbi,
-        functionName: 'getPoolsPaginated',
-        args: [BigInt(0), BigInt(100)],
-      },
-    ],
-    query: {
-      refetchInterval: 30_000,
-      staleTime: 15_000,
-    },
-  });
-
-  const allPoolsResult = statsData?.[0]?.result as
-    | [Address[], Address[], bigint, boolean]
-    | undefined;
-
-  // Calculate overview statistics
-  const overviewStats = useMemo(() => {
-    const totalPools = allPoolsResult?.[2] ? Number(allPoolsResult[2]) : 0;
-    
-    // Placeholder values for TVL and Volume
-    const tvl = '0';
-    const volume24h = '0';
-
-    return {
-      totalPools,
-      tvl,
-      volume24h,
-    };
-  }, [allPoolsResult]);
+  // ✨ Clean separation: Hook handles all business logic
+  const { tvl, totalPools, volume24h, isLoading: isLoadingStats } = useTVLStats();
 
   return (
     <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
@@ -75,10 +42,18 @@ export const LiquidityPage: React.FC = () => {
                   <Droplet className="w-4 h-4 text-[var(--neon-blue)]" />
                 </div>
                 <div className="text-lg sm:text-xl font-bold text-[var(--silver-light)] truncate">
-                  ${overviewStats.tvl}
+                  {isLoadingStats ? (
+                    <div className="w-16 h-6 bg-[var(--charcoal)] animate-pulse rounded" />
+                  ) : (
+                    `$${tvl}`
+                  )}
                 </div>
                 <div className="text-xs text-[var(--neon-blue)] mt-1">
-                  {overviewStats.totalPools} pools
+                  {isLoadingStats ? (
+                    <div className="w-12 h-3 bg-[var(--charcoal)] animate-pulse rounded" />
+                  ) : (
+                    `${totalPools} pools`
+                  )}
                 </div>
               </Card>
 
@@ -89,7 +64,11 @@ export const LiquidityPage: React.FC = () => {
                   <TrendingUp className="w-4 h-4 text-[var(--neon-orange)]" />
                 </div>
                 <div className="text-lg sm:text-xl font-bold text-[var(--silver-light)] truncate">
-                  ${overviewStats.volume24h}
+                  {isLoadingStats ? (
+                    <div className="w-16 h-6 bg-[var(--charcoal)] animate-pulse rounded" />
+                  ) : (
+                    `$${volume24h}`
+                  )}
                 </div>
                 <div className="text-xs text-[var(--neon-orange)] mt-1">
                   +0%

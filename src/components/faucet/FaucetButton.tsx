@@ -4,7 +4,7 @@ import { Droplets, Clock } from 'lucide-react'
 import { useAccount } from 'wagmi'
 import { Link } from 'react-router-dom'
 import { Button } from '../ui/Button'
-import { useFaucet } from '../../hooks/useFaucet'
+import { useFaucet } from '../../hooks/utilities/useFaucet'
 
 export const FaucetButton: React.FC = () => {
   const { isConnected } = useAccount()

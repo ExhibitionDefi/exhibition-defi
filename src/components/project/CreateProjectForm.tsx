@@ -8,9 +8,9 @@ import { Input } from '../ui/Input'
 import { Label } from '../ui/Label'
 import { Checkbox } from '../ui/Checkbox'
 import { Alert } from '../ui/Alert'
-import type { CreateProjectFormData } from '@/hooks/pad/useCreateProject'
-import { SUPPORTED_EXH, SUPPORTED_EXUSDT, SUPPORTED_EXNEX } from '@/config/contracts'
-import { useTokenomicsValidation } from '@/hooks/useTokenomicsValidation'
+import type { CreateProjectFormData } from '@/hooks/launchpad/useCreateProject'
+import { SUPPORTED_EXH, SUPPORTED_EXUSD, SUPPORTED_EXNEX } from '@/config/contracts'
+import { useTokenomicsValidation } from '@/hooks/launchpad/useTokenomicsValidation'
 import { TokenomicsValidationDisplay } from './TokenomicsValidationDisplay'
 
 // 🔒 SECURITY: Import sanitization utilities
@@ -31,7 +31,7 @@ interface CreateProjectFormProps {
 
 const CONTRIBUTION_TOKENS = [
   { address: SUPPORTED_EXH, symbol: 'EXH', name: 'Exhibition Token' },
-  { address: SUPPORTED_EXUSDT, symbol: 'exUSDT', name: 'Exhibition USDT' },
+  { address: SUPPORTED_EXUSD, symbol: 'exUSD', name: 'Exhibition USD' },
   { address: SUPPORTED_EXNEX, symbol: 'exNEX', name: 'Exhibition NEX' },
 ] as const
 
@@ -46,7 +46,7 @@ const getDefaultStartTime = (): Date => {
 
 const getDefaultEndTime = (): Date => {
   const date = new Date()
-  date.setDate(date.getDate() + 7)
+  date.setDate(date.getDate() + 21)
   date.setMinutes(0)
   date.setSeconds(0)
   date.setMilliseconds(0)
@@ -136,7 +136,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
     // Apply field-specific sanitization
     switch (field) {
       case 'projectTokenName':
-        // Text only: allow only letters and spaces
+        // Text&Number only: allow only letters, numbers and spaces
         sanitizedValue = value
           .replace(/[^a-zA-Z0-9\s]/g, '') // Only allow letters and space
           .replace(/\s{2,}/g, ' ') // Replace multiple spaces with single space
@@ -265,8 +265,8 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
         }
         const duration =
           (formData.endTime.getTime() - formData.startTime.getTime()) / (24 * 60 * 60 * 1000)
-        if (duration > 7) {
-          errors.endTime = 'Project duration cannot exceed 7 days'
+        if (duration > 21) {
+          errors.endTime = 'Project duration cannot exceed 21 days'
         }
         break
 
@@ -314,8 +314,9 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
   // 🔒 SECURITY: Final sanitization before submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!validateStep(currentStep)) {
+
+    // ✅ ONLY allow submission on step 6
+    if (currentStep !== 6) {
       return
     }
 
@@ -347,10 +348,10 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
           <div className="space-y-8">
             <div className="border border-l-4 border-[var(--neon-blue)] pl-4">
               <h3 className="text-2xl font-bold text-[var(--silver-light)] mb-2">
-                Project Token Details
+                Token Parameters
               </h3>
               <p className="text-[var(--metallic-silver)] leading-relaxed">
-                Define the basic properties of your project token. All project tokens use 18 decimals for compatibility with DeFi standards.
+                Specify the core properties of the launch token. All tokens use 18 decimals for compatibility with on-chain exchange and DeFi standards.
               </p>
             </div>
 
@@ -414,7 +415,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
 
               <div className="space-y-2">
                 <Label htmlFor="projectTokenLogoURI" className="text-base">
-                  Logo URI <span className="text-[var(--metallic-silver)] text-sm">(optional)</span>
+                  Logo URI <span className="text-[var(--metallic-silver)] text-sm"></span>
                 </Label>
                 <Input
                   id="projectTokenLogoURI"
@@ -426,7 +427,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
                 />
                 <p className="text-sm text-[var(--metallic-silver)] flex items-start gap-2">
                   <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  URL to your token logo image (recommended: 256x256 PNG, https only)
+                  Public accessible URL to your token logo image (e.g ., PNG, JPG and SVG formats)
                 </p>
               </div>
             </div>
@@ -441,7 +442,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
                 Funding Configuration
               </h3>
               <p className="text-[var(--metallic-silver)] leading-relaxed">
-                Set your funding goals, contribution limits, and token pricing to define how supporters can participate in your project.
+                 Configure funding targets, contribution bounds, and initial pricing parameters enforced by the protocol.
               </p>
             </div>
 
@@ -449,11 +450,11 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
               <div className="flex gap-3">
                 <AlertCircle className="w-5 h-5 text-[var(--neon-blue)] flex-shrink-0 mt-0.5" />
                 <div className="space-y-2 text-sm text-[var(--silver-light)]">
-                  <p className="font-semibold">Important Guidelines:</p>
+                  <p className="font-semibold">Protocol Constraints:</p>
                   <ul className="space-y-1 ml-4 list-disc">
-                    <li>Soft cap must not exceed hard cap (funding goal)</li>
-                    <li>Tokens for sale cannot exceed total supply</li>
-                    <li>Set realistic contribution limits for fair distribution</li>
+                    <li>Soft cap must be less than or equal to the hard cap</li>
+                    <li>Tokens allocated for sale must not exceed total token supply</li>
+                    <li>Per-contributor limits should be configured to bound capital intake</li>
                   </ul>
                 </div>
               </div>
@@ -608,16 +609,16 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
         const duration = formData.endTime && formData.startTime 
           ? ((formData.endTime.getTime() - formData.startTime.getTime()) / (24 * 60 * 60 * 1000)).toFixed(1)
           : '0'
-        const durationExceeded = parseFloat(duration) > 7
+        const durationExceeded = parseFloat(duration) > 21
 
         return (
           <div className="space-y-8">
             <div className="border-l-4 border-[var(--neon-blue)] pl-4">
               <h3 className="text-2xl font-bold text-[var(--silver-light)] mb-2">
-                Project Timeline
+                Launch Timeline
               </h3>
               <p className="text-[var(--metallic-silver)] leading-relaxed">
-                Define when your project will begin accepting contributions and when the funding period will conclude.
+                Specify the on-chain start and end times for contribution acceptance and sale finalization.
               </p>
             </div>
 
@@ -628,7 +629,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
                   <p className="font-semibold">Timeline Requirements:</p>
                   <ul className="space-y-1 ml-4 list-disc">
                     <li>Start time must be at least 20 minutes in the future</li>
-                    <li className="font-bold text-[var(--neon-orange)]">Maximum project duration is 7 days</li>
+                    <li className="font-bold text-[var(--neon-orange)]">Maximum launch duration is 21 days</li>
                   </ul>
                 </div>
               </div>
@@ -691,7 +692,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-[var(--metallic-silver)] mb-1">
-                      Campaign Duration
+                      Lunch Duration
                     </p>
                     <p className={`text-3xl font-bold ${
                       durationExceeded ? 'text-[var(--neon-orange)]' : 'text-[var(--neon-blue)]'
@@ -705,7 +706,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
                 </div>
                 {durationExceeded && (
                   <p className="text-sm text-[var(--neon-orange)] mt-3">
-                    Duration exceeds 7-day maximum
+                    Duration exceeds 21-day maximum
                   </p>
                 )}
               </div>
@@ -982,7 +983,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
                 Review & Submit
               </h3>
               <p className="text-[var(--metallic-silver)] leading-relaxed">
-                Please carefully review all project details before submission. Once created, these parameters cannot be changed.
+                Please carefully review all Launch details before submission. Once created, these parameters cannot be changed.
               </p>
             </div>
 
@@ -1220,8 +1221,9 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
           </Button>
         ) : (
           <Button
-            type="submit"
+            type="button" 
             variant="primary"
+            onClick={handleSubmit} 
             disabled={isSubmitting}
             className="w-full sm:w-auto px-8 py-3 font-bold"
           >

@@ -3,7 +3,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import type { Address } from 'viem';
 import { useReadContract } from 'wagmi';
 import { Search, AlertCircle, CheckCircle, X, Star, Plus } from 'lucide-react';
-import { useTokenBalance } from '../../hooks/useTokenBalance';
+import { useTokenBalance } from '../../hooks/utilities/useTokenBalance';
 import { exhibitionAmmAbi } from '../../generated/wagmi';
 import { AMMFormatters } from '../../utils/ammFormatters';
 import { SafeHtml, SafeImage } from '../SafeHtml';

@@ -1,7 +1,7 @@
 // src/components/projects/TokenomicsValidationDisplay.tsx
 import React from 'react'
 import { AlertCircle, Lightbulb, TrendingUp, Droplets } from 'lucide-react'
-import type { TokenomicsValidation } from '@/hooks/useTokenomicsValidation'
+import type { TokenomicsValidation } from '@/hooks/launchpad/useTokenomicsValidation'
 
 interface TokenomicsValidationDisplayProps {
   validation: TokenomicsValidation

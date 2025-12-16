@@ -1,7 +1,7 @@
 // src/hooks/projects/useRequestRefund.ts
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
-import { useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
+import { useWriteContract, useWaitForTransactionReceipt, useAccount, useReadContract, useBlockNumber } from 'wagmi'
 import { exhibitionAbi } from '@/generated/wagmi'
 import { EXHIBITION_ADDRESS, EXPLORER_URL } from '@/config/contracts'
 import type { Hash } from 'viem'
@@ -35,6 +35,8 @@ interface UseRequestRefundOptions {
   showToast?: boolean
 }
 
+const LIQUIDITY_FINALIZATION_DEADLINE = 7n * 24n * 60n * 60n // 7 days in seconds
+
 export function useRequestRefund(options: UseRequestRefundOptions = {}) {
   const { 
     project,
@@ -47,16 +49,83 @@ export function useRequestRefund(options: UseRequestRefundOptions = {}) {
 
   const { isConnected } = useAccount()
 
+  // Get current block timestamp for deadline calculations
+  const { data: blockNumber } = useBlockNumber({ watch: true })
+  const { data: currentBlock } = useReadContract({
+    address: EXHIBITION_ADDRESS,
+    abi: [{
+      inputs: [],
+      name: 'getCurrentTimestamp',
+      outputs: [{ name: '', type: 'uint256' }],
+      stateMutability: 'view',
+      type: 'function',
+    }] as const,
+    functionName: 'getCurrentTimestamp',
+  })
+
+  // Get success timestamp for the project
+  const { data: successTimestamp } = useReadContract({
+    address: EXHIBITION_ADDRESS,
+    abi: exhibitionAbi,
+    functionName: 'successTimestamp',
+    args: project?.id ? [project.id] : undefined,
+    query: {
+      enabled: !!project?.id && (project.status === 3 || project.status === 5),
+    },
+  })
+
+  const currentTime = currentBlock as bigint | undefined
+
+  // Calculate if emergency refund is available
+  const emergencyRefundInfo = useMemo(() => {
+    if (!project || !successTimestamp || !currentTime) {
+      return { available: false, deadline: undefined, timeRemaining: undefined }
+    }
+
+    // Emergency refund only for Successful (3) or Claimable (5) status
+    const isSuccessfulOrClaimable = project.status === 3 || project.status === 5
+    
+    // Liquidity must NOT have been added
+    const liquidityNotAdded = project.depositedLiquidityTokens < project.requiredLiquidityTokens
+
+    // Calculate deadline
+    const deadline = successTimestamp + LIQUIDITY_FINALIZATION_DEADLINE
+    const deadlinePassed = currentTime >= deadline
+
+    const available = isSuccessfulOrClaimable && liquidityNotAdded && deadlinePassed
+    const timeRemaining = deadline - currentTime
+
+    return {
+      available,
+      deadline,
+      timeRemaining,
+      deadlinePassed,
+    }
+  }, [project, successTimestamp, currentTime])
+
+  // Regular refund availability
   const canRefund = useMemo(() => {
     if (!project || !userSummary) return false
-    // Can refund if project is Failed (4) or Refundable (6)
-    const isFailedOrRefundable = project.status === 4 || project.status === 6
+    // Can refund if project is Failed (3) or Refundable (5)
+    const isFailedOrRefundable = project.status === 3 || project.status === 5
     // User hasn't refunded yet and has contribution
     const hasContribution = userSummary.contributionAmount > BigInt(0)
     const notRefunded = !userSummary.userHasRefunded
     
     return isFailedOrRefundable && hasContribution && notRefunded
   }, [project, userSummary])
+
+  // Emergency refund availability
+  const canEmergencyRefund = useMemo(() => {
+    if (!project || !userSummary) return false
+    const hasContribution = userSummary.contributionAmount > BigInt(0)
+    const notRefunded = !userSummary.userHasRefunded
+    
+    return emergencyRefundInfo.available && hasContribution && notRefunded
+  }, [emergencyRefundInfo, project, userSummary])
+
+  // Determine which refund type to use
+  const isEmergencyRefund = canEmergencyRefund && !canRefund
 
   const {
     writeContract,
@@ -76,7 +145,7 @@ export function useRequestRefund(options: UseRequestRefundOptions = {}) {
   const [txHash, setTxHash] = useState<Hash | undefined>(undefined)
   const [txError, setTxError] = useState<Error | null>(null)
   const [showStatus, setShowStatus] = useState(false)
-  const [transactionType] = useState<'refund'>('refund')
+  const [transactionType, setTransactionType] = useState<'refund' | 'emergency_refund'>('refund')
 
   // 🔥 Toast tracking refs
   const hasShownSubmitToast = useRef(false)
@@ -91,11 +160,11 @@ export function useRequestRefund(options: UseRequestRefundOptions = {}) {
     isError: step === 'error' || wagmiIsError || Boolean(receiptError),
     error: txError ?? (wagmiError as Error | undefined) ?? null,
     message:
-      step === 'submitting' ? 'Submitting refund request...' :
+      step === 'submitting' ? `Submitting ${transactionType === 'emergency_refund' ? 'emergency ' : ''}refund request...` :
       step === 'confirming' ? 'Waiting for confirmation...' :
-      step === 'confirmed' ? 'Refund requested successfully' :
+      step === 'confirmed' ? `${transactionType === 'emergency_refund' ? 'Emergency r' : 'R'}efund requested successfully` :
       step === 'error' ? txError?.message ?? 'Transaction failed' : undefined,
-  }), [showStatus, txHash, step, wagmiIsPending, isConfirming, isConfirmed, wagmiIsError, receiptError, txError, wagmiError])
+  }), [showStatus, txHash, step, wagmiIsPending, isConfirming, isConfirmed, wagmiIsError, receiptError, txError, wagmiError, transactionType])
 
   const isLoading = step === 'submitting' || step === 'confirming' || wagmiIsPending || isConfirming
 
@@ -113,6 +182,7 @@ export function useRequestRefund(options: UseRequestRefundOptions = {}) {
     setTxHash(undefined)
     setShowStatus(true)
     setStep('idle')
+    setTransactionType('refund')
     
     // Reset toast flags
     hasShownSubmitToast.current = false
@@ -144,8 +214,58 @@ export function useRequestRefund(options: UseRequestRefundOptions = {}) {
     }
   }, [writeContract, onSuccess, onError, showToast, txHash, project, canRefund])
 
+  const executeRequestEmergencyRefund = useCallback(async () => {
+    if (!project || !canEmergencyRefund) {
+      const err = new Error('Cannot request emergency refund at this time')
+      setTxError(err)
+      setStep('error')
+      if (showToast) toast.error(err.message)
+      onError?.(err)
+      return
+    }
+
+    setTxError(null)
+    setTxHash(undefined)
+    setShowStatus(true)
+    setStep('idle')
+    setTransactionType('emergency_refund')
+    
+    // Reset toast flags
+    hasShownSubmitToast.current = false
+    hasShownConfirmedToast.current = false
+
+    setStep('submitting')
+    try {
+      await writeContract({
+        address: EXHIBITION_ADDRESS,
+        abi: exhibitionAbi,
+        functionName: 'requestEmergencyRefund',
+        args: [project.id],
+      })
+      
+      // Show toast only once
+      if (showToast && !hasShownSubmitToast.current) {
+        toast.loading('Emergency refund request submitted — confirm in wallet')
+        hasShownSubmitToast.current = true
+      }
+      
+      onSuccess?.(txHash)
+      setStep('confirming')
+    } catch (err) {
+      const e = err as Error
+      setTxError(e)
+      setStep('error')
+      if (showToast) toast.error(e.message || 'Failed to request emergency refund')
+      onError?.(e)
+    }
+  }, [writeContract, onSuccess, onError, showToast, txHash, project, canEmergencyRefund])
+
   const onRequestRefund = async () => {
     await executeRequestRefund()
+  }
+
+  const onRequestEmergencyRefund = async () => {
+    await executeRequestEmergencyRefund()
   }
 
   // Set hash when available
@@ -161,12 +281,15 @@ export function useRequestRefund(options: UseRequestRefundOptions = {}) {
     if (isConfirmed && step === 'confirming' && !hasShownConfirmedToast.current) { 
       setStep('confirmed')
       if (showToast) {
-        toast.success('Refund requested successfully')
+        const message = transactionType === 'emergency_refund' 
+          ? 'Emergency refund requested successfully' 
+          : 'Refund requested successfully'
+        toast.success(message)
         hasShownConfirmedToast.current = true
       }
       onConfirmed?.(txHash)
     } 
-  }, [isConfirmed, step, txHash, onConfirmed, showToast])
+  }, [isConfirmed, step, txHash, onConfirmed, showToast, transactionType])
 
   // Handle errors
   useEffect(() => { 
@@ -212,26 +335,33 @@ export function useRequestRefund(options: UseRequestRefundOptions = {}) {
   }, [reset])
 
   const buttonState: ButtonState = useMemo(() => {
-    if (!canRefund) return { text: 'Not Available', disabled: true, loading: false }
+    const anyRefundAvailable = canRefund || canEmergencyRefund
+    if (!anyRefundAvailable) return { text: 'Not Available', disabled: true, loading: false }
+    
+    const buttonText = isEmergencyRefund ? 'Request Emergency Refund' : 'Request Refund'
+    
     switch (step) {
       case 'submitting':
         return { text: 'Submitting...', disabled: true, loading: true }
       case 'confirming':
         return { text: 'Confirming...', disabled: true, loading: true }
       case 'confirmed':
-        return { text: 'Refund Requested', disabled: true, loading: false }
+        return { text: isEmergencyRefund ? 'Emergency Refund Requested' : 'Refund Requested', disabled: true, loading: false }
       case 'error':
         return { text: 'Retry', disabled: false, loading: false }
       default:
-        return { text: 'Request Refund', disabled: false, loading: false }
+        return { text: buttonText, disabled: false, loading: false }
     }
-  }, [step, canRefund])
+  }, [step, canRefund, canEmergencyRefund, isEmergencyRefund])
 
   return {
     isConnected,
     canRefund,
+    canEmergencyRefund,
+    isEmergencyRefund,
     isLoading,
     onRequestRefund,
+    onRequestEmergencyRefund,
     transactionStatus,
     transactionType,
     hash: txHash,
@@ -248,5 +378,9 @@ export function useRequestRefund(options: UseRequestRefundOptions = {}) {
     userContribution: userSummary?.contributionAmount ?? BigInt(0),
     contributionTokenSymbol: project?.contributionTokenSymbol ?? 'TOKEN',
     contributionTokenDecimals: project?.contributionTokenDecimals ?? 18,
+    // Emergency refund info
+    liquidityDeadline: emergencyRefundInfo.deadline,
+    currentTime,
+    liquidityNotAdded: emergencyRefundInfo.available,
   }
 }

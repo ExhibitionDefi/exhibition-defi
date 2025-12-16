@@ -1,13 +1,6 @@
 /**
  * Production-ready logging system for Vite + React (TypeScript)
- * 
- * Features:
- * - Dev: full colorful logs, grouped & styled
- * - Prod: only warn/error + timestamp
- * - Component-scoped loggers: logger.forComponent("HomePage")
- * - Safe sanitization (no private keys, no wallet addresses)
- * - Depth-limited object logging
- * - Optional monitoring integration (Sentry, LogRocket, etc)
+ * Handles BigInt serialization safely.
  */
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
@@ -21,6 +14,7 @@ export interface LogEntry {
 }
 
 class Logger {
+  private loggedMessages = new Set<string>();
   private isDev = import.meta.env.DEV;
   private isProd = import.meta.env.PROD;
   private enabled = true;
@@ -28,6 +22,11 @@ class Logger {
   // ---------- Base Log ---------- //
   private log(level: LogLevel, message: string, data?: any, component?: string) {
     if (!this.enabled) return;
+
+    // 🔥 LOG EACH UNIQUE MESSAGE ONLY ONCE
+    const messageId = `${message}:${this.safeStringify(data)}`;
+    if (this.isDev && this.loggedMessages.has(messageId)) return;
+    if (this.isDev) this.loggedMessages.add(messageId);
 
     const entry: LogEntry = {
       level,
@@ -37,15 +36,12 @@ class Logger {
       data: this.sanitizeData(data),
     };
 
-    // DEV MODE → Beautiful styled logs
+    // DEV MODE → Styled logs
     if (this.isDev) {
       const prefix = this.getEmojiPrefix(level);
       const style = this.getConsoleStyle(level);
 
-      console.groupCollapsed(
-        `%c${prefix} ${message}`,
-        style
-      );
+      console.groupCollapsed(`%c${prefix} ${message}`, style);
       console.log("Time:", entry.timestamp.toISOString());
       if (component) console.log("Component:", component);
       if (data) console.log("Data:", entry.data);
@@ -97,60 +93,71 @@ class Logger {
     }
   }
 
-  // Component-bound logger
   forComponent(name: string) {
     return {
       debug: (msg: string, data?: any) => this.debug(msg, data, name),
       info: (msg: string, data?: any) => this.info(msg, data, name),
       warn: (msg: string, data?: any) => this.warn(msg, data, name),
       error: (msg: string, data?: any) => this.error(msg, data, name),
-      action: (act: string, meta?: any) =>
-        this.userAction(act, meta, name),
+      action: (act: string, meta?: any) => this.userAction(act, meta, name),
     };
   }
 
-  // Enable/Disable for tests
   setEnabled(state: boolean) {
     this.enabled = state;
   }
 
-  // ---------- Sanitization ---------- //
+  // ---------- Sanitization & BigInt Handling ---------- //
+  private safeStringify(obj: any): string {
+    try {
+      return JSON.stringify(obj, (_key, value) => {
+        if (typeof value === "bigint") return value.toString() + "n";
+        return value;
+      });
+    } catch {
+      return "[Unserializable]";
+    }
+  }
+
   private sanitizeData(data: any) {
     if (!data) return data;
-
     try {
-      return this.limitDepth(data, 3);
+      const bigIntSafe = this.convertBigIntsToStrings(data);
+      return this.limitDepth(bigIntSafe, 3);
     } catch {
       return "[Unserializable Data]";
     }
+  }
+
+  private convertBigIntsToStrings(obj: any): any {
+    if (typeof obj === "bigint") return obj.toString() + "n";
+    if (Array.isArray(obj)) return obj.map((i) => this.convertBigIntsToStrings(i));
+    if (typeof obj === "object" && obj !== null) {
+      const out: any = {};
+      Object.entries(obj).forEach(([k, v]) => {
+        out[k] = this.convertBigIntsToStrings(v);
+      });
+      return out;
+    }
+    return obj;
   }
 
   private sanitizeUserData(data: any) {
     if (!data || typeof data !== "object") return data;
 
     const sensitive = [
-      "address",
-      "privateKey",
-      "seedPhrase",
-      "password",
-      "token",
-      "wallet",
-      "signature",
-      "nonce",
-      "portfolio",
-      "balance",
-      "transactionHash",
+      "address", "privateKey", "seedPhrase", "password",
+      "token", "wallet", "signature", "nonce",
+      "portfolio", "balance", "transactionHash",
     ];
 
     const clean: any = {};
-
     Object.entries(data).forEach(([key, value]) => {
       if (sensitive.includes(key)) return;
-
       if (typeof value === "string" && /^0x[a-fA-F0-9]{40}$/.test(value)) {
         clean[key] = "0x***" + value.slice(-4);
       } else {
-        clean[key] = value;
+        clean[key] = this.convertBigIntsToStrings(value);
       }
     });
 
@@ -193,10 +200,9 @@ class Logger {
   // Optional monitoring (non-blocking)
   private async sendToMonitoring(_entry: LogEntry) {
     try {
-      // Example:
-      // await fetch("/api/log", { method: "POST", body: JSON.stringify(entry) });
+      // e.g. await fetch("/api/log", { method: "POST", body: JSON.stringify(entry) });
     } catch {
-      // Silent fail
+      // silent fail
     }
   }
 }
@@ -204,7 +210,7 @@ class Logger {
 // Singleton instance
 export const logger = new Logger();
 
-// Preconfigured component loggers (optional)
+// Preconfigured component loggers
 export const uiLogger = logger.forComponent("UI");
 export const poolLogger = logger.forComponent("PoolModule");
 export const walletLogger = logger.forComponent("Wallet");

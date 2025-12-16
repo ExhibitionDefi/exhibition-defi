@@ -1,4 +1,4 @@
-// src/components/amm/SwapInterface.tsx
+// src/components/swap/SwapInterface.tsx
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Address } from 'viem';
 import { Settings, ChevronDown, ArrowUpDown } from 'lucide-react';
@@ -13,6 +13,7 @@ import { AMM_ADDRESS } from '@/config/contracts';
 import { SafeHtml } from '../SafeHtml';
 import { sanitizeText } from '@/utils/sanitization';
 import { logger } from '@/utils/logger';
+import { useLocalPricing } from '@/hooks/utilities/useLocalPricing';
 
 // Token interface
 interface Token {
@@ -33,10 +34,10 @@ const COMMON_TOKENS: Omit<Token, 'decimals'>[] = [
     logoURI: '/tokens/EXH.png',
   },
   {
-    address: (import.meta.env.VITE_EXUSDT_ADDRESS ) as Address,
-    symbol: 'exUSDT',
-    name: 'Exhibition USDT',
-    logoURI: '/tokens/exusdt.png',
+    address: (import.meta.env.VITE_EXUSD_ADDRESS ) as Address,
+    symbol: 'exUSD',
+    name: 'Exhibition USD',
+    logoURI: '/tokens/exusd.png',
   },
   {
     address: (import.meta.env.VITE_EXNEX_ADDRESS ) as Address,
@@ -50,17 +51,24 @@ interface SwapInterfaceProps {
   className?: string;
   defaultTokenIn?: Address;
   defaultTokenOut?: Address;
+  // ✨ NEW: Callbacks for token changes
+  onTokenInChange?: (token: Address | null) => void;
+  onTokenOutChange?: (token: Address | null) => void;
 }
 
 export const SwapInterface: React.FC<SwapInterfaceProps> = ({
   className = '',
   defaultTokenIn,
   defaultTokenOut,
+  onTokenInChange,
+  onTokenOutChange,
 }) => {
   const swapLogic = useSwapLogic({
     defaultTokenIn: defaultTokenIn || COMMON_TOKENS[0]?.address,
     defaultTokenOut: defaultTokenOut || COMMON_TOKENS[1]?.address,
   });
+
+  const { getTokenPriceUSD, isReady: isPricingReady } = useLocalPricing();
 
   // ✅ Safe localStorage handling with validation
   const [customTokens, setCustomTokens] = useState<Token[]>(() => {
@@ -101,6 +109,15 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
   const [showTokenSelector, setShowTokenSelector] = useState<'in' | 'out' | null>(null);
   const [showSettings, setShowSettings] = useState(false);
 
+  // ✨ NEW: Notify parent when tokens change
+  useEffect(() => {
+    onTokenInChange?.(swapLogic.tokenIn || null);
+  }, [swapLogic.tokenIn, onTokenInChange]);
+
+  useEffect(() => {
+    onTokenOutChange?.(swapLogic.tokenOut || null);
+  }, [swapLogic.tokenOut, onTokenOutChange]);
+
   // ✅ Safe localStorage save with error handling
   useEffect(() => {
     try {
@@ -132,6 +149,45 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
 
     return [...tokensWithDecimals, ...customTokens];
   }, [customTokens, swapLogic.tokenInInfo, swapLogic.tokenOutInfo]);
+
+  // Calculate USD values
+  const getUSDValue = (amount: string, decimals: number, tokenAddress?: Address): string => {
+    if (!isPricingReady || !tokenAddress || !amount || amount === '0' || amount === '0.0') return '';
+    
+    try {
+      const tokenPrice = getTokenPriceUSD(tokenAddress);
+      if (tokenPrice === 'N/A') return '';
+      
+      // Parse the price (remove $ and commas)
+      const priceValue = parseFloat(tokenPrice.replace(/[$,]/g, ''));
+      
+      // Parse amount as number
+      const amountValue = parseFloat(amount);
+      if (isNaN(amountValue) || amountValue <= 0) return '';
+      
+      // Calculate USD value
+      const usdValue = amountValue * priceValue;
+      
+      return `$${usdValue.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+    } catch (error) {
+      return '';
+    }
+  };
+
+  const amountInUSD = getUSDValue(
+    swapLogic.amountIn,
+    swapLogic.tokenInInfo?.decimals || 18,
+    swapLogic.tokenIn || undefined
+  );
+
+  const amountOutUSD = getUSDValue(
+    swapLogic.formattedAmountOut || '0',
+    swapLogic.tokenOutInfo?.decimals || 18,
+    swapLogic.tokenOut || undefined
+  );
 
   // ✅ Validate custom token before adding
   const handleAddCustomToken = (token: Token) => {
@@ -255,15 +311,22 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
             )}
           </div>
           <div className="flex items-center bg-[var(--charcoal)] rounded-xl px-3 sm:px-4 py-3 gap-2">
-            <input
-              type="text"
-              inputMode="decimal"
-              value={swapLogic.amountIn}
-              onChange={(e) => handleAmountInChange(e.target.value)}
-              placeholder="0.0"
-              maxLength={30} // ✅ Prevent DoS
-              className="flex-1 min-w-0 bg-transparent text-lg text-[var(--silver-light)] outline-none"
-            />
+            <div className="flex-1 min-w-0">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={swapLogic.amountIn}
+                onChange={(e) => handleAmountInChange(e.target.value)}
+                placeholder="0.0"
+                maxLength={30}
+                className="w-full bg-transparent text-lg text-[var(--silver-light)] outline-none"
+              />
+              {amountInUSD && (
+                <div className="text-xs text-[var(--silver-dark)] mt-1">
+                  ≈ {amountInUSD}
+                </div>
+              )}
+            </div>
             <button
               onClick={() => setShowTokenSelector('in')}
               className="flex items-center space-x-1.5 shrink-0"
@@ -303,13 +366,20 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
             )}
           </div>
           <div className="flex items-center bg-[var(--charcoal)] rounded-xl px-3 sm:px-4 py-3 gap-2">
-            <input
-              type="text"
-              value={swapLogic.formattedAmountOut || ''}
-              readOnly
-              placeholder="0.0"
-              className="flex-1 min-w-0 bg-transparent text-lg text-[var(--silver-light)] outline-none"
-            />
+            <div className="flex-1 min-w-0">
+              <input
+                type="text"
+                value={swapLogic.formattedAmountOut || ''}
+                readOnly
+                placeholder="0.0"
+                className="w-full bg-transparent text-lg text-[var(--silver-light)] outline-none"
+              />
+              {amountOutUSD && (
+                <div className="text-xs text-[var(--silver-dark)] mt-1">
+                  ≈ {amountOutUSD}
+                </div>
+              )}
+            </div>
             <button
               onClick={() => setShowTokenSelector('out')}
               className="flex items-center space-x-1.5 shrink-0"

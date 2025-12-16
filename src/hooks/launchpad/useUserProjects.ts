@@ -1,24 +1,23 @@
-// src/hooks/useProjects.ts
-import { useMemo, useEffect, useRef, useState } from 'react'
-import { useReadContracts } from 'wagmi'
+import { useMemo, useEffect, useState } from 'react'
+import { useAccount, useReadContracts } from 'wagmi'
 import { exhibitionAbi } from '@/generated/wagmi'
 import { EXHIBITION_ADDRESS } from '@/config/contracts'
-import { useProjectStore } from '@/stores/projectStore'
 import type { ProjectDisplayData, ProjectStatus } from '@/types/project'
 import { ProjectStatusLabels } from '@/types/project'
 import { logger } from '@/utils/logger'
 
 /**
- * useProjects
- * Fetches and formats all projects from the Exhibition contract
+ * useUserProjects
+ * Fetches projects owned by the connected user AND all projects they've contributed to
  */
-export function useProjects() {
-  const { setProjects, statusFilter, searchQuery } = useProjectStore()
-  const [projectIds, setProjectIds] = useState<bigint[]>([])
+export function useUserProjects() {
+  const { address } = useAccount()
+  const [ownedProjectIds, setOwnedProjectIds] = useState<bigint[]>([])
+  const [allProjectIds, setAllProjectIds] = useState<bigint[]>([])
 
-  // --- Step 1: Fetch project IDs ---
+  // --- Step 1: Fetch user's owned projects AND all project IDs ---
   const {
-    data: idsData,
+    data: initialData,
     isLoading: isLoadingIds,
     error: idsError,
     refetch: refetchIds,
@@ -27,16 +26,18 @@ export function useProjects() {
       {
         address: EXHIBITION_ADDRESS,
         abi: exhibitionAbi,
-        functionName: 'getProjectCount',
+        functionName: 'getProjectsByOwner',
+        args: address ? [address] : undefined,
       },
       {
         address: EXHIBITION_ADDRESS,
         abi: exhibitionAbi,
         functionName: 'getProjects',
-        args: [0n, 100n], // offset: 0, limit: 100
+        args: [0n, 100n], // Get all projects
       },
     ],
     query: {
+      enabled: Boolean(address),
       refetchInterval: 60_000,
       staleTime: 30_000,
     },
@@ -44,45 +45,82 @@ export function useProjects() {
 
   // Extract project IDs
   useEffect(() => {
-    if (idsData?.[1]?.result) {
-      const ids = idsData[1].result as bigint[]
-      setProjectIds(ids)
+    if (initialData?.[0]?.result) {
+      const owned = initialData[0].result as bigint[]
+      setOwnedProjectIds(owned)
     }
-  }, [idsData])
+    if (initialData?.[1]?.result) {
+      const all = initialData[1].result as bigint[]
+      setAllProjectIds(all)
+    }
+  }, [initialData])
 
-  // --- Step 2: Fetch details for all projects ---
-  const detailsContracts = useMemo(() => {
-    if (!projectIds.length) return []
-    
-    return projectIds.map((id) => ({
+  // --- Step 2: Fetch user contributions for ALL projects ---
+  const contributionsContracts = useMemo(() => {
+    if (!allProjectIds.length || !address) return []
+
+    return allProjectIds.map((id) => ({
       address: EXHIBITION_ADDRESS,
       abi: exhibitionAbi,
-      functionName: 'getProjectDetails',
-      args: [id],
+      functionName: 'getUserContribution',
+      args: [id, address],
     } as const))
-  }, [projectIds])
+  }, [allProjectIds, address])
 
   const {
-    data: detailsData,
-    isLoading: isLoadingDetails,
-    error: detailsError,
+    data: contributionsData,
+    isLoading: isLoadingContributions,
   } = useReadContracts({
-    contracts: detailsContracts,
+    contracts: contributionsContracts,
     query: {
-      enabled: projectIds.length > 0,
+      enabled: contributionsContracts.length > 0,
       refetchInterval: 60_000,
       staleTime: 30_000,
     },
   })
 
-  // --- Step 3: Extract token addresses for fetching metadata ---
-  const tokenAddresses = useMemo(() => {
-    if (!detailsData) return { projectTokens: [], contributionTokens: [] }
+  // --- Step 3: Get project IDs where user has contributed ---
+  const contributedProjectIds = useMemo(() => {
+    if (!contributionsData || !allProjectIds.length) return []
+
+    return allProjectIds.filter((_projectId, i) => {
+      const contribution = contributionsData[i]?.result as bigint | undefined
+      return contribution && contribution > 0n
+    })
+  }, [contributionsData, allProjectIds])
+
+  // --- Step 4: Fetch details for owned projects ---
+  const ownedDetailsContracts = useMemo(() => {
+    if (!ownedProjectIds.length) return []
+
+    return ownedProjectIds.map((id) => ({
+      address: EXHIBITION_ADDRESS,
+      abi: exhibitionAbi,
+      functionName: 'getProjectDetails',
+      args: [id],
+    } as const))
+  }, [ownedProjectIds])
+
+  const {
+    data: ownedDetailsData,
+    isLoading: isLoadingOwnedDetails,
+  } = useReadContracts({
+    contracts: ownedDetailsContracts,
+    query: {
+      enabled: ownedDetailsContracts.length > 0,
+      refetchInterval: 60_000,
+      staleTime: 30_000,
+    },
+  })
+
+  // --- Step 5: Extract token addresses from owned projects ---
+  const ownedTokenAddresses = useMemo(() => {
+    if (!ownedDetailsData) return { projectTokens: [], contributionTokens: [] }
 
     const projectTokens: `0x${string}`[] = []
     const contributionTokens: `0x${string}`[] = []
 
-    detailsData.forEach((result) => {
+    ownedDetailsData.forEach((result) => {
       if (result?.result) {
         const details = result.result as any
         if (details[0]) {
@@ -93,11 +131,11 @@ export function useProjects() {
     })
 
     return { projectTokens, contributionTokens }
-  }, [detailsData])
+  }, [ownedDetailsData])
 
-  // --- Step 4: Fetch token info for all tokens ---
-  const tokenInfoContracts = useMemo(() => {
-    const { projectTokens, contributionTokens } = tokenAddresses
+  // --- Step 6: Fetch token info for owned projects ---
+  const ownedTokenInfoContracts = useMemo(() => {
+    const { projectTokens, contributionTokens } = ownedTokenAddresses
     if (!projectTokens.length) return []
 
     return [
@@ -114,29 +152,29 @@ export function useProjects() {
         args: [address],
       } as const)),
     ]
-  }, [tokenAddresses])
+  }, [ownedTokenAddresses])
 
   const {
-    data: tokenInfoData,
-    isLoading: isLoadingTokens,
+    data: ownedTokenInfoData,
+    isLoading: isLoadingOwnedTokens,
   } = useReadContracts({
-    contracts: tokenInfoContracts,
+    contracts: ownedTokenInfoContracts,
     query: {
-      enabled: tokenInfoContracts.length > 0,
-      refetchInterval: 120_000, // Tokens don't change often
+      enabled: ownedTokenInfoContracts.length > 0,
+      refetchInterval: 120_000,
       staleTime: 60_000,
     },
   })
 
-  // --- Step 5: Transform raw data into UI display format ---
-  const projects: ProjectDisplayData[] = useMemo(() => {
-    if (!detailsData || !tokenInfoData || !projectIds.length) return []
+  // --- Step 7: Transform owned projects into ProjectDisplayData ---
+  const userProjects: ProjectDisplayData[] = useMemo(() => {
+    if (!ownedDetailsData || !ownedTokenInfoData || !ownedProjectIds.length) return []
 
     const formatted: ProjectDisplayData[] = []
-    const numProjects = projectIds.length
+    const numProjects = ownedProjectIds.length
 
     for (let i = 0; i < numProjects; i++) {
-      const detailsResult = detailsData[i]
+      const detailsResult = ownedDetailsData[i]
       if (!detailsResult?.result) continue
 
       try {
@@ -170,7 +208,8 @@ export function useProjects() {
           bigint, // timeRemaining
           boolean, // canContribute
           bigint, // requiredLiquidityTokens
-          bigint // depositedLiquidityTokens
+          bigint, // depositedLiquidityTokens
+          bigint  // totalContributors
         ]
 
         const project = details[0]
@@ -178,30 +217,29 @@ export function useProjects() {
         const timeRemaining = details[2]
         const canContribute = details[3]
         const requiredLiquidityTokens = details[4]
-        const depositedLiquidityTokens = details[5] 
+        const depositedLiquidityTokens = details[5]
+        const totalContributors = details[6]
 
-        // Get token info (first half is project tokens, second half is contribution tokens)
-        const projectTokenInfo = tokenInfoData[i]?.result as
+        const projectTokenInfo = ownedTokenInfoData[i]?.result as
           | { decimals: number; symbol: string; name: string }
           | undefined
-        const contributionTokenInfo = tokenInfoData[numProjects + i]?.result as
+        const contributionTokenInfo = ownedTokenInfoData[numProjects + i]?.result as
           | { decimals: number; symbol: string; name: string }
           | undefined
 
         formatted.push({
-          id: projectIds[i],
+          id: ownedProjectIds[i],
           projectOwner: project.projectOwner,
           projectToken: project.projectToken,
           contributionTokenAddress: project.contributionTokenAddress,
-
-          // Token metadata
+          totalContributors: Number(totalContributors),
           tokenName: projectTokenInfo?.name ?? '',
           tokenSymbol: projectTokenInfo?.symbol ?? '',
           tokenDecimals: projectTokenInfo?.decimals ?? 18,
           contributionTokenSymbol: contributionTokenInfo?.symbol ?? '',
           contributionTokenDecimals: contributionTokenInfo?.decimals ?? 18,
+          // ✅ ADD LOGO URI
           projectTokenLogoURI: project.projectTokenLogoURI ?? '',
-
           fundingGoal: project.fundingGoal,
           softCap: project.softCap,
           totalRaised: project.totalRaised,
@@ -209,87 +247,70 @@ export function useProjects() {
           startTime: project.startTime,
           endTime: project.endTime,
           amountTokensForSale: project.amountTokensForSale,
-          totalProjectTokenSupply: project.totalProjectTokenSupply,
           liquidityPercentage: project.liquidityPercentage,
           lockDuration: project.lockDuration,
           status: Number(project.status),
           minContribution: project.minContribution,
           maxContribution: project.maxContribution,
-
-          // Vesting info
           vestingEnabled: project.vestingEnabled,
           vestingCliff: project.vestingCliff,
           vestingDuration: project.vestingDuration,
           vestingInterval: project.vestingInterval,
           vestingInitialRelease: project.vestingInitialRelease,
-
           progressPercentage: Number(progressPercentage),
           timeRemaining: Number(timeRemaining),
           canContribute: Boolean(canContribute),
           formattedStatus: ProjectStatusLabels[Number(project.status) as ProjectStatus] ?? 'Unknown',
-
-          // 🆕 Liquidity data
+          totalProjectTokenSupply: project.totalProjectTokenSupply,
           requiredLiquidityTokens,
           depositedLiquidityTokens,
-        } satisfies ProjectDisplayData)
+        })
       } catch (err) {
-        logger.error('Failed to format project:', projectIds[i], err instanceof Error ? err.message : String(err))
+        logger.info('Failed to format user project:', ownedProjectIds[i], String(err))
       }
     }
 
     return formatted
-  }, [detailsData, tokenInfoData, projectIds])
+  }, [ownedDetailsData, ownedTokenInfoData, ownedProjectIds])
 
-  // --- Store sync: only update when data changes ---
-  const prevProjectsRef = useRef<ProjectDisplayData[]>([])
+  // --- Step 8: Extract contributions with amounts ---
+  const userContributions = useMemo(() => {
+    if (!contributionsData || !allProjectIds.length) return []
 
-  useEffect(() => {
-    if (!projects.length) return
-
-    const hasChanged =
-      projects.length !== prevProjectsRef.current.length ||
-      projects.some((p, i) => {
-        const prev = prevProjectsRef.current[i]
-        return (
-          !prev ||
-          p.id !== prev.id ||
-          p.totalRaised !== prev.totalRaised ||
-          p.status !== prev.status
-        )
+    return allProjectIds
+      .map((projectId, i) => {
+        const contribution = contributionsData[i]?.result as bigint | undefined
+        if (!contribution || contribution === 0n) return null
+        
+        return {
+          projectId: projectId.toString(),
+          amount: contribution.toString(),
+        }
       })
+      .filter((c): c is { projectId: string; amount: string } => c !== null)
+  }, [contributionsData, allProjectIds])
 
-    if (hasChanged) {
-      prevProjectsRef.current = projects
-      setProjects(projects)
-    }
-  }, [projects, setProjects])
+  // --- Step 9: Calculate total raised from user's owned projects ---
+  const totalRaised = useMemo(() => {
+    return userProjects.reduce((total, project) => {
+      const raised = Number(project.totalRaised) / 1e18
+      return total + raised
+    }, 0)
+  }, [userProjects])
 
-  // --- Filtering logic ---
-  const filteredProjects = useMemo(() => {
-    let filtered = projects
-
-    if (statusFilter !== null) {
-      filtered = filtered.filter((p) => p.status === statusFilter)
-    }
-
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        (p) =>
-          p.tokenName?.toLowerCase().includes(q) ||
-          p.tokenSymbol?.toLowerCase().includes(q) ||
-          p.projectOwner.toLowerCase().includes(q)
-      )
-    }
-
-    return filtered
-  }, [projects, statusFilter, searchQuery])
+  const isLoading = 
+    isLoadingIds || 
+    isLoadingContributions || 
+    isLoadingOwnedDetails || 
+    isLoadingOwnedTokens
 
   return {
-    projects: filteredProjects,
-    allProjects: projects,
-    isLoading: isLoadingIds || isLoadingDetails || isLoadingTokens,
-    error: idsError || detailsError,
+    userProjects, // Projects owned by the user
+    userContributions, // All contributions made by the user (including amount)
+    contributedProjectIds, // IDs of projects user contributed to
+    totalRaised, // Total raised from owned projects
+    isLoading,
+    error: idsError,
     refetch: refetchIds,
   }
 }

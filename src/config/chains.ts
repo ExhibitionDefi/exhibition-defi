@@ -3,7 +3,6 @@ import { defineChain } from 'viem'
 // 1. Define variables for cleaner configuration below
 const NEXUS_TESTNET_WALLET_RPC_URL = [
   import.meta.env.VITE_NEXUS_TESTNET_WALLET_RPC_URL,
-  import.meta.env.VITE_NEXUS_ALCHEMY_RPC_URL,
 ].filter(Boolean); // HTTP RPC Endpoints
 
 // 2. Extract the dedicated WebSocket URL

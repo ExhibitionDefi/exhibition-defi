@@ -1,3 +1,4 @@
+// src/components/project/ProjectCard.tsx
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { Clock } from 'lucide-react'
@@ -8,12 +9,16 @@ import { type ProjectDisplayData, ProjectStatus, ProjectStatusLabels } from '../
 import { ExhibitionFormatters } from '../../utils/exFormatters'
 import { SafeHtml, SafeImage } from '../SafeHtml'
 import { logger } from '@/utils/logger'
+import { useLocalPricing } from '@/hooks/utilities/useLocalPricing'
+import type { Address } from 'viem'
 
 interface ProjectCardProps {
   project: ProjectDisplayData
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
+  const { getTokenPriceUSD, isReady } = useLocalPricing()
+
   const getStatusVariant = (status: number) => {
     switch (status) {
       case ProjectStatus.Active:
@@ -38,6 +43,46 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const formatTimeRemaining = (seconds: number): string => {
     return ExhibitionFormatters.formatDuration(seconds)
   }
+
+  // Calculate USD values
+  const getUSDValue = (tokenAmount: bigint, decimals: number, tokenAddress?: string): string => {
+    if (!isReady || !tokenAddress) return 'N/A'
+    
+    try {
+      const tokenPrice = getTokenPriceUSD(tokenAddress as Address)
+      if (tokenPrice === 'N/A') return 'N/A'
+      
+      // Parse the price (remove $ and commas)
+      const priceValue = parseFloat(tokenPrice.replace(/[$,]/g, ''))
+      
+      // Convert token amount to decimal
+      const divisor = 10n ** BigInt(decimals)
+      const tokenAmountDecimal = Number(tokenAmount) / Number(divisor)
+      
+      // Calculate USD value
+      const usdValue = tokenAmountDecimal * priceValue
+      
+      return `$${usdValue.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`
+    } catch (error) {
+      logger.warn('Error calculating USD value:', error)
+      return 'N/A'
+    }
+  }
+
+  const raisedUSD = getUSDValue(
+    project.totalRaised,
+    project.contributionTokenDecimals || 0,
+    project.contributionTokenAddress,
+  )
+  
+  const goalUSD = getUSDValue(
+    project.fundingGoal,
+    project.contributionTokenDecimals || 0,
+    project.contributionTokenAddress
+  )
 
   return (
     <Link to={`/projects/${project.id}`} className="block">
@@ -99,11 +144,14 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
             />
           </div>
 
-          {/* Key Metrics */}
+          {/* Key Metrics with USD values */}
           <div className="grid grid-cols-3 gap-3 pt-2 border-t border-[var(--metallic-silver)]/10">
             <div>
               <p className="text-xs text-[var(--metallic-silver)] mb-1">Raised</p>
               <p className="text-sm font-semibold text-[var(--silver-light)] truncate">
+                {raisedUSD}
+              </p>
+              <p className="text-xs text-[var(--metallic-silver)]/60 truncate mt-0.5">
                 {ExhibitionFormatters.formatTokenWithSymbol(
                   project.totalRaised,
                   project.contributionTokenSymbol || 'Tokens',
@@ -115,6 +163,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
             <div>
               <p className="text-xs text-[var(--metallic-silver)] mb-1">Goal</p>
               <p className="text-sm font-semibold text-[var(--silver-light)] truncate">
+                {goalUSD}
+              </p>
+              <p className="text-xs text-[var(--metallic-silver)]/60 truncate mt-0.5">
                 {ExhibitionFormatters.formatTokenWithSymbol(
                   project.fundingGoal,
                   project.contributionTokenSymbol || 'Tokens',

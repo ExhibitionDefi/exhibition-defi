@@ -12,7 +12,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import AdminPage from './pages/AdminPage'
 import { SwapPage } from './pages/SwapPage'
 import { LiquidityPage } from './pages/LiquidityPage'
-import { ManageLiquidityPage } from './pages/ManageLiquidityPage' // ✅ ADD THIS
+import { ManageLiquidityPage } from './pages/ManageLiquidityPage'
 import { FaucetPage } from './pages/FaucetPage'
 // Layout
 import { Layout } from './components/Layout'
@@ -43,7 +43,7 @@ function App() {
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/swap" element={<SwapPage />} />
               <Route path="/liquidity" element={<LiquidityPage />} />
-              <Route path="/liquidity/manage" element={<ManageLiquidityPage />} /> {/* ✅ ADD THIS */}
+              <Route path="/liquidity/manage" element={<ManageLiquidityPage />} />
               <Route path="/faucet" element={<FaucetPage />} />
             </Routes>
             <Toaster

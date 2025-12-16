@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/Button'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { MultiTransactionModal, useMultiTransactionModal } from '@/components/common/MultiTransactionModal'
 import { ExNEXInterface } from '@/components/faucet/ExNEXInterface'
-import { useFaucet } from '../hooks/useFaucet'
-import { useExNEX } from '../hooks/useNEX'
+import { useFaucet } from '../hooks/utilities/useFaucet'
+import { useExNEX } from '../hooks/utilities/useNEX'
 
 type PageView = 'faucet' | 'exnex'
 
@@ -19,7 +19,7 @@ export const FaucetPage: React.FC = () => {
   // Faucet hook
   const {
     exhAmountFormatted,
-    usdtAmountFormatted,
+    exusdAmountFormatted,
     canRequestFaucet,
     cooldownRemaining,
     cooldownPercentage,
@@ -200,10 +200,10 @@ export const FaucetPage: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-sm" style={{ color: 'var(--metallic-silver)' }}>
-                        USDT Token
+                        exUSD Token
                       </p>
                       <p className="text-2xl font-bold" style={{ color: 'var(--silver-light)' }}>
-                        {usdtAmountFormatted}
+                        {exusdAmountFormatted}
                       </p>
                     </div>
                   </div>
@@ -218,7 +218,7 @@ export const FaucetPage: React.FC = () => {
             </div>
 
             {/* Main Faucet Card */}
-            <Card className="bg-gradient-to-br from-[var(--charcoal)] to-[var(--deep-black)] border border-[var(--metallic-silver)]/30 p-8">
+           <Card className="bg-gradient-to-br from-[var(--charcoal)] to-[var(--deep-black)] border border-[var(--metallic-silver)]/30 p-8 w-full max-w-3xl mx-auto">
               <div className="space-y-6">
                 {/* Connected Wallet Info */}
                 <div className="bg-[var(--charcoal)]/50 rounded-lg p-4 border border-[var(--metallic-silver)]/20">
@@ -261,7 +261,7 @@ export const FaucetPage: React.FC = () => {
                     <div>
                       <p className="font-semibold text-green-400">Tokens Claimed Successfully!</p>
                       <p className="text-sm text-green-300/80 mt-1">
-                        {exhAmountFormatted} EXH and {usdtAmountFormatted} USDT have been sent to your wallet
+                        {exhAmountFormatted} EXH and {exusdAmountFormatted} exUSD have been sent to your wallet
                       </p>
                     </div>
                   </div>

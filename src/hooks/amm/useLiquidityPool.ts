@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { type Address, parseUnits, formatUnits, erc20Abi, isAddress } from 'viem';
 import { useAccount, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { exhibitionAmmAbi } from '@/generated/wagmi';
-import { useTokenApproval } from '@/hooks/useTokenApproval';
+import { useTokenApproval } from '@/hooks/utilities/useTokenApproval';
 import { CONTRACT_ADDRESSES } from '@/config/contracts';
 import { publicClient } from '@/config/wagmi';
 import type { Pool } from '@/components/liquidity/PoolList';

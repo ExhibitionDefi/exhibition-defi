@@ -2,16 +2,18 @@ import React, { useMemo } from 'react';
 import type { Address } from 'viem';
 import { useAccount, useReadContracts } from 'wagmi';
 import { formatUnits } from 'viem';
-import { TrendingUp, Droplet, Percent, BarChart3 } from 'lucide-react';
-
+import { TrendingUp, Droplet, Percent, BarChart3, DollarSign, Clock, Sparkles } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { SafeHtml, SafeImage } from '../SafeHtml';
-
 import { exhibitionAmmAbi, exhibitionFactoryAbi } from '@/generated/wagmi';
 import { CONTRACT_ADDRESSES } from '@/config/contracts';
 import { logger } from '@/utils/logger';
+import { usePoolEarnings } from '@/hooks/amm/usePoolEarnings';
+import { useFeeConfig } from '@/hooks/amm/useFeeConfig';
+import { useLocalPricing } from '@/hooks/utilities/useLocalPricing';
+import { resolveTokenLogo } from '@/utils/tokenLogoResolver';
 
 interface PoolDetailsPanelProps {
   tokenA?: Address | null;
@@ -85,8 +87,19 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
   const poolExists = poolData?.[1]?.result as boolean | undefined;
   const reserves = poolData?.[2]?.result as [bigint, bigint] | undefined;
   const userLPBalance = poolData?.[3]?.result as bigint | undefined;
-  const logoURIA = poolData?.[4]?.result as string | undefined;
-  const logoURIB = poolData?.[5]?.result as string | undefined;
+  const onChainLogoURIA = poolData?.[4]?.result as string | undefined;
+  const onChainLogoURIB = poolData?.[5]?.result as string | undefined;
+
+  // ✨ CHANGED: Resolve logos with fallback chain
+  const logoURIA = useMemo(() => {
+    if (!tokenA) return '';
+    return resolveTokenLogo(tokenA, onChainLogoURIA);
+  }, [tokenA, onChainLogoURIA]);
+
+  const logoURIB = useMemo(() => {
+    if (!tokenB) return '';
+    return resolveTokenLogo(tokenB, onChainLogoURIB);
+  }, [tokenB, onChainLogoURIB]);
 
   // Parse token info
   const tokenInfo = useMemo(() => {
@@ -102,14 +115,36 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
     };
   }, [tokensInfo]);
 
-  // Calculate pool stats
+  // ✅ Fetch earnings data (only if user has a position)
+  const hasPosition = useMemo(() => {
+    return Boolean(userLPBalance && userLPBalance > BigInt(0));
+  }, [userLPBalance]);
+
+  const { earnings, isLoading: isLoadingEarnings } = usePoolEarnings({
+    tokenA: tokenA || undefined,
+    tokenB: tokenB || undefined,
+    tokenADecimals: tokenInfo?.decimalsA,
+    tokenBDecimals: tokenInfo?.decimalsB,
+    enabled: hasPosition && !!tokenInfo,
+  });
+
+  // ✅ Fetch fee config
+  const { feeConfig } = useFeeConfig();
+
+  // ✅ Use local pricing
+  const { calculateTVL, getTokenPriceUSD, isReady: isPricingReady } = useLocalPricing();
+
+  // Calculate pool stats with pricing
   const poolStats = useMemo(() => {
     if (!reserves || !tokenInfo) {
       return {
         reserveA: '0',
         reserveB: '0',
         totalLiquidity: '0',
+        totalLiquidityUSD: 'N/A',
         priceRatio: '0',
+        priceA: 'N/A',
+        priceB: 'N/A',
       };
     }
 
@@ -118,22 +153,55 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
     const formattedReserveA = formatUnits(reserveA, tokenInfo.decimalsA);
     const formattedReserveB = formatUnits(reserveB, tokenInfo.decimalsB);
 
+    // Calculate price ratio
     const priceRatio =
-      reserveA > BigInt(0)
-        ? (Number(reserveB) / Number(reserveA)).toFixed(6)
+      parseFloat(formattedReserveA) > 0
+        ? (parseFloat(formattedReserveB) / parseFloat(formattedReserveA)).toFixed(6)
         : '0';
 
+    // Simple sum for display (not USD value)
     const totalLiquidity = (
       parseFloat(formattedReserveA) + parseFloat(formattedReserveB)
     ).toFixed(2);
+
+    // Calculate USD value using pricing
+    let totalLiquidityUSD = 'N/A';
+    let priceA = 'N/A';
+    let priceB = 'N/A';
+
+    if (isPricingReady && tokenA && tokenB) {
+      // Get individual token prices
+      priceA = getTokenPriceUSD(tokenA);
+      priceB = getTokenPriceUSD(tokenB);
+
+      // Calculate total USD value
+      const tvlUSD = calculateTVL(
+        tokenA,
+        reserveA,
+        tokenB,
+        reserveB,
+        tokenInfo.decimalsA,
+        tokenInfo.decimalsB
+      );
+
+      if (tvlUSD > 0) {
+        totalLiquidityUSD = `${tvlUSD.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`;
+      }
+    }
 
     return {
       reserveA: parseFloat(formattedReserveA).toFixed(6),
       reserveB: parseFloat(formattedReserveB).toFixed(6),
       totalLiquidity,
+      totalLiquidityUSD,
       priceRatio,
+      priceA,
+      priceB,
     };
-  }, [reserves, tokenInfo]);
+  }, [reserves, tokenInfo, isPricingReady, tokenA, tokenB, calculateTVL, getTokenPriceUSD]);
 
   // User position - calculate share percentage
   const userShare = useMemo(() => {
@@ -143,8 +211,6 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
 
     const lpBalance = formatUnits(userLPBalance, 18);
 
-    // You'd need totalLPSupply to calculate accurate share
-    // For now, just show the LP balance
     return {
       lpBalance: parseFloat(lpBalance).toFixed(6),
     };
@@ -244,59 +310,71 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
     <Card className={`p-6 ${className}`}>
       {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center -space-x-2">
-            {logoURIA ? (
-              <SafeImage
-                src={logoURIA}
-                alt={tokenInfo?.symbolA || ''}
-                className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)]"
-                fallback={
-                  <div className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs">
-                    ?
-                  </div>
-                }
-                onError={() => logger.warn('Failed to load logo A')}
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs text-[var(--silver-dark)]">
-                {tokenInfo?.symbolA[0] || '?'}
-              </div>
-            )}
-            {logoURIB ? (
-              <SafeImage
-                src={logoURIB}
-                alt={tokenInfo?.symbolB || ''}
-                className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)]"
-                fallback={
-                  <div className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs">
-                    ?
-                  </div>
-                }
-                onError={() => logger.warn('Failed to load logo B')}
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs text-[var(--silver-dark)]">
-                {tokenInfo?.symbolB[0] || '?'}
-              </div>
-            )}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center -space-x-2">
+              {logoURIA ? (
+                <SafeImage
+                  src={logoURIA}
+                  alt={tokenInfo?.symbolA || ''}
+                  className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)]"
+                  fallback={
+                    <div className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs">
+                      ?
+                    </div>
+                  }
+                  onError={() => logger.warn('Failed to load logo A')}
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs text-[var(--silver-dark)]">
+                  {tokenInfo?.symbolA[0] || '?'}
+                </div>
+              )}
+              {logoURIB ? (
+                <SafeImage
+                  src={logoURIB}
+                  alt={tokenInfo?.symbolB || ''}
+                  className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)]"
+                  fallback={
+                    <div className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs">
+                      ?
+                    </div>
+                  }
+                  onError={() => logger.warn('Failed to load logo B')}
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs text-[var(--silver-dark)]">
+                  {tokenInfo?.symbolB[0] || '?'}
+                </div>
+              )}
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-[var(--silver-light)]">
+                <SafeHtml
+                  content={`${tokenInfo?.symbolA || 'Token A'}/${
+                    tokenInfo?.symbolB || 'Token B'
+                  }`}
+                />
+              </h3>
+              <Badge
+                variant="default"
+                size="sm"
+                className="bg-[var(--neon-blue)] bg-opacity-20 text-[var(--neon-blue)] border-[var(--neon-blue)] border-opacity-40 mt-1"
+              >
+                {feeConfig?.formatted.tradingFee || '0.30%'} Fee
+              </Badge>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xl font-bold text-[var(--silver-light)]">
-              <SafeHtml
-                content={`${tokenInfo?.symbolA || 'Token A'}/${
-                  tokenInfo?.symbolB || 'Token B'
-                }`}
-              />
-            </h3>
-            <Badge
-              variant="default"
-              size="sm"
-              className="bg-[var(--neon-blue)] bg-opacity-20 text-[var(--neon-blue)] border-[var(--neon-blue)] border-opacity-40 mt-1"
-            >
-              0.3% Fee
-            </Badge>
-          </div>
+
+          {/* ✅ APY Badge (if user has position) */}
+          {earnings && (
+            <div className="text-right">
+              <div className="text-xs text-[var(--silver-dark)] mb-1">APY</div>
+              <div className="text-xl font-bold text-[var(--neon-blue)]">
+                {earnings.formatted.apy}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -311,8 +389,13 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
             </span>
           </div>
           <div className="text-2xl font-bold text-[var(--silver-light)]">
-            ${poolStats.totalLiquidity}
+            ${poolStats.totalLiquidityUSD}
           </div>
+          {isPricingReady && (
+            <div className="text-xs text-[var(--silver-dark)] mt-1">
+              {poolStats.reserveA} {tokenInfo?.symbolA} + {poolStats.reserveB} {tokenInfo?.symbolB}
+            </div>
+          )}
         </div>
 
         {/* Reserves */}
@@ -326,17 +409,31 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
               <span className="text-sm text-[var(--silver-dark)]">
                 {tokenInfo?.symbolA}:
               </span>
-              <span className="text-sm font-medium text-[var(--silver-light)]">
-                {poolStats.reserveA}
-              </span>
+              <div className="text-right">
+                <div className="text-sm font-medium text-[var(--silver-light)]">
+                  {poolStats.reserveA}
+                </div>
+                {isPricingReady && poolStats.priceA !== 'N/A' && (
+                  <div className="text-xs text-[var(--silver-dark)]">
+                    {poolStats.priceA}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-[var(--silver-dark)]">
                 {tokenInfo?.symbolB}:
               </span>
-              <span className="text-sm font-medium text-[var(--silver-light)]">
-                {poolStats.reserveB}
-              </span>
+              <div className="text-right">
+                <div className="text-sm font-medium text-[var(--silver-light)]">
+                  {poolStats.reserveB}
+                </div>
+                {isPricingReady && poolStats.priceB !== 'N/A' && (
+                  <div className="text-xs text-[var(--silver-dark)]">
+                    {poolStats.priceB}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -352,7 +449,7 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
           </div>
         </div>
 
-        {/* User Position */}
+        {/* ✅ User Position with Earnings */}
         {userShare && (
           <div className="bg-gradient-to-br from-[var(--neon-blue)] from-opacity-10 to-[var(--charcoal)] rounded-lg p-4 border border-[var(--neon-blue)] border-opacity-30">
             <div className="flex items-center space-x-2 mb-3">
@@ -361,7 +458,9 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
                 Your Position
               </span>
             </div>
-            <div className="flex justify-between">
+            
+            {/* LP Balance */}
+            <div className="flex justify-between mb-3">
               <span className="text-sm text-[var(--metallic-silver)]">
                 LP Tokens:
               </span>
@@ -369,6 +468,104 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
                 {userShare.lpBalance}
               </span>
             </div>
+
+            {/* ✅ Earnings Section */}
+            {isLoadingEarnings ? (
+              <div className="flex items-center justify-center py-2">
+                <div className="w-4 h-4 border-2 border-[var(--neon-blue)] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : earnings ? (
+              <>
+                {/* Position Value */}
+                <div className="mb-3 pb-3 border-b border-[var(--charcoal)]">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-[var(--silver-dark)]">
+                      Position Value
+                    </span>
+                    <span className="text-sm font-semibold text-[var(--silver-light)]">
+                      ${earnings.formatted.currentValue}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-xs text-[var(--silver-dark)]">
+                      Original Deposit
+                    </span>
+                    <span className="text-xs text-[var(--silver-dark)]">
+                      ${earnings.formatted.originalDeposit}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Unrealized Earnings */}
+                <div className="mb-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-3 h-3 text-[var(--neon-blue)]" />
+                    <span className="text-xs font-medium text-[var(--metallic-silver)]">
+                      Unrealized Earnings
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-[var(--charcoal)] bg-opacity-50 rounded p-2">
+                      <div className="text-xs text-[var(--silver-dark)] mb-1">
+                        {tokenInfo?.symbolA}
+                      </div>
+                      <div className="text-sm font-semibold text-[var(--neon-blue)]">
+                        {earnings.formatted.unrealizedA}
+                      </div>
+                    </div>
+                    <div className="bg-[var(--charcoal)] bg-opacity-50 rounded p-2">
+                      <div className="text-xs text-[var(--silver-dark)] mb-1">
+                        {tokenInfo?.symbolB}
+                      </div>
+                      <div className="text-sm font-semibold text-[var(--neon-blue)]">
+                        {earnings.formatted.unrealizedB}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Total Earnings (if has realized earnings) */}
+                {(earnings.realizedEarningsA > 0n || earnings.realizedEarningsB > 0n) && (
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <DollarSign className="w-3 h-3 text-[var(--neon-blue)]" />
+                      <span className="text-xs font-medium text-[var(--metallic-silver)]">
+                        Total Earnings
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-[var(--charcoal)] bg-opacity-50 rounded p-2">
+                        <div className="text-xs text-[var(--silver-dark)] mb-1">
+                          {tokenInfo?.symbolA}
+                        </div>
+                        <div className="text-sm font-semibold text-[var(--silver-light)]">
+                          {earnings.formatted.totalA}
+                        </div>
+                      </div>
+                      <div className="bg-[var(--charcoal)] bg-opacity-50 rounded p-2">
+                        <div className="text-xs text-[var(--silver-dark)] mb-1">
+                          {tokenInfo?.symbolB}
+                        </div>
+                        <div className="text-sm font-semibold text-[var(--silver-light)]">
+                          {earnings.formatted.totalB}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Days Active */}
+                <div className="flex items-center justify-between text-xs text-[var(--silver-dark)] pt-2 border-t border-[var(--charcoal)]">
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>{earnings.formatted.daysActive} days active</span>
+                  </div>
+                  <span className="text-[var(--neon-blue)]">
+                    {earnings.formatted.apy}
+                  </span>
+                </div>
+              </>
+            ) : null}
           </div>
         )}
 

@@ -1,11 +1,12 @@
 // src/hooks/projects/useCreateProject.ts
-import { useState, useCallback } from 'react'
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useState, useCallback, useEffect } from 'react'
+import { useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi'
 import { exhibitionAbi } from '@/generated/wagmi'
 import { EXHIBITION_ADDRESS } from '@/config/contracts'
 import { ExhibitionFormatters } from '@/utils/exFormatters'
 import { useMultiTransactionModal } from '@/components/common/MultiTransactionModal'
 import { logger } from '@/utils/logger'
+import { parseEventLogs } from 'viem'
 
 export interface CreateProjectFormData {
   // Project Token Details
@@ -39,20 +40,6 @@ export interface CreateProjectFormData {
 }
 
 /**
- * Safely convert Date to Unix timestamp (in seconds)
- */
-const dateToUnixTimestamp = (date: Date): bigint => {
-  if (!date || isNaN(date.getTime())) {
-    throw new Error('Invalid date')
-  }
-  
-  // Get timestamp in seconds (JavaScript gives milliseconds)
-  const timestampInSeconds = Math.floor(date.getTime() / 1000)
-  
-  return BigInt(timestampInSeconds)
-}
-
-/**
  * Hook to create a new launchpad project
  */
 export function useCreateProject() {
@@ -60,6 +47,7 @@ export function useCreateProject() {
   const [projectTokenAddress, setProjectTokenAddress] = useState<`0x${string}` | null>(null)
   
   const modalState = useMultiTransactionModal()
+  const publicClient = usePublicClient()
 
   // Write contract hook
   const {
@@ -72,6 +60,7 @@ export function useCreateProject() {
 
   // Wait for transaction confirmation
   const {
+    data: receipt,  // ✅ ADD THIS
     isLoading: isConfirming,
     isSuccess,
     error: confirmError,
@@ -79,11 +68,89 @@ export function useCreateProject() {
     hash: txHash,
   })
 
+  // ✅ ADD THIS ENTIRE useEffect BLOCK
+  useEffect(() => {
+    if (isSuccess && receipt && publicClient) {
+      const parseProjectCreated = async () => {
+        try {
+          logger.info('🔍 Parsing transaction receipt for ProjectCreated event...')
+          
+          // Parse logs using the contract ABI
+          const logs = parseEventLogs({
+            abi: exhibitionAbi,
+            eventName: 'ProjectCreated',
+            logs: receipt.logs,
+          })
+
+          if (logs.length > 0) {
+            const projectCreatedEvent = logs[0]
+            const { projectId: eventProjectId, projectToken } = projectCreatedEvent.args
+
+            setProjectId(eventProjectId)
+            setProjectTokenAddress(projectToken)
+            
+            logger.info('✅ Project created successfully!')
+            logger.info(`   Project ID: ${eventProjectId.toString()}`)
+            logger.info(`   Token Address: ${projectToken}`)
+          } else {
+            logger.warn('⚠️ No ProjectCreated event found in transaction logs')
+          }
+        } catch (err) {
+          logger.error('❌ Failed to parse project creation logs:', err)
+        }
+      }
+
+      parseProjectCreated()
+    }
+  }, [isSuccess, receipt, publicClient])
+
+  /**
+   * Convert user's selected Date to blockchain timestamp
+   * Uses blockchain's current time instead of system time to handle
+   * chains with logical timestamps (like Nexus L1 or Hardhat)
+   */
+  const dateToBlockchainTimestamp = useCallback(async (date: Date): Promise<bigint> => {
+    if (!date || isNaN(date.getTime())) {
+      throw new Error('Invalid date')
+    }
+
+    if (!publicClient) {
+      throw new Error('Public client not available')
+    }
+
+    try {
+      // Get blockchain's current timestamp from latest block
+      const latestBlock = await publicClient.getBlock({ blockTag: 'latest' })
+      const blockchainNow = latestBlock.timestamp
+      
+      logger.info(`⏰ Blockchain current time: ${blockchainNow} (${new Date(Number(blockchainNow) * 1000).toLocaleString()})`)
+      
+      // Calculate offset between user's selected time and current system time
+      const systemNow = Math.floor(Date.now() / 1000)
+      const userSelectedTime = Math.floor(date.getTime() / 1000)
+      const offsetSeconds = userSelectedTime - systemNow
+      
+      logger.info(`📅 User selected: ${date.toLocaleString()}`)
+      logger.info(`⏱️  System now: ${systemNow}, User selected: ${userSelectedTime}`)
+      logger.info(`⏳ Offset: ${offsetSeconds} seconds (${offsetSeconds / 3600} hours)`)
+      
+      // Apply the same offset to blockchain time
+      const blockchainTargetTime = blockchainNow + BigInt(offsetSeconds)
+      
+      logger.info(`🎯 Target blockchain time: ${blockchainTargetTime} (${new Date(Number(blockchainTargetTime) * 1000).toLocaleString()})`)
+      
+      return blockchainTargetTime
+    } catch (error) {
+      logger.error('❌ Failed to get blockchain timestamp:', error)
+      throw new Error('Failed to get blockchain timestamp')
+    }
+  }, [publicClient])
+
   /**
    * Parse form data and prepare contract arguments
    * WITH COMPREHENSIVE DEBUG LOGGING
    */
-  const prepareContractArgs = useCallback((formData: CreateProjectFormData) => {
+  const prepareContractArgs = useCallback(async (formData: CreateProjectFormData) => {
     logger.info('🔧 ===== PREPARING CONTRACT ARGUMENTS =====')
     logger.info('📋 Raw Form Data:', formData)
 
@@ -169,16 +236,17 @@ export function useCreateProject() {
     const parsedLiquidityPercentage = ExhibitionFormatters.parsePercentage(liquidityPercentage)
     logger.info(`  Liquidity %: ${liquidityPercentage}% -> ${parsedLiquidityPercentage.toString()} basis points`)
     
-    // Timestamp conversion
-    logger.info('⏰ Parsing Timestamps...')
+    // Timestamp conversion using blockchain time
+    logger.info('⏰ Parsing Timestamps (using blockchain time)...')
     logger.info(`  Start Time Input: ${startTime.toLocaleString()}`)
     logger.info(`  End Time Input: ${endTime.toLocaleString()}`)
     
-    const parsedStartTime = dateToUnixTimestamp(startTime)
-    const parsedEndTime = dateToUnixTimestamp(endTime)
+    const parsedStartTime = await dateToBlockchainTimestamp(startTime)
+    const parsedEndTime = await dateToBlockchainTimestamp(endTime)
     
-    logger.info(`  Start Time Unix: ${parsedStartTime.toString()} (${new Date(Number(parsedStartTime) * 1000).toLocaleString()})`)
-    logger.info(`  End Time Unix: ${parsedEndTime.toString()} (${new Date(Number(parsedEndTime) * 1000).toLocaleString()})`)
+    logger.info(`  Start Time Blockchain: ${parsedStartTime.toString()}`)
+    logger.info(`  End Time Blockchain: ${parsedEndTime.toString()}`)
+    logger.info(`  Duration: ${Number(parsedEndTime - parsedStartTime) / 86400} days`)
     
     // Duration conversion (DAYS -> SECONDS)
     logger.info('⏳ Parsing Durations (converting DAYS to SECONDS)...')
@@ -228,11 +296,8 @@ export function useCreateProject() {
       parsedVestingInitialRelease,
     ] as const
 
-    logger.info('✅ Final Contract Arguments:', args)
-    logger.info('===== PREPARATION COMPLETE =====\n')
-
     return args
-  }, [])
+  }, [dateToBlockchainTimestamp])
 
   /**
    * Create a new launchpad project
@@ -246,7 +311,7 @@ export function useCreateProject() {
         modalState.show('create')
 
         // Prepare contract arguments with full validation
-        const args = prepareContractArgs(formData)
+        const args = await prepareContractArgs(formData)
 
         logger.info('📤 Sending transaction to contract...')
         

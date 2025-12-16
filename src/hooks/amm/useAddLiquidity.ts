@@ -2,10 +2,11 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { type Address, parseUnits, formatUnits, erc20Abi, isAddress } from 'viem';
 import { useAccount, useReadContracts, useWriteContract } from 'wagmi';
 import { exhibitionAmmAbi } from '@/generated/wagmi';
-import { useTokenApproval } from '@/hooks/useTokenApproval';
+import { useTokenApproval } from '@/hooks/utilities/useTokenApproval';
 import { CONTRACT_ADDRESSES } from '@/config/contracts';
 import { publicClient } from '@/config/wagmi';
 import { logger } from '@/utils/logger';
+import { useBlockchainTime } from '@/hooks/utilities/useBlockchainTime'; // ✅ Import the hook
 
 interface AddLiquidityState {
   tokenA?: Address;
@@ -31,11 +32,17 @@ const isValidAddress = (address: any): address is Address => {
 
 export const useAddLiquidity = (initialTokenA?: Address | null, initialTokenB?: Address | null) => {
   const { address } = useAccount();
+  
+  // ✅ Get blockchain time
+  const { timestampNumber: blockchainTime, isLoading: isLoadingTime } = useBlockchainTime({
+    refetchInterval: 5000,
+    enabled: true,
+  });
 
   // Initialize with default tokens from environment variables
   const [state, setState] = useState<AddLiquidityState>(() => {
     const defaultTokenA = initialTokenA || import.meta.env.VITE_EXH_ADDRESS as Address;
-    const defaultTokenB = initialTokenB || import.meta.env.VITE_EXUSDT_ADDRESS as Address;
+    const defaultTokenB = initialTokenB || import.meta.env.VITE_EXUSD_ADDRESS as Address;
     
     return {
       tokenA: isValidAddress(defaultTokenA) ? defaultTokenA : undefined,
@@ -303,6 +310,11 @@ export const useAddLiquidity = (initialTokenA?: Address | null, initialTokenB?: 
       throw new Error('Missing required data for adding liquidity');
     }
 
+    // ✅ Check if blockchain time is loaded
+    if (isLoadingTime || blockchainTime === 0) {
+      throw new Error('Waiting for blockchain time...');
+    }
+
     setState((prev) => ({
       ...prev,
       isProcessing: true,
@@ -357,7 +369,15 @@ export const useAddLiquidity = (initialTokenA?: Address | null, initialTokenB?: 
 
       const minAmountA = (amountABigInt * BigInt(Math.floor((100 - state.slippage) * 100))) / BigInt(10000);
       const minAmountB = (finalAmountB * BigInt(Math.floor((100 - state.slippage) * 100))) / BigInt(10000);
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + state.deadline * 60);
+      
+      // ✅ Use blockchain time instead of Date.now()
+      const deadline = BigInt(blockchainTime + state.deadline * 60);
+      
+      logger.info('💡 Using blockchain time for deadline:', {
+        blockchainTime,
+        deadlineMinutes: state.deadline,
+        deadline: deadline.toString(),
+      });
 
       const txHash = await new Promise<`0x${string}`>((resolve, reject) => {
         writeAMM(
@@ -397,7 +417,7 @@ export const useAddLiquidity = (initialTokenA?: Address | null, initialTokenB?: 
       }));
       throw error;
     }
-  }, [address, state, amountABigInt, calculatedAmountB, amountBBigInt, approvalA, approvalB, writeAMM, waitForTx, refetchBalances, refetchAMMData, resetAMMWrite]);
+  }, [address, state, amountABigInt, calculatedAmountB, amountBBigInt, approvalA, approvalB, writeAMM, waitForTx, refetchBalances, refetchAMMData, resetAMMWrite, blockchainTime, isLoadingTime]);
 
   const canAddLiquidity = useMemo(() => {
     if (!address || !state.tokenA || !state.tokenB) return false;
@@ -408,10 +428,19 @@ export const useAddLiquidity = (initialTokenA?: Address | null, initialTokenB?: 
 
     if (balanceA?.value !== undefined && amountABigInt > balanceA.value) return false;
     if (balanceB?.value !== undefined && finalAmountB > balanceB.value) return false;
+    
+    // ✅ Wait for blockchain time
+    if (isLoadingTime || blockchainTime === 0) return false;
+    
     return true;
-  }, [address, state, amountABigInt, calculatedAmountB, amountBBigInt, balanceA, balanceB]);
+  }, [address, state, amountABigInt, calculatedAmountB, amountBBigInt, balanceA, balanceB, isLoadingTime, blockchainTime]);
 
   const buttonState = useMemo(() => {
+    // ✅ Show loading state while waiting for blockchain time
+    if (isLoadingTime || blockchainTime === 0) {
+      return { text: 'Loading blockchain time...', disabled: true, loading: true };
+    }
+    
     if (state.isProcessing) {
       switch (state.currentStep) {
         case 'approving-a':
@@ -433,7 +462,7 @@ export const useAddLiquidity = (initialTokenA?: Address | null, initialTokenB?: 
     }
 
     return { text: canAddLiquidity ? 'Add Liquidity' : 'Enter amounts', disabled: !canAddLiquidity, loading: false };
-  }, [state, approvalA, approvalB, tokenAInfo, tokenBInfo, canAddLiquidity]);
+  }, [state, approvalA, approvalB, tokenAInfo, tokenBInfo, canAddLiquidity, isLoadingTime, blockchainTime]);
 
   return {
     state,
@@ -450,6 +479,8 @@ export const useAddLiquidity = (initialTokenA?: Address | null, initialTokenB?: 
     amountBBigInt,
     canAddLiquidity,
     buttonState,
+    blockchainTime, // ✅ Expose for debugging
+    isLoadingTime, // ✅ Expose for debugging
     updateState,
     executeAddLiquidity,
     refetchBalances,

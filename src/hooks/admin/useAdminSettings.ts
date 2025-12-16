@@ -5,7 +5,7 @@ import { formatUnits, type Address } from 'viem'
 
 interface FaucetSettings {
   exhAmount: string
-  usdtAmount: string
+  exusdAmount: string
   cooldown: number
 }
 
@@ -78,7 +78,7 @@ export function useAdminSettings(): AdminSettings {
     contributionTokens: (contributionTokensQuery.data as readonly Address[]) || [],
     faucetSettings: faucetSettingsQuery.data ? {
       exhAmount: formatUnits((faucetSettingsQuery.data as any)[0], 18),
-      usdtAmount: formatUnits((faucetSettingsQuery.data as any)[1], 6),
+      exusdAmount: formatUnits((faucetSettingsQuery.data as any)[1], 6),
       cooldown: Number((faucetSettingsQuery.data as any)[2]),
     } : null,
     isLoading,

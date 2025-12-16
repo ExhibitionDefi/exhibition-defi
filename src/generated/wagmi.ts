@@ -113,6 +113,44 @@ export const erc20Abi = [
 export const exhibitionAbi = [
   { type: 'constructor', inputs: [], stateMutability: 'nonpayable' },
   {
+    type: 'error',
+    inputs: [{ name: 'owner', internalType: 'address', type: 'address' }],
+    name: 'OwnableInvalidOwner',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'OwnableUnauthorizedAccount',
+  },
+  { type: 'error', inputs: [], name: 'PlatformFeeRecipientNotSet' },
+  { type: 'error', inputs: [], name: 'ProjectNotActive' },
+  { type: 'error', inputs: [], name: 'ProjectNotFound' },
+  { type: 'error', inputs: [], name: 'ProjectNotRefundable' },
+  { type: 'error', inputs: [], name: 'ProjectNotSuccessfulForLiquidity' },
+  { type: 'error', inputs: [], name: 'ReentrancyGuardReentrantCall' },
+  {
+    type: 'error',
+    inputs: [{ name: 'token', internalType: 'address', type: 'address' }],
+    name: 'SafeERC20FailedOperation',
+  },
+  { type: 'error', inputs: [], name: 'SoftCapBelowMinimum' },
+  { type: 'error', inputs: [], name: 'TokenAlreadyApproved' },
+  { type: 'error', inputs: [], name: 'TokenNotApproved' },
+  {
+    type: 'error',
+    inputs: [],
+    name: 'TokenNotApprovedAsExhibitionContributionToken',
+  },
+  { type: 'error', inputs: [], name: 'TokenPriceTooHigh' },
+  { type: 'error', inputs: [], name: 'TokenPriceTooLow' },
+  { type: 'error', inputs: [], name: 'TokensForSaleMismatch' },
+  { type: 'error', inputs: [], name: 'Unauthorized' },
+  { type: 'error', inputs: [], name: 'WithdrawalLocked' },
+  { type: 'error', inputs: [], name: 'ZeroAddress' },
+  { type: 'error', inputs: [], name: 'ZeroAmount' },
+  { type: 'error', inputs: [], name: 'ZeroTokenPrice' },
+  { type: 'error', inputs: [], name: 'ZeroTokensCalculated' },
+  {
     type: 'event',
     anonymous: false,
     inputs: [
@@ -262,7 +300,7 @@ export const exhibitionAbi = [
         indexed: true,
       },
     ],
-    name: 'ExhibitionUSDTAddressSet',
+    name: 'ExhibitionUSDAddressSet',
   },
   {
     type: 'event',
@@ -296,7 +334,7 @@ export const exhibitionAbi = [
         indexed: false,
       },
       {
-        name: 'usdtAmount',
+        name: 'exusdAmount',
         internalType: 'uint256',
         type: 'uint256',
         indexed: false,
@@ -309,25 +347,25 @@ export const exhibitionAbi = [
     anonymous: false,
     inputs: [
       {
-        name: 'tokenAddress',
+        name: 'projectId',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: true,
+      },
+      {
+        name: 'contributor',
         internalType: 'address',
         type: 'address',
         indexed: true,
       },
       {
-        name: 'recipient',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
-      },
-      {
-        name: 'amount',
+        name: 'contributorNumber',
         internalType: 'uint256',
         type: 'uint256',
         indexed: false,
       },
     ],
-    name: 'FeesWithdrawn',
+    name: 'FirstTimeContributor',
   },
   {
     type: 'event',
@@ -421,6 +459,25 @@ export const exhibitionAbi = [
       },
     ],
     name: 'LiquidityAdded',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'projectId',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: true,
+      },
+      {
+        name: 'timestamp',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+    ],
+    name: 'LiquidityDeadlinePassed',
   },
   {
     type: 'event',
@@ -888,15 +945,15 @@ export const exhibitionAbi = [
   {
     type: 'function',
     inputs: [],
-    name: 'MAX_PROJECT_DURATION',
+    name: 'LIQUIDITY_FINALIZATION_DEADLINE',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
   {
     type: 'function',
     inputs: [],
-    name: 'MAX_TOKEN_DECIMALS',
-    outputs: [{ name: '', internalType: 'uint8', type: 'uint8' }],
+    name: 'MAX_PROJECT_DURATION',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
   {
@@ -943,13 +1000,6 @@ export const exhibitionAbi = [
   },
   {
     type: 'function',
-    inputs: [{ name: '', internalType: 'address', type: 'address' }],
-    name: 'accumulatedFees',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
     inputs: [
       { name: '_tokenAddress', internalType: 'address', type: 'address' },
     ],
@@ -978,7 +1028,6 @@ export const exhibitionAbi = [
         internalType: 'address',
         type: 'address',
       },
-      { name: 'projectTokenAddress', internalType: 'address', type: 'address' },
     ],
     name: 'batchCalculateTokens',
     outputs: [{ name: '', internalType: 'uint256[]', type: 'uint256[]' }],
@@ -998,7 +1047,6 @@ export const exhibitionAbi = [
         internalType: 'address',
         type: 'address',
       },
-      { name: 'projectTokenAddress', internalType: 'address', type: 'address' },
     ],
     name: 'calculateTokensDue',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
@@ -1035,6 +1083,13 @@ export const exhibitionAbi = [
       { name: '', internalType: 'address', type: 'address' },
     ],
     name: 'contributions',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    name: 'contributorCount',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
@@ -1122,7 +1177,7 @@ export const exhibitionAbi = [
   {
     type: 'function',
     inputs: [],
-    name: 'exUSDTTokenAddress',
+    name: 'exUSDTokenAddress',
     outputs: [{ name: '', internalType: 'address', type: 'address' }],
     stateMutability: 'view',
   },
@@ -1157,7 +1212,7 @@ export const exhibitionAbi = [
   {
     type: 'function',
     inputs: [],
-    name: 'faucetAmountUSDT',
+    name: 'faucetAmountexUSD',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
@@ -1196,7 +1251,6 @@ export const exhibitionAbi = [
         internalType: 'address',
         type: 'address',
       },
-      { name: 'projectTokenAddress', internalType: 'address', type: 'address' },
     ],
     name: 'getCalculationPreview',
     outputs: [
@@ -1237,7 +1291,7 @@ export const exhibitionAbi = [
       { name: 'factory', internalType: 'address', type: 'address' },
       { name: 'amm', internalType: 'address', type: 'address' },
       { name: 'exhToken', internalType: 'address', type: 'address' },
-      { name: 'exUSDTToken', internalType: 'address', type: 'address' },
+      { name: 'exUSDToken', internalType: 'address', type: 'address' },
     ],
     stateMutability: 'view',
   },
@@ -1268,6 +1322,13 @@ export const exhibitionAbi = [
   },
   {
     type: 'function',
+    inputs: [{ name: 'projectId', internalType: 'uint256', type: 'uint256' }],
+    name: 'getLiquidityDeadline',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [],
     name: 'getMinLockDuration',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
@@ -1282,7 +1343,6 @@ export const exhibitionAbi = [
         internalType: 'address',
         type: 'address',
       },
-      { name: 'projectTokenAddress', internalType: 'address', type: 'address' },
     ],
     name: 'getMinimumContribution',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
@@ -1299,6 +1359,13 @@ export const exhibitionAbi = [
       { name: 'maxProjectDuration', internalType: 'uint256', type: 'uint256' },
       { name: 'withdrawalDelay', internalType: 'uint256', type: 'uint256' },
     ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'projectId', internalType: 'uint256', type: 'uint256' }],
+    name: 'getProjectContributorCount',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
   {
@@ -1380,6 +1447,7 @@ export const exhibitionAbi = [
         internalType: 'uint256',
         type: 'uint256',
       },
+      { name: 'totalContributors', internalType: 'uint256', type: 'uint256' },
     ],
     stateMutability: 'view',
   },
@@ -1453,7 +1521,6 @@ export const exhibitionAbi = [
         components: [
           { name: 'minTokenPrice', internalType: 'uint256', type: 'uint256' },
           { name: 'maxTokenPrice', internalType: 'uint256', type: 'uint256' },
-          { name: 'maxTokenDecimals', internalType: 'uint8', type: 'uint8' },
           { name: 'priceDecimals', internalType: 'uint256', type: 'uint256' },
         ],
       },
@@ -1531,6 +1598,16 @@ export const exhibitionAbi = [
       { name: '', internalType: 'uint256', type: 'uint256' },
       { name: '', internalType: 'address', type: 'address' },
     ],
+    name: 'hasContributed',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '', internalType: 'uint256', type: 'uint256' },
+      { name: '', internalType: 'address', type: 'address' },
+    ],
     name: 'hasRefunded',
     outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
     stateMutability: 'view',
@@ -1547,8 +1624,36 @@ export const exhibitionAbi = [
   },
   {
     type: 'function',
+    inputs: [
+      { name: 'projectId', internalType: 'uint256', type: 'uint256' },
+      { name: 'user', internalType: 'address', type: 'address' },
+    ],
+    name: 'hasUserContributed',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'projectId', internalType: 'uint256', type: 'uint256' }],
+    name: 'isEmergencyRefundAvailable',
+    outputs: [
+      { name: 'available', internalType: 'bool', type: 'bool' },
+      { name: 'deadline', internalType: 'uint256', type: 'uint256' },
+      { name: 'timeRemaining', internalType: 'uint256', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [{ name: '', internalType: 'address', type: 'address' }],
     name: 'isExhibitionContributionToken',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'isProjectToken',
     outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
     stateMutability: 'view',
   },
@@ -1582,8 +1687,25 @@ export const exhibitionAbi = [
   },
   {
     type: 'function',
+    inputs: [
+      { name: '', internalType: 'uint256', type: 'uint256' },
+      { name: '', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'projectContributors',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     name: 'projectLiquidityTokenDeposits',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'projectTokenToProjectId',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
@@ -1648,6 +1770,13 @@ export const exhibitionAbi = [
   },
   {
     type: 'function',
+    inputs: [{ name: '_projectId', internalType: 'uint256', type: 'uint256' }],
+    name: 'requestEmergencyRefund',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     inputs: [],
     name: 'requestFaucetTokens',
     outputs: [],
@@ -1663,9 +1792,9 @@ export const exhibitionAbi = [
   {
     type: 'function',
     inputs: [
-      { name: '_exUSDTTokenAddress', internalType: 'address', type: 'address' },
+      { name: '_exUSDTokenAddress', internalType: 'address', type: 'address' },
     ],
-    name: 'setExUSDTTokenAddress',
+    name: 'setExUSDTokenAddress',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -1714,7 +1843,7 @@ export const exhibitionAbi = [
   {
     type: 'function',
     inputs: [{ name: '_amount', internalType: 'uint256', type: 'uint256' }],
-    name: 'setFaucetAmountUSDT',
+    name: 'setFaucetAmountexUSD',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -1745,6 +1874,13 @@ export const exhibitionAbi = [
   },
   {
     type: 'function',
+    inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    name: 'successTimestamp',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [{ name: 'newOwner', internalType: 'address', type: 'address' }],
     name: 'transferOwnership',
     outputs: [],
@@ -1764,7 +1900,6 @@ export const exhibitionAbi = [
         internalType: 'address',
         type: 'address',
       },
-      { name: 'projectTokenAddress', internalType: 'address', type: 'address' },
     ],
     name: 'validateCalculation',
     outputs: [
@@ -1798,16 +1933,6 @@ export const exhibitionAbi = [
   },
   {
     type: 'function',
-    inputs: [
-      { name: '_tokenAddress', internalType: 'address', type: 'address' },
-      { name: '_recipient', internalType: 'address', type: 'address' },
-    ],
-    name: 'withdrawAccumulatedFees',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
     inputs: [{ name: '_projectId', internalType: 'uint256', type: 'uint256' }],
     name: 'withdrawUnsoldTokens',
     outputs: [],
@@ -1820,7 +1945,107 @@ export const exhibitionAbi = [
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export const exhibitionAmmAbi = [
-  { type: 'constructor', inputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'constructor',
+    inputs: [
+      { name: '_tradingFeeBps', internalType: 'uint256', type: 'uint256' },
+      { name: '_protocolFeeBps', internalType: 'uint256', type: 'uint256' },
+      { name: '_feeRecipient', internalType: 'address', type: 'address' },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'owner', internalType: 'address', type: 'address' }],
+    name: 'OwnableInvalidOwner',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'OwnableUnauthorizedAccount',
+  },
+  { type: 'error', inputs: [], name: 'PoolAlreadyExists' },
+  { type: 'error', inputs: [], name: 'PoolDoesNotExist' },
+  { type: 'error', inputs: [], name: 'ReentrancyGuardReentrantCall' },
+  { type: 'error', inputs: [], name: 'SlippageTooHigh' },
+  { type: 'error', inputs: [], name: 'TokenTransferFailed' },
+  { type: 'error', inputs: [], name: 'Unauthorized' },
+  { type: 'error', inputs: [], name: 'UnauthorizedPoolCreation' },
+  { type: 'error', inputs: [], name: 'ZeroAddress' },
+  { type: 'error', inputs: [], name: 'ZeroAddress' },
+  { type: 'error', inputs: [], name: 'ZeroAmount' },
+  { type: 'error', inputs: [], name: 'ZeroAmount' },
+  { type: 'error', inputs: [], name: 'ZeroLiquidity' },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      {
+        name: 'tokenA',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+      {
+        name: 'tokenB',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+      {
+        name: 'earningsA',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+      {
+        name: 'earningsB',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+    ],
+    name: 'EarningsRealized',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      {
+        name: 'tokenA',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+      {
+        name: 'tokenB',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+      {
+        name: 'lpAmount',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+      {
+        name: 'reserveA',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+      {
+        name: 'reserveB',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+    ],
+    name: 'EarningsSnapshot',
+  },
   {
     type: 'event',
     anonymous: false,
@@ -1864,6 +2089,31 @@ export const exhibitionAmmAbi = [
       },
     ],
     name: 'ExhibitionContractSet',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'tradingFee',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+      {
+        name: 'protocolFee',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+      {
+        name: 'feeRecipient',
+        internalType: 'address',
+        type: 'address',
+        indexed: false,
+      },
+    ],
+    name: 'FeeConfigUpdated',
   },
   {
     type: 'event',
@@ -2080,6 +2330,43 @@ export const exhibitionAmmAbi = [
         indexed: true,
       },
       {
+        name: 'amount0',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+      {
+        name: 'amount1',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+      {
+        name: 'recipient',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+    ],
+    name: 'ProtocolFeesCollected',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'token0',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+      {
+        name: 'token1',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+      {
         name: 'reserve0',
         internalType: 'uint256',
         type: 'uint256',
@@ -2128,14 +2415,68 @@ export const exhibitionAmmAbi = [
         type: 'uint256',
         indexed: false,
       },
+      {
+        name: 'tradingFee',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+      {
+        name: 'protocolFee',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
     ],
     name: 'Swap',
   },
+  { type: 'fallback', stateMutability: 'payable' },
   {
     type: 'function',
     inputs: [],
     name: 'ExhTokenAddress',
     outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'FEE_DENOMINATOR',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'MAX_PROTOCOL_FEE',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'MAX_TRADING_FEE',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '', internalType: 'address', type: 'address' },
+      { name: '', internalType: 'address', type: 'address' },
+    ],
+    name: 'accumulatedProtocolFeesToken0',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '', internalType: 'address', type: 'address' },
+      { name: '', internalType: 'address', type: 'address' },
+    ],
+    name: 'accumulatedProtocolFeesToken1',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
   {
@@ -2189,13 +2530,50 @@ export const exhibitionAmmAbi = [
   },
   {
     type: 'function',
-    inputs: [
-      { name: '', internalType: 'address', type: 'address' },
-      { name: '', internalType: 'address', type: 'address' },
+    inputs: [{ name: 'amountIn', internalType: 'uint256', type: 'uint256' }],
+    name: 'calculateExpectedFees',
+    outputs: [
+      { name: 'tradingFee', internalType: 'uint256', type: 'uint256' },
+      { name: 'protocolFee', internalType: 'uint256', type: 'uint256' },
+      { name: 'lpFee', internalType: 'uint256', type: 'uint256' },
     ],
-    name: 'blockTimestampLast',
-    outputs: [{ name: '', internalType: 'uint32', type: 'uint32' }],
     stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_user', internalType: 'address', type: 'address' },
+      { name: '_tokenA', internalType: 'address', type: 'address' },
+      { name: '_tokenB', internalType: 'address', type: 'address' },
+    ],
+    name: 'calculateUnrealizedEarnings',
+    outputs: [
+      { name: 'earningsA', internalType: 'uint256', type: 'uint256' },
+      { name: 'earningsB', internalType: 'uint256', type: 'uint256' },
+      { name: 'valueAtDeposit', internalType: 'uint256', type: 'uint256' },
+      { name: 'currentValue', internalType: 'uint256', type: 'uint256' },
+      { name: 'apy', internalType: 'uint256', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_tokenA', internalType: 'address', type: 'address' },
+      { name: '_tokenB', internalType: 'address', type: 'address' },
+    ],
+    name: 'collectProtocolFees',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_tokenPairs', internalType: 'address[][]', type: 'address[][]' },
+    ],
+    name: 'collectProtocolFeesMultiple',
+    outputs: [],
+    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -2214,19 +2592,34 @@ export const exhibitionAmmAbi = [
   {
     type: 'function',
     inputs: [
+      { name: '', internalType: 'address', type: 'address' },
+      { name: '', internalType: 'address', type: 'address' },
+      { name: '', internalType: 'address', type: 'address' },
+    ],
+    name: 'cumulativeEarningsToken0',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '', internalType: 'address', type: 'address' },
+      { name: '', internalType: 'address', type: 'address' },
+      { name: '', internalType: 'address', type: 'address' },
+    ],
+    name: 'cumulativeEarningsToken1',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
       { name: '_tokenA', internalType: 'address', type: 'address' },
       { name: '_tokenB', internalType: 'address', type: 'address' },
     ],
     name: 'doesPoolExist',
     outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
     stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'emergencyPause',
-    outputs: [],
-    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -2241,6 +2634,20 @@ export const exhibitionAmmAbi = [
   },
   {
     type: 'function',
+    inputs: [
+      { name: '_user', internalType: 'address', type: 'address' },
+      { name: '_tokenA', internalType: 'address', type: 'address' },
+      { name: '_tokenB', internalType: 'address', type: 'address' },
+    ],
+    name: 'estimateDailyEarnings',
+    outputs: [
+      { name: 'dailyEarningsA', internalType: 'uint256', type: 'uint256' },
+      { name: 'dailyEarningsB', internalType: 'uint256', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [],
     name: 'exNEXADDRESS',
     outputs: [{ name: '', internalType: 'address', type: 'address' }],
@@ -2249,7 +2656,7 @@ export const exhibitionAmmAbi = [
   {
     type: 'function',
     inputs: [],
-    name: 'exUSDTADDRESS',
+    name: 'exUSDADDRESS',
     outputs: [{ name: '', internalType: 'address', type: 'address' }],
     stateMutability: 'view',
   },
@@ -2276,6 +2683,31 @@ export const exhibitionAmmAbi = [
   {
     type: 'function',
     inputs: [],
+    name: 'feeConfig',
+    outputs: [
+      { name: 'tradingFee', internalType: 'uint256', type: 'uint256' },
+      { name: 'protocolFee', internalType: 'uint256', type: 'uint256' },
+      { name: 'feeRecipient', internalType: 'address', type: 'address' },
+      { name: 'feesEnabled', internalType: 'bool', type: 'bool' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'tokenA', internalType: 'address', type: 'address' },
+      { name: 'tokenB', internalType: 'address', type: 'address' },
+    ],
+    name: 'getAccumulatedProtocolFees',
+    outputs: [
+      { name: 'fees0', internalType: 'uint256', type: 'uint256' },
+      { name: 'fees1', internalType: 'uint256', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
     name: 'getAllPoolPairs',
     outputs: [{ name: '', internalType: 'address[]', type: 'address[]' }],
     stateMutability: 'view',
@@ -2289,6 +2721,40 @@ export const exhibitionAmmAbi = [
     ],
     name: 'getAmountOut',
     outputs: [{ name: 'amountOut', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_user', internalType: 'address', type: 'address' },
+      { name: '_tokenA', internalType: 'address', type: 'address' },
+      { name: '_tokenB', internalType: 'address', type: 'address' },
+    ],
+    name: 'getEarningsReport',
+    outputs: [
+      { name: 'unrealizedEarningsA', internalType: 'uint256', type: 'uint256' },
+      { name: 'unrealizedEarningsB', internalType: 'uint256', type: 'uint256' },
+      { name: 'realizedEarningsA', internalType: 'uint256', type: 'uint256' },
+      { name: 'realizedEarningsB', internalType: 'uint256', type: 'uint256' },
+      { name: 'totalEarningsA', internalType: 'uint256', type: 'uint256' },
+      { name: 'totalEarningsB', internalType: 'uint256', type: 'uint256' },
+      { name: 'currentValue', internalType: 'uint256', type: 'uint256' },
+      { name: 'originalDeposit', internalType: 'uint256', type: 'uint256' },
+      { name: 'apy', internalType: 'uint256', type: 'uint256' },
+      { name: 'daysActive', internalType: 'uint256', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getFeeConfig',
+    outputs: [
+      { name: 'tradingFee', internalType: 'uint256', type: 'uint256' },
+      { name: 'protocolFee', internalType: 'uint256', type: 'uint256' },
+      { name: 'feeRecipient', internalType: 'address', type: 'address' },
+      { name: 'feesEnabled', internalType: 'bool', type: 'bool' },
+    ],
     stateMutability: 'view',
   },
   {
@@ -2343,6 +2809,7 @@ export const exhibitionAmmAbi = [
           { name: 'reserveA', internalType: 'uint256', type: 'uint256' },
           { name: 'reserveB', internalType: 'uint256', type: 'uint256' },
           { name: 'totalLPSupply', internalType: 'uint256', type: 'uint256' },
+          { name: 'kLast', internalType: 'uint256', type: 'uint256' },
         ],
       },
     ],
@@ -2381,6 +2848,7 @@ export const exhibitionAmmAbi = [
           { name: 'reserveA', internalType: 'uint256', type: 'uint256' },
           { name: 'reserveB', internalType: 'uint256', type: 'uint256' },
           { name: 'totalLPSupply', internalType: 'uint256', type: 'uint256' },
+          { name: 'kLast', internalType: 'uint256', type: 'uint256' },
         ],
       },
     ],
@@ -2439,11 +2907,57 @@ export const exhibitionAmmAbi = [
   {
     type: 'function',
     inputs: [
+      { name: '_user', internalType: 'address', type: 'address' },
+      { name: '_tokenPairs', internalType: 'address[][]', type: 'address[][]' },
+    ],
+    name: 'getPortfolioEarnings',
+    outputs: [
+      {
+        name: 'unrealizedEarningsA',
+        internalType: 'uint256[]',
+        type: 'uint256[]',
+      },
+      {
+        name: 'unrealizedEarningsB',
+        internalType: 'uint256[]',
+        type: 'uint256[]',
+      },
+      {
+        name: 'realizedEarningsA',
+        internalType: 'uint256[]',
+        type: 'uint256[]',
+      },
+      {
+        name: 'realizedEarningsB',
+        internalType: 'uint256[]',
+        type: 'uint256[]',
+      },
+      { name: 'apys', internalType: 'uint256[]', type: 'uint256[]' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
       { name: '_tokenA', internalType: 'address', type: 'address' },
       { name: '_tokenB', internalType: 'address', type: 'address' },
     ],
     name: 'getPrice',
     outputs: [{ name: 'price', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_user', internalType: 'address', type: 'address' },
+      { name: '_tokenA', internalType: 'address', type: 'address' },
+      { name: '_tokenB', internalType: 'address', type: 'address' },
+    ],
+    name: 'getRealizedEarnings',
+    outputs: [
+      { name: 'realizedA', internalType: 'uint256', type: 'uint256' },
+      { name: 'realizedB', internalType: 'uint256', type: 'uint256' },
+    ],
     stateMutability: 'view',
   },
   {
@@ -2500,6 +3014,17 @@ export const exhibitionAmmAbi = [
   },
   {
     type: 'function',
+    inputs: [
+      { name: '_tokenA', internalType: 'address', type: 'address' },
+      { name: '_tokenB', internalType: 'address', type: 'address' },
+      { name: '_owner', internalType: 'address', type: 'address' },
+    ],
+    name: 'getTimeUntilUnlock',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [{ name: '_token', internalType: 'address', type: 'address' }],
     name: 'getTokenDecimals',
     outputs: [{ name: '', internalType: 'uint8', type: 'uint8' }],
@@ -2521,6 +3046,16 @@ export const exhibitionAmmAbi = [
       { name: 'decimals', internalType: 'uint8[]', type: 'uint8[]' },
       { name: 'totalSupplies', internalType: 'uint256[]', type: 'uint256[]' },
     ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'tokenA', internalType: 'address', type: 'address' },
+      { name: 'tokenB', internalType: 'address', type: 'address' },
+    ],
+    name: 'getTotalFeesCollected',
+    outputs: [{ name: 'totalFees', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
   {
@@ -2588,6 +3123,30 @@ export const exhibitionAmmAbi = [
   {
     type: 'function',
     inputs: [
+      { name: '_user', internalType: 'address', type: 'address' },
+      { name: '_tokenA', internalType: 'address', type: 'address' },
+      { name: '_tokenB', internalType: 'address', type: 'address' },
+    ],
+    name: 'getUserSnapshots',
+    outputs: [
+      {
+        name: '',
+        internalType: 'struct ExhibitionAMMEarnings.LPSnapshot[]',
+        type: 'tuple[]',
+        components: [
+          { name: 'reserveA', internalType: 'uint256', type: 'uint256' },
+          { name: 'reserveB', internalType: 'uint256', type: 'uint256' },
+          { name: 'lpAmount', internalType: 'uint256', type: 'uint256' },
+          { name: 'timestamp', internalType: 'uint256', type: 'uint256' },
+          { name: 'totalLPSupply', internalType: 'uint256', type: 'uint256' },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
       { name: '_tokenA', internalType: 'address', type: 'address' },
       { name: '_tokenB', internalType: 'address', type: 'address' },
       { name: '_owner', internalType: 'address', type: 'address' },
@@ -2647,6 +3206,25 @@ export const exhibitionAmmAbi = [
       { name: 'reserveA', internalType: 'uint256', type: 'uint256' },
       { name: 'reserveB', internalType: 'uint256', type: 'uint256' },
       { name: 'totalLPSupply', internalType: 'uint256', type: 'uint256' },
+      { name: 'kLast', internalType: 'uint256', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '', internalType: 'address', type: 'address' },
+      { name: '', internalType: 'address', type: 'address' },
+      { name: '', internalType: 'address', type: 'address' },
+      { name: '', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'lpSnapshots',
+    outputs: [
+      { name: 'reserveA', internalType: 'uint256', type: 'uint256' },
+      { name: 'reserveB', internalType: 'uint256', type: 'uint256' },
+      { name: 'lpAmount', internalType: 'uint256', type: 'uint256' },
+      { name: 'timestamp', internalType: 'uint256', type: 'uint256' },
+      { name: 'totalLPSupply', internalType: 'uint256', type: 'uint256' },
     ],
     stateMutability: 'view',
   },
@@ -2665,26 +3243,6 @@ export const exhibitionAmmAbi = [
     ],
     name: 'poolExists',
     outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '', internalType: 'address', type: 'address' },
-      { name: '', internalType: 'address', type: 'address' },
-    ],
-    name: 'price0CumulativeLast',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '', internalType: 'address', type: 'address' },
-      { name: '', internalType: 'address', type: 'address' },
-    ],
-    name: 'price1CumulativeLast',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
   {
@@ -2734,9 +3292,9 @@ export const exhibitionAmmAbi = [
   {
     type: 'function',
     inputs: [
-      { name: '_exUSDTAddress', internalType: 'address', type: 'address' },
+      { name: '_exUSDAddress', internalType: 'address', type: 'address' },
     ],
-    name: 'setExUSDTAddress',
+    name: 'setExUSDAddress',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -2755,6 +3313,24 @@ export const exhibitionAmmAbi = [
       { name: '_exhibitionContract', internalType: 'address', type: 'address' },
     ],
     name: 'setExhibitionContract',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_tradingFeeBps', internalType: 'uint256', type: 'uint256' },
+      { name: '_protocolFeeBps', internalType: 'uint256', type: 'uint256' },
+      { name: '_feeRecipient', internalType: 'address', type: 'address' },
+    ],
+    name: 'setFeeConfig',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_enabled', internalType: 'bool', type: 'bool' }],
+    name: 'setFeesEnabled',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -2797,6 +3373,28 @@ export const exhibitionAmmAbi = [
     name: 'transferOwnership',
     outputs: [],
     stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '', internalType: 'address', type: 'address' },
+      { name: '', internalType: 'address', type: 'address' },
+    ],
+    name: 'twapData',
+    outputs: [
+      {
+        name: 'price0CumulativeLast',
+        internalType: 'uint256',
+        type: 'uint256',
+      },
+      {
+        name: 'price1CumulativeLast',
+        internalType: 'uint256',
+        type: 'uint256',
+      },
+      { name: 'blockTimestampLast', internalType: 'uint32', type: 'uint32' },
+    ],
+    stateMutability: 'view',
   },
   {
     type: 'function',
@@ -3245,21 +3843,21 @@ export const useReadExhibitionExhibitionContributionTokens =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"LIQUIDITY_FINALIZATION_DEADLINE"`
+ */
+export const useReadExhibitionLiquidityFinalizationDeadline =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAbi,
+    functionName: 'LIQUIDITY_FINALIZATION_DEADLINE',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"MAX_PROJECT_DURATION"`
  */
 export const useReadExhibitionMaxProjectDuration =
   /*#__PURE__*/ createUseReadContract({
     abi: exhibitionAbi,
     functionName: 'MAX_PROJECT_DURATION',
-  })
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"MAX_TOKEN_DECIMALS"`
- */
-export const useReadExhibitionMaxTokenDecimals =
-  /*#__PURE__*/ createUseReadContract({
-    abi: exhibitionAbi,
-    functionName: 'MAX_TOKEN_DECIMALS',
   })
 
 /**
@@ -3317,15 +3915,6 @@ export const useReadExhibitionWithdrawalDelay =
   })
 
 /**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"accumulatedFees"`
- */
-export const useReadExhibitionAccumulatedFees =
-  /*#__PURE__*/ createUseReadContract({
-    abi: exhibitionAbi,
-    functionName: 'accumulatedFees',
-  })
-
-/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"batchCalculateTokens"`
  */
 export const useReadExhibitionBatchCalculateTokens =
@@ -3362,12 +3951,21 @@ export const useReadExhibitionContributions =
   })
 
 /**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"exUSDTTokenAddress"`
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"contributorCount"`
  */
-export const useReadExhibitionExUsdtTokenAddress =
+export const useReadExhibitionContributorCount =
   /*#__PURE__*/ createUseReadContract({
     abi: exhibitionAbi,
-    functionName: 'exUSDTTokenAddress',
+    functionName: 'contributorCount',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"exUSDTokenAddress"`
+ */
+export const useReadExhibitionExUsdTokenAddress =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAbi,
+    functionName: 'exUSDTokenAddress',
   })
 
 /**
@@ -3407,12 +4005,12 @@ export const useReadExhibitionFaucetAmountExh =
   })
 
 /**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"faucetAmountUSDT"`
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"faucetAmountexUSD"`
  */
-export const useReadExhibitionFaucetAmountUsdt =
+export const useReadExhibitionFaucetAmountexUsd =
   /*#__PURE__*/ createUseReadContract({
     abi: exhibitionAbi,
-    functionName: 'faucetAmountUSDT',
+    functionName: 'faucetAmountexUSD',
   })
 
 /**
@@ -3470,6 +4068,15 @@ export const useReadExhibitionGetFaucetSettings =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"getLiquidityDeadline"`
+ */
+export const useReadExhibitionGetLiquidityDeadline =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAbi,
+    functionName: 'getLiquidityDeadline',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"getMinLockDuration"`
  */
 export const useReadExhibitionGetMinLockDuration =
@@ -3494,6 +4101,15 @@ export const useReadExhibitionGetPlatformSettings =
   /*#__PURE__*/ createUseReadContract({
     abi: exhibitionAbi,
     functionName: 'getPlatformSettings',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"getProjectContributorCount"`
+ */
+export const useReadExhibitionGetProjectContributorCount =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAbi,
+    functionName: 'getProjectContributorCount',
   })
 
 /**
@@ -3621,6 +4237,15 @@ export const useReadExhibitionGetUserVestingInfo =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"hasContributed"`
+ */
+export const useReadExhibitionHasContributed =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAbi,
+    functionName: 'hasContributed',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"hasRefunded"`
  */
 export const useReadExhibitionHasRefunded = /*#__PURE__*/ createUseReadContract(
@@ -3637,12 +4262,39 @@ export const useReadExhibitionHasUserBeenRefunded =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"hasUserContributed"`
+ */
+export const useReadExhibitionHasUserContributed =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAbi,
+    functionName: 'hasUserContributed',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"isEmergencyRefundAvailable"`
+ */
+export const useReadExhibitionIsEmergencyRefundAvailable =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAbi,
+    functionName: 'isEmergencyRefundAvailable',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"isExhibitionContributionToken"`
  */
 export const useReadExhibitionIsExhibitionContributionToken =
   /*#__PURE__*/ createUseReadContract({
     abi: exhibitionAbi,
     functionName: 'isExhibitionContributionToken',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"isProjectToken"`
+ */
+export const useReadExhibitionIsProjectToken =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAbi,
+    functionName: 'isProjectToken',
   })
 
 /**
@@ -3681,6 +4333,15 @@ export const useReadExhibitionPlatformFeeRecipient =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"projectContributors"`
+ */
+export const useReadExhibitionProjectContributors =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAbi,
+    functionName: 'projectContributors',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"projectLiquidityTokenDeposits"`
  */
 export const useReadExhibitionProjectLiquidityTokenDeposits =
@@ -3690,12 +4351,30 @@ export const useReadExhibitionProjectLiquidityTokenDeposits =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"projectTokenToProjectId"`
+ */
+export const useReadExhibitionProjectTokenToProjectId =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAbi,
+    functionName: 'projectTokenToProjectId',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"projects"`
  */
 export const useReadExhibitionProjects = /*#__PURE__*/ createUseReadContract({
   abi: exhibitionAbi,
   functionName: 'projects',
 })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"successTimestamp"`
+ */
+export const useReadExhibitionSuccessTimestamp =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAbi,
+    functionName: 'successTimestamp',
+  })
 
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"validateCalculation"`
@@ -3829,6 +4508,15 @@ export const useWriteExhibitionRenounceOwnership =
   })
 
 /**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"requestEmergencyRefund"`
+ */
+export const useWriteExhibitionRequestEmergencyRefund =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: exhibitionAbi,
+    functionName: 'requestEmergencyRefund',
+  })
+
+/**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"requestFaucetTokens"`
  */
 export const useWriteExhibitionRequestFaucetTokens =
@@ -3847,12 +4535,12 @@ export const useWriteExhibitionRequestRefund =
   })
 
 /**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"setExUSDTTokenAddress"`
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"setExUSDTokenAddress"`
  */
-export const useWriteExhibitionSetExUsdtTokenAddress =
+export const useWriteExhibitionSetExUsdTokenAddress =
   /*#__PURE__*/ createUseWriteContract({
     abi: exhibitionAbi,
-    functionName: 'setExUSDTTokenAddress',
+    functionName: 'setExUSDTokenAddress',
   })
 
 /**
@@ -3892,12 +4580,12 @@ export const useWriteExhibitionSetFaucetAmountExh =
   })
 
 /**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"setFaucetAmountUSDT"`
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"setFaucetAmountexUSD"`
  */
-export const useWriteExhibitionSetFaucetAmountUsdt =
+export const useWriteExhibitionSetFaucetAmountexUsd =
   /*#__PURE__*/ createUseWriteContract({
     abi: exhibitionAbi,
-    functionName: 'setFaucetAmountUSDT',
+    functionName: 'setFaucetAmountexUSD',
   })
 
 /**
@@ -3934,15 +4622,6 @@ export const useWriteExhibitionTransferOwnership =
   /*#__PURE__*/ createUseWriteContract({
     abi: exhibitionAbi,
     functionName: 'transferOwnership',
-  })
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"withdrawAccumulatedFees"`
- */
-export const useWriteExhibitionWithdrawAccumulatedFees =
-  /*#__PURE__*/ createUseWriteContract({
-    abi: exhibitionAbi,
-    functionName: 'withdrawAccumulatedFees',
   })
 
 /**
@@ -4070,6 +4749,15 @@ export const useSimulateExhibitionRenounceOwnership =
   })
 
 /**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"requestEmergencyRefund"`
+ */
+export const useSimulateExhibitionRequestEmergencyRefund =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: exhibitionAbi,
+    functionName: 'requestEmergencyRefund',
+  })
+
+/**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"requestFaucetTokens"`
  */
 export const useSimulateExhibitionRequestFaucetTokens =
@@ -4088,12 +4776,12 @@ export const useSimulateExhibitionRequestRefund =
   })
 
 /**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"setExUSDTTokenAddress"`
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"setExUSDTokenAddress"`
  */
-export const useSimulateExhibitionSetExUsdtTokenAddress =
+export const useSimulateExhibitionSetExUsdTokenAddress =
   /*#__PURE__*/ createUseSimulateContract({
     abi: exhibitionAbi,
-    functionName: 'setExUSDTTokenAddress',
+    functionName: 'setExUSDTokenAddress',
   })
 
 /**
@@ -4133,12 +4821,12 @@ export const useSimulateExhibitionSetFaucetAmountExh =
   })
 
 /**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"setFaucetAmountUSDT"`
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"setFaucetAmountexUSD"`
  */
-export const useSimulateExhibitionSetFaucetAmountUsdt =
+export const useSimulateExhibitionSetFaucetAmountexUsd =
   /*#__PURE__*/ createUseSimulateContract({
     abi: exhibitionAbi,
-    functionName: 'setFaucetAmountUSDT',
+    functionName: 'setFaucetAmountexUSD',
   })
 
 /**
@@ -4175,15 +4863,6 @@ export const useSimulateExhibitionTransferOwnership =
   /*#__PURE__*/ createUseSimulateContract({
     abi: exhibitionAbi,
     functionName: 'transferOwnership',
-  })
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link exhibitionAbi}__ and `functionName` set to `"withdrawAccumulatedFees"`
- */
-export const useSimulateExhibitionWithdrawAccumulatedFees =
-  /*#__PURE__*/ createUseSimulateContract({
-    abi: exhibitionAbi,
-    functionName: 'withdrawAccumulatedFees',
   })
 
 /**
@@ -4265,12 +4944,12 @@ export const useWatchExhibitionExhibitionFactoryAddressSetEvent =
   })
 
 /**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link exhibitionAbi}__ and `eventName` set to `"ExhibitionUSDTAddressSet"`
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link exhibitionAbi}__ and `eventName` set to `"ExhibitionUSDAddressSet"`
  */
-export const useWatchExhibitionExhibitionUsdtAddressSetEvent =
+export const useWatchExhibitionExhibitionUsdAddressSetEvent =
   /*#__PURE__*/ createUseWatchContractEvent({
     abi: exhibitionAbi,
-    eventName: 'ExhibitionUSDTAddressSet',
+    eventName: 'ExhibitionUSDAddressSet',
   })
 
 /**
@@ -4292,12 +4971,12 @@ export const useWatchExhibitionFaucetRequestedEvent =
   })
 
 /**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link exhibitionAbi}__ and `eventName` set to `"FeesWithdrawn"`
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link exhibitionAbi}__ and `eventName` set to `"FirstTimeContributor"`
  */
-export const useWatchExhibitionFeesWithdrawnEvent =
+export const useWatchExhibitionFirstTimeContributorEvent =
   /*#__PURE__*/ createUseWatchContractEvent({
     abi: exhibitionAbi,
-    eventName: 'FeesWithdrawn',
+    eventName: 'FirstTimeContributor',
   })
 
 /**
@@ -4325,6 +5004,15 @@ export const useWatchExhibitionLiquidityAddedEvent =
   /*#__PURE__*/ createUseWatchContractEvent({
     abi: exhibitionAbi,
     eventName: 'LiquidityAdded',
+  })
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link exhibitionAbi}__ and `eventName` set to `"LiquidityDeadlinePassed"`
+ */
+export const useWatchExhibitionLiquidityDeadlinePassedEvent =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: exhibitionAbi,
+    eventName: 'LiquidityDeadlinePassed',
   })
 
 /**
@@ -4488,6 +5176,51 @@ export const useReadExhibitionAmmExhTokenAddress =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"FEE_DENOMINATOR"`
+ */
+export const useReadExhibitionAmmFeeDenominator =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'FEE_DENOMINATOR',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"MAX_PROTOCOL_FEE"`
+ */
+export const useReadExhibitionAmmMaxProtocolFee =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'MAX_PROTOCOL_FEE',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"MAX_TRADING_FEE"`
+ */
+export const useReadExhibitionAmmMaxTradingFee =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'MAX_TRADING_FEE',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"accumulatedProtocolFeesToken0"`
+ */
+export const useReadExhibitionAmmAccumulatedProtocolFeesToken0 =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'accumulatedProtocolFeesToken0',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"accumulatedProtocolFeesToken1"`
+ */
+export const useReadExhibitionAmmAccumulatedProtocolFeesToken1 =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'accumulatedProtocolFeesToken1',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"allPoolPairs"`
  */
 export const useReadExhibitionAmmAllPoolPairs =
@@ -4497,12 +5230,39 @@ export const useReadExhibitionAmmAllPoolPairs =
   })
 
 /**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"blockTimestampLast"`
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"calculateExpectedFees"`
  */
-export const useReadExhibitionAmmBlockTimestampLast =
+export const useReadExhibitionAmmCalculateExpectedFees =
   /*#__PURE__*/ createUseReadContract({
     abi: exhibitionAmmAbi,
-    functionName: 'blockTimestampLast',
+    functionName: 'calculateExpectedFees',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"calculateUnrealizedEarnings"`
+ */
+export const useReadExhibitionAmmCalculateUnrealizedEarnings =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'calculateUnrealizedEarnings',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"cumulativeEarningsToken0"`
+ */
+export const useReadExhibitionAmmCumulativeEarningsToken0 =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'cumulativeEarningsToken0',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"cumulativeEarningsToken1"`
+ */
+export const useReadExhibitionAmmCumulativeEarningsToken1 =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'cumulativeEarningsToken1',
   })
 
 /**
@@ -4515,6 +5275,15 @@ export const useReadExhibitionAmmDoesPoolExist =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"estimateDailyEarnings"`
+ */
+export const useReadExhibitionAmmEstimateDailyEarnings =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'estimateDailyEarnings',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"exNEXADDRESS"`
  */
 export const useReadExhibitionAmmExNexaddress =
@@ -4524,12 +5293,12 @@ export const useReadExhibitionAmmExNexaddress =
   })
 
 /**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"exUSDTADDRESS"`
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"exUSDADDRESS"`
  */
-export const useReadExhibitionAmmExUsdtaddress =
+export const useReadExhibitionAmmExUsdaddress =
   /*#__PURE__*/ createUseReadContract({
     abi: exhibitionAmmAbi,
-    functionName: 'exUSDTADDRESS',
+    functionName: 'exUSDADDRESS',
   })
 
 /**
@@ -4551,6 +5320,24 @@ export const useReadExhibitionAmmExhibitionLpTokens =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"feeConfig"`
+ */
+export const useReadExhibitionAmmFeeConfig =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'feeConfig',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"getAccumulatedProtocolFees"`
+ */
+export const useReadExhibitionAmmGetAccumulatedProtocolFees =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'getAccumulatedProtocolFees',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"getAllPoolPairs"`
  */
 export const useReadExhibitionAmmGetAllPoolPairs =
@@ -4566,6 +5353,24 @@ export const useReadExhibitionAmmGetAmountOut =
   /*#__PURE__*/ createUseReadContract({
     abi: exhibitionAmmAbi,
     functionName: 'getAmountOut',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"getEarningsReport"`
+ */
+export const useReadExhibitionAmmGetEarningsReport =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'getEarningsReport',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"getFeeConfig"`
+ */
+export const useReadExhibitionAmmGetFeeConfig =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'getFeeConfig',
   })
 
 /**
@@ -4649,11 +5454,29 @@ export const useReadExhibitionAmmGetPoolsPaginated =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"getPortfolioEarnings"`
+ */
+export const useReadExhibitionAmmGetPortfolioEarnings =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'getPortfolioEarnings',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"getPrice"`
  */
 export const useReadExhibitionAmmGetPrice = /*#__PURE__*/ createUseReadContract(
   { abi: exhibitionAmmAbi, functionName: 'getPrice' },
 )
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"getRealizedEarnings"`
+ */
+export const useReadExhibitionAmmGetRealizedEarnings =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'getRealizedEarnings',
+  })
 
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"getRemoveLiquidityQuote"`
@@ -4691,6 +5514,15 @@ export const useReadExhibitionAmmGetTwap = /*#__PURE__*/ createUseReadContract({
 })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"getTimeUntilUnlock"`
+ */
+export const useReadExhibitionAmmGetTimeUntilUnlock =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'getTimeUntilUnlock',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"getTokenDecimals"`
  */
 export const useReadExhibitionAmmGetTokenDecimals =
@@ -4715,6 +5547,15 @@ export const useReadExhibitionAmmGetTokensInfo =
   /*#__PURE__*/ createUseReadContract({
     abi: exhibitionAmmAbi,
     functionName: 'getTokensInfo',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"getTotalFeesCollected"`
+ */
+export const useReadExhibitionAmmGetTotalFeesCollected =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'getTotalFeesCollected',
   })
 
 /**
@@ -4763,6 +5604,15 @@ export const useReadExhibitionAmmGetUserPositionSummary =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"getUserSnapshots"`
+ */
+export const useReadExhibitionAmmGetUserSnapshots =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'getUserSnapshots',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"getWithdrawableLPAmount"`
  */
 export const useReadExhibitionAmmGetWithdrawableLpAmount =
@@ -4808,6 +5658,15 @@ export const useReadExhibitionAmmLiquidityPools =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"lpSnapshots"`
+ */
+export const useReadExhibitionAmmLpSnapshots =
+  /*#__PURE__*/ createUseReadContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'lpSnapshots',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"owner"`
  */
 export const useReadExhibitionAmmOwner = /*#__PURE__*/ createUseReadContract({
@@ -4822,24 +5681,6 @@ export const useReadExhibitionAmmPoolExists =
   /*#__PURE__*/ createUseReadContract({
     abi: exhibitionAmmAbi,
     functionName: 'poolExists',
-  })
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"price0CumulativeLast"`
- */
-export const useReadExhibitionAmmPrice0CumulativeLast =
-  /*#__PURE__*/ createUseReadContract({
-    abi: exhibitionAmmAbi,
-    functionName: 'price0CumulativeLast',
-  })
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"price1CumulativeLast"`
- */
-export const useReadExhibitionAmmPrice1CumulativeLast =
-  /*#__PURE__*/ createUseReadContract({
-    abi: exhibitionAmmAbi,
-    functionName: 'price1CumulativeLast',
   })
 
 /**
@@ -4859,6 +5700,13 @@ export const useReadExhibitionAmmTotalFeesCollected =
     abi: exhibitionAmmAbi,
     functionName: 'totalFeesCollected',
   })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"twapData"`
+ */
+export const useReadExhibitionAmmTwapData = /*#__PURE__*/ createUseReadContract(
+  { abi: exhibitionAmmAbi, functionName: 'twapData' },
+)
 
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"userHasPosition"`
@@ -4913,21 +5761,30 @@ export const useWriteExhibitionAmmAddLiquidityWithLock =
   })
 
 /**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"collectProtocolFees"`
+ */
+export const useWriteExhibitionAmmCollectProtocolFees =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'collectProtocolFees',
+  })
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"collectProtocolFeesMultiple"`
+ */
+export const useWriteExhibitionAmmCollectProtocolFeesMultiple =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'collectProtocolFeesMultiple',
+  })
+
+/**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"createLiquidityLock"`
  */
 export const useWriteExhibitionAmmCreateLiquidityLock =
   /*#__PURE__*/ createUseWriteContract({
     abi: exhibitionAmmAbi,
     functionName: 'createLiquidityLock',
-  })
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"emergencyPause"`
- */
-export const useWriteExhibitionAmmEmergencyPause =
-  /*#__PURE__*/ createUseWriteContract({
-    abi: exhibitionAmmAbi,
-    functionName: 'emergencyPause',
   })
 
 /**
@@ -4967,12 +5824,12 @@ export const useWriteExhibitionAmmSetExNexAddress =
   })
 
 /**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"setExUSDTAddress"`
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"setExUSDAddress"`
  */
-export const useWriteExhibitionAmmSetExUsdtAddress =
+export const useWriteExhibitionAmmSetExUsdAddress =
   /*#__PURE__*/ createUseWriteContract({
     abi: exhibitionAmmAbi,
-    functionName: 'setExUSDTAddress',
+    functionName: 'setExUSDAddress',
   })
 
 /**
@@ -4991,6 +5848,24 @@ export const useWriteExhibitionAmmSetExhibitionContract =
   /*#__PURE__*/ createUseWriteContract({
     abi: exhibitionAmmAbi,
     functionName: 'setExhibitionContract',
+  })
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"setFeeConfig"`
+ */
+export const useWriteExhibitionAmmSetFeeConfig =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'setFeeConfig',
+  })
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"setFeesEnabled"`
+ */
+export const useWriteExhibitionAmmSetFeesEnabled =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'setFeesEnabled',
   })
 
 /**
@@ -5064,21 +5939,30 @@ export const useSimulateExhibitionAmmAddLiquidityWithLock =
   })
 
 /**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"collectProtocolFees"`
+ */
+export const useSimulateExhibitionAmmCollectProtocolFees =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'collectProtocolFees',
+  })
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"collectProtocolFeesMultiple"`
+ */
+export const useSimulateExhibitionAmmCollectProtocolFeesMultiple =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'collectProtocolFeesMultiple',
+  })
+
+/**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"createLiquidityLock"`
  */
 export const useSimulateExhibitionAmmCreateLiquidityLock =
   /*#__PURE__*/ createUseSimulateContract({
     abi: exhibitionAmmAbi,
     functionName: 'createLiquidityLock',
-  })
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"emergencyPause"`
- */
-export const useSimulateExhibitionAmmEmergencyPause =
-  /*#__PURE__*/ createUseSimulateContract({
-    abi: exhibitionAmmAbi,
-    functionName: 'emergencyPause',
   })
 
 /**
@@ -5118,12 +6002,12 @@ export const useSimulateExhibitionAmmSetExNexAddress =
   })
 
 /**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"setExUSDTAddress"`
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"setExUSDAddress"`
  */
-export const useSimulateExhibitionAmmSetExUsdtAddress =
+export const useSimulateExhibitionAmmSetExUsdAddress =
   /*#__PURE__*/ createUseSimulateContract({
     abi: exhibitionAmmAbi,
-    functionName: 'setExUSDTAddress',
+    functionName: 'setExUSDAddress',
   })
 
 /**
@@ -5142,6 +6026,24 @@ export const useSimulateExhibitionAmmSetExhibitionContract =
   /*#__PURE__*/ createUseSimulateContract({
     abi: exhibitionAmmAbi,
     functionName: 'setExhibitionContract',
+  })
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"setFeeConfig"`
+ */
+export const useSimulateExhibitionAmmSetFeeConfig =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'setFeeConfig',
+  })
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `functionName` set to `"setFeesEnabled"`
+ */
+export const useSimulateExhibitionAmmSetFeesEnabled =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: exhibitionAmmAbi,
+    functionName: 'setFeesEnabled',
   })
 
 /**
@@ -5196,6 +6098,24 @@ export const useWatchExhibitionAmmEvent =
   /*#__PURE__*/ createUseWatchContractEvent({ abi: exhibitionAmmAbi })
 
 /**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `eventName` set to `"EarningsRealized"`
+ */
+export const useWatchExhibitionAmmEarningsRealizedEvent =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: exhibitionAmmAbi,
+    eventName: 'EarningsRealized',
+  })
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `eventName` set to `"EarningsSnapshot"`
+ */
+export const useWatchExhibitionAmmEarningsSnapshotEvent =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: exhibitionAmmAbi,
+    eventName: 'EarningsSnapshot',
+  })
+
+/**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `eventName` set to `"EmergencyWithdrawal"`
  */
 export const useWatchExhibitionAmmEmergencyWithdrawalEvent =
@@ -5211,6 +6131,15 @@ export const useWatchExhibitionAmmExhibitionContractSetEvent =
   /*#__PURE__*/ createUseWatchContractEvent({
     abi: exhibitionAmmAbi,
     eventName: 'ExhibitionContractSet',
+  })
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `eventName` set to `"FeeConfigUpdated"`
+ */
+export const useWatchExhibitionAmmFeeConfigUpdatedEvent =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: exhibitionAmmAbi,
+    eventName: 'FeeConfigUpdated',
   })
 
 /**
@@ -5265,6 +6194,15 @@ export const useWatchExhibitionAmmPoolCreatedEvent =
   /*#__PURE__*/ createUseWatchContractEvent({
     abi: exhibitionAmmAbi,
     eventName: 'PoolCreated',
+  })
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link exhibitionAmmAbi}__ and `eventName` set to `"ProtocolFeesCollected"`
+ */
+export const useWatchExhibitionAmmProtocolFeesCollectedEvent =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: exhibitionAmmAbi,
+    eventName: 'ProtocolFeesCollected',
   })
 
 /**

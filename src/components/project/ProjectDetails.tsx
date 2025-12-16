@@ -9,6 +9,9 @@ import { ExhibitionFormatters } from '../../utils/exFormatters'
 import { formatTimeRemaining } from '../../utils/timeHelpers'
 import { SafeHtml, SafeImage } from '../SafeHtml'
 import { logger } from '@/utils/logger'
+import { useBlockchainTime } from '../../hooks/utilities/useBlockchainTime'
+import { useLocalPricing } from '@/hooks/utilities/useLocalPricing'
+import type { Address } from 'viem'
 
 interface ProjectDetailsProps {
   project: ProjectDisplayData
@@ -16,8 +19,105 @@ interface ProjectDetailsProps {
   hasDepositedProjectTokens?: boolean
 }
 
-export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProjectOwner = false, hasDepositedProjectTokens = false }) => {
+// Helper functions for time calculations
+const calculateTimeRemaining = (endTime: number, currentTime: number): number => {
+  const remaining = endTime - currentTime
+  return remaining > 0 ? remaining : 0
+}
+
+const calculateTimeUntilStart = (startTime: number, currentTime: number): number => {
+  const until = startTime - currentTime
+  return until > 0 ? until : 0
+}
+
+export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ 
+  project, 
+  isProjectOwner = false, 
+  hasDepositedProjectTokens = false 
+}) => {
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
+
+  // ✨ Initialize pricing hook
+  const { getTokenPrice, isReady: isPricingReady } = useLocalPricing({
+    maxHops: 4,
+    refetchInterval: 30_000,
+  })
+
+  // ✨ Helper to format token amount with USD value
+  const formatTokenWithUSD = (
+    amount: bigint,
+    tokenSymbol: string,
+    tokenAddress: Address,
+    decimals: number
+  ) => {
+    const tokenFormatted = ExhibitionFormatters.formatTokenWithSymbol(
+      amount,
+      tokenSymbol,
+      decimals
+    )
+
+    if (!isPricingReady) {
+      return <span className="font-medium text-[var(--silver-light)]">{tokenFormatted}</span>
+    }
+
+    const price = getTokenPrice(tokenAddress)
+    if (price === null) {
+      return <span className="font-medium text-[var(--silver-light)]">{tokenFormatted}</span>
+    }
+
+    // Calculate USD value
+    const amountNumber = Number(amount) / Math.pow(10, decimals)
+    const usdValue = amountNumber * price
+
+    const formattedUSD = usdValue >= 1_000_000 
+      ? `$${(usdValue / 1_000_000).toFixed(2)}M`
+      : usdValue >= 1_000
+      ? `$${(usdValue / 1_000).toFixed(2)}K`
+      : `$${usdValue.toFixed(2)}`
+
+    return (
+      <div className="flex flex-col items-end">
+        <span className="font-medium text-[var(--silver-light)]">{tokenFormatted}</span>
+        <span className="text-sm text-[var(--metallic-silver)]">{formattedUSD}</span>
+      </div>
+    )
+  }
+
+  // ✨ Helper to format token price with USD equivalent
+  const formatTokenPriceWithUSD = (
+    priceInContributionToken: bigint,
+    projectTokenSymbol: string,
+    contributionTokenSymbol: string,
+    contributionTokenAddress: Address
+  ) => {
+    const priceFormatted = ExhibitionFormatters.formatTokenPrice(
+      priceInContributionToken,
+      projectTokenSymbol,
+      contributionTokenSymbol
+    )
+
+    if (!isPricingReady) {
+      return <span className="font-medium text-[var(--silver-light)]">{priceFormatted}</span>
+    }
+
+    const contributionTokenPrice = getTokenPrice(contributionTokenAddress)
+    if (contributionTokenPrice === null) {
+      return <span className="font-medium text-[var(--silver-light)]">{priceFormatted}</span>
+    }
+
+    // Price is in contribution token terms (e.g., 0.5 exUSD per PROJECT)
+    const priceNumber = Number(priceInContributionToken) / 1e18
+    const usdPrice = priceNumber * contributionTokenPrice
+
+    return (
+      <div className="flex flex-col items-end">
+        <span className="font-medium text-[var(--silver-light)]">{priceFormatted}</span>
+        <span className="text-sm text-[var(--metallic-silver)]">
+          ~${usdPrice.toFixed(4)}
+        </span>
+      </div>
+    )
+  }
 
   const copyToClipboard = async (address: string) => {
     try {
@@ -68,8 +168,8 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
   const progressPercentage = Number(project.progressPercentage) / 100
   const isLive = project.status === ProjectStatus.Active
 
-  // Check current time and project timing
-  const now = Math.floor(Date.now() / 1000)
+  // Check current time and project timing using BLOCKCHAIN TIME
+  const { timestampNumber: now } = useBlockchainTime()
   const hasStarted = now >= Number(project.startTime)
   const hasEnded = now >= Number(project.endTime)
   const isActive = project.status === ProjectStatus.Active
@@ -78,18 +178,40 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
   const isClaimable = project.status === ProjectStatus.Claimable
   const isFailed = project.status === ProjectStatus.Failed
   const isRefundable = project.status === ProjectStatus.Refundable
-  const isFundingEnded = project.status === ProjectStatus.FundingEnded
+  
+  const isFundingEnded = isActive && hasEnded
 
-  // Determine what message to show
   const showOwnerMessage = isProjectOwner && (isActive || isUpcoming)
   const showUserMessage = !isProjectOwner && (isActive || isUpcoming || isSuccessful || isClaimable || isFundingEnded || isFailed || isRefundable)
 
-  // Generate owner messages
   type MessageVariant = 'info' | 'success' | 'warning' | 'error';
 
   const getOwnerMessage = () => {
+    if (isSuccessful || isClaimable) {
+      return {
+        main: 'Project Successful! 🎉',
+        sub: 'See below for next steps: deposit liquidity tokens and finalize liquidity.',
+        variant: 'success' as const
+      }
+    }
+    
+    if (isFailed || isRefundable) {
+      return {
+        main: 'Project did not reach its funding goal.',
+        sub: 'Contributors can request refunds. You can withdraw unsold tokens after the lock period.',
+        variant: 'error' as const
+      }
+    }
+    
+    if (isFundingEnded) {
+      return {
+        main: 'Funding period has ended.',
+        sub: 'Please finalize your project to proceed with the next steps.',
+        variant: 'warning' as const
+      }
+    }
+    
     if (isUpcoming && !hasStarted) {
-      // Check if tokens are deposited
       if (hasDepositedProjectTokens === false) {
         return {
           main: '⚠️ Action Required: Deposit Project Tokens',
@@ -99,14 +221,14 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
       }
       return {
         main: 'Your project is scheduled and ready to launch!',
-        sub: `Contributions will begin on ${new Date(Number(project.startTime) * 1000).toLocaleString()}`,
+        sub: 'Contributions will begin soon based on blockchain time.',
         variant: 'info' as MessageVariant
       }
     }
     if (isActive && !hasStarted) {
       return {
         main: 'Your project is active but has not started yet.',
-        sub: `Contributions will open on ${new Date(Number(project.startTime) * 1000).toLocaleString()}`,
+        sub: 'Contributions will open soon.',
         variant: 'info' as const
       }
     }
@@ -117,60 +239,26 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
         variant: 'success' as const
       }
     }
-    if (isActive && hasEnded) {
-      return {
-        main: 'Funding period has ended.',
-        sub: 'Your project needs to be finalized to determine its status.',
-        variant: 'warning' as const
-      }
-    }
-    if (isFundingEnded) {
-      return {
-        main: 'Funding period has ended.',
-        sub: 'Please finalize your project to proceed with the next steps.',
-        variant: 'warning' as const
-      }
-    }
-    if (isSuccessful || isClaimable) {
-      return {
-        main: 'Project Successful! 🎉',
-        sub: 'See below for next steps: deposit liquidity tokens and finalize liquidity.',
-        variant: 'success' as const
-      }
-    }
-    if (isFailed || isRefundable) {
-      return {
-        main: 'Project did not reach its funding goal.',
-        sub: 'Contributors can request refunds. You can withdraw unsold tokens after the lock period.',
-        variant: 'error' as const
-      }
-    }
     return null
   }
 
-  // Generate user messages
   const getUserMessage = () => {
-    if (isUpcoming || (isActive && !hasStarted)) {
+    if (isSuccessful || isClaimable) {
       return {
-        main: 'This project has not started yet.',
-        sub: `Contributions will open on ${new Date(Number(project.startTime) * 1000).toLocaleString()}`,
-        variant: 'info' as const
-      }
-    }
-    if (isActive && hasStarted && !hasEnded) {
-      return {
-        main: 'This project is live and accepting contributions!',
-        sub: 'Connect your wallet and contribute to participate in this project.',
+        main: 'Project Successful! 🎉',
+        sub: 'This project has reached its funding goal. If you contributed, you can claim your tokens!',
         variant: 'success' as const
       }
     }
-    if (isActive && hasEnded) {
+    
+    if (isFailed || isRefundable) {
       return {
-        main: 'Funding period has ended.',
-        sub: 'This project is awaiting finalization. The final status will be determined soon.',
-        variant: 'warning' as const
+        main: 'Project did not reach its funding goal.',
+        sub: 'If you contributed, you can request a refund of your contribution.',
+        variant: 'error' as const
       }
     }
+    
     if (isFundingEnded) {
       return {
         main: 'Funding period has ended.',
@@ -178,18 +266,19 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
         variant: 'warning' as const
       }
     }
-   if (isSuccessful || isClaimable) {
+    
+    if (isUpcoming || (isActive && !hasStarted)) {
       return {
-        main: 'Project Successful! 🎉',
-        sub: 'This project has reached its funding goal. If you contributed, you can claim your tokens!',
-        variant: 'success' as const
+        main: 'This project has not started yet.',
+        sub: 'Contributions will open soon. Check the countdown below.',
+        variant: 'info' as const
       }
     }
-    if (isFailed || isRefundable) {
+    if (isActive && hasStarted && !hasEnded) {
       return {
-        main: 'Project did not reach its funding goal.',
-        sub: 'If you contributed, you can request a refund of your contribution.',
-        variant: 'error' as const
+        main: 'This project is live and accepting contributions!',
+        sub: 'Connect your wallet to participate in this project.',
+        variant: 'success' as const
       }
     }
     return null
@@ -221,7 +310,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
                 />
               )}
               
-              {isLive && (
+              {isLive && hasStarted && !hasEnded && (
                 <div className="flex items-center space-x-2 text-[var(--neon-blue)]">
                   <div className="w-2 h-2 bg-[var(--neon-blue)] rounded-full animate-pulse shadow-[0_0_4px_var(--neon-blue)]" />
                   <span className="font-medium">Live Now</span>
@@ -235,7 +324,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
                 <SafeHtml content={project.tokenName || 'Unknown Token'} />
               </h1>
               <Badge variant={getStatusVariant(project.status as ProjectStatus)} size="md">
-                {ProjectStatusLabels[project.status as keyof typeof ProjectStatusLabels]}
+                {isFundingEnded ? 'Funding Ended' : ProjectStatusLabels[project.status as keyof typeof ProjectStatusLabels]}
               </Badge>
             </div>
 
@@ -253,7 +342,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
           </div>
         </Card>
 
-        {/* Progress Section */}
+        {/* Progress Section - ✨ UPDATED WITH USD VALUES */}
         <Card hover>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
@@ -271,48 +360,45 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
           
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div className="text-center">
-                <p className="text-[var(--metallic-silver)]">Raised</p>
-                <p className="text-lg font-semibold text-[var(--silver-light)]">
-                  {ExhibitionFormatters.formatTokenWithSymbol(
-                    typeof project.totalRaised === 'string' 
-                      ? BigInt(project.totalRaised)
-                      : typeof project.totalRaised === 'number'
-                      ? BigInt(project.totalRaised)
-                      : project.totalRaised,
-                    project.contributionTokenSymbol || 'Tokens',
-                    project.contributionTokenDecimals,
-                  )}
-                </p>
+                <p className="text-[var(--metallic-silver)] mb-1">Raised</p>
+                {formatTokenWithUSD(
+                  typeof project.totalRaised === 'string' 
+                    ? BigInt(project.totalRaised)
+                    : typeof project.totalRaised === 'number'
+                    ? BigInt(project.totalRaised)
+                    : project.totalRaised,
+                  project.contributionTokenSymbol || 'Tokens',
+                  project.contributionTokenAddress as Address,
+                  project.contributionTokenDecimals || 0,
+                )}
               </div>
             
               <div className="text-center">
-                <p className="text-[var(--metallic-silver)]">Soft Cap</p>
-                <p className="text-lg font-semibold text-[var(--silver-light)]">
-                  {ExhibitionFormatters.formatTokenWithSymbol(
-                    typeof project.softCap === 'string' 
-                      ? BigInt(project.softCap)
-                      : typeof project.softCap === 'number'
-                      ? BigInt(project.softCap)
-                      : project.softCap,
-                    project.contributionTokenSymbol || 'Tokens',
-                    project.contributionTokenDecimals,
-                 )}
-                </p>
+                <p className="text-[var(--metallic-silver)] mb-1">Soft Cap</p>
+                {formatTokenWithUSD(
+                  typeof project.softCap === 'string' 
+                    ? BigInt(project.softCap)
+                    : typeof project.softCap === 'number'
+                    ? BigInt(project.softCap)
+                    : project.softCap,
+                  project.contributionTokenSymbol || 'Tokens',
+                  project.contributionTokenAddress as Address,
+                  project.contributionTokenDecimals || 0,
+                )}
               </div>
             
               <div className="text-center">
-                <p className="text-[var(--metallic-silver)]">Hard Cap</p>
-                <p className="text-lg font-semibold text-[var(--silver-light)]">
-                  {ExhibitionFormatters.formatTokenWithSymbol(
-                    typeof project.fundingGoal === 'string' 
-                      ? BigInt(project.fundingGoal)
-                      : typeof project.fundingGoal === 'number'
-                      ? BigInt(project.fundingGoal)
-                      : project.fundingGoal,
-                    project.contributionTokenSymbol || 'Tokens',
-                    project.contributionTokenDecimals,
-                  )}
-                </p>
+                <p className="text-[var(--metallic-silver)] mb-1">Hard Cap</p>
+                {formatTokenWithUSD(
+                  typeof project.fundingGoal === 'string' 
+                    ? BigInt(project.fundingGoal)
+                    : typeof project.fundingGoal === 'number'
+                    ? BigInt(project.fundingGoal)
+                    : project.fundingGoal,
+                  project.contributionTokenSymbol || 'Tokens',
+                  project.contributionTokenAddress as Address,
+                  project.contributionTokenDecimals || 0,
+                )}
               </div>
             </div>
           </div>
@@ -325,33 +411,45 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
         <Card hover>
           <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-4">Timeline</h3>
           <div className="space-y-3">
-            <div className="flex items-center space-x-3">
-              <Calendar className="h-5 w-5 text-[var(--neon-blue)]" />
-              <div>
-                <p className="text-sm text-[var(--metallic-silver)]">Start Time</p>
-                <p className="font-medium text-[var(--silver-light)]">
-                  {ExhibitionFormatters.formatTimestamp(Number(project.startTime))}
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <Clock className="h-5 w-5 text-[var(--neon-orange)]" />
-              <div>
-                <p className="text-sm text-[var(--metallic-silver)]">End Time</p>
-                <p className="font-medium text-[var(--silver-light)]">
-                  {ExhibitionFormatters.formatTimestamp(Number(project.endTime))}
-                </p>
-              </div>
-            </div>
-            
-            {!hasEnded && project.timeRemaining > 0 && (
+            {!hasStarted ? (
               <div className="flex items-center space-x-3">
-                <TrendingUp className="h-5 w-5 text-[var(--neon-blue)]" />
+                <Clock className="h-5 w-5 text-[var(--neon-blue)]" />
                 <div>
-                  <p className="text-sm text-[var(--metallic-silver)]">Time Remaining</p>
+                  <p className="text-sm text-[var(--metallic-silver)]">⏳ Contribution Opens In</p>
                   <p className="font-medium text-[var(--neon-blue)]">
-                    {formatTimeRemaining(project.timeRemaining)}
+                    {formatTimeRemaining(calculateTimeUntilStart(Number(project.startTime), now))}
+                  </p>
+                </div>
+              </div>
+            ) : !hasEnded ? (
+              <div className="flex items-center space-x-3">
+                <TrendingUp className="h-5 w-5 text-[var(--neon-orange)]" />
+                <div>
+                  <p className="text-sm text-[var(--metallic-silver)]">⏰ Contribution Ends In</p>
+                  <p className="font-medium text-[var(--neon-blue)]">
+                    {formatTimeRemaining(calculateTimeRemaining(Number(project.endTime), now))}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <Clock className="h-5 w-5 text-[var(--metallic-silver)]" />
+                <div>
+                  <p className="text-sm text-[var(--metallic-silver)]">Status</p>
+                  <p className="font-medium text-[var(--metallic-silver)]">
+                    Contribution Period Ended
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {('totalContributors' in project) && (
+              <div className="flex items-center space-x-3">
+                <Calendar className="h-5 w-5 text-[var(--neon-blue)]" />
+                <div>
+                  <p className="text-sm text-[var(--metallic-silver)]">👥 Total Contributors</p>
+                  <p className="font-medium text-[var(--silver-light)]">
+                    {(project as any).totalContributors || 0}
                   </p>
                 </div>
               </div>
@@ -359,19 +457,18 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
           </div>
         </Card>
 
-        {/* Token Economics */}
+        {/* Token Economics - ✨ UPDATED WITH USD VALUES */}
         <Card hover>
           <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-4">Token Economics</h3>
           <div className="space-y-3">
-            <div className="flex justify-between">
+            <div className="flex justify-between items-start">
               <span className="text-[var(--metallic-silver)]">Token Price</span>
-              <span className="font-medium text-[var(--silver-light)]">
-                {ExhibitionFormatters.formatTokenPrice(
-                  BigInt(project.tokenPrice),
-                  project.tokenSymbol || 'Unknown',
-                  project.contributionTokenSymbol || 'Tokens'
-                )}
-              </span>
+              {formatTokenPriceWithUSD(
+                BigInt(project.tokenPrice),
+                project.tokenSymbol || 'Unknown',
+                project.contributionTokenSymbol || 'Tokens',
+                project.contributionTokenAddress as Address
+              )}
             </div>
             
             <div className="flex justify-between">
@@ -388,7 +485,6 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
               </span>
             </div>
             
-            {/* Conditionally render if property exists */}
             {('totalProjectTokenSupply' in project) && (
               <div className="flex justify-between">
                 <span className="text-[var(--metallic-silver)]">Total Supply</span>
@@ -400,35 +496,33 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
           </div>
         </Card>
 
-        {/* Contribution Limits */}
+        {/* Contribution Limits - ✨ UPDATED WITH USD VALUES */}
         <Card hover>
           <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-4">Contribution Limits</h3>
           <div className="space-y-3">
-            <div className="flex justify-between">
+            <div className="flex justify-between items-start">
               <span className="text-[var(--metallic-silver)]">Minimum</span>
-              <span className="font-medium text-[var(--silver-light)]">
-                {ExhibitionFormatters.formatTokenWithSymbol(
-                  project.minContribution || 0n,
-                  project.contributionTokenSymbol || 'Tokens',
-                  project.contributionTokenDecimals,
-                )}
-              </span>
+              {formatTokenWithUSD(
+                project.minContribution || 0n,
+                project.contributionTokenSymbol || 'Tokens',
+                project.contributionTokenAddress as Address,
+                project.contributionTokenDecimals || 0,
+              )}
             </div>
             
-            <div className="flex justify-between">
+            <div className="flex justify-between items-start">
               <span className="text-[var(--metallic-silver)]">Maximum</span>
-              <span className="font-medium text-[var(--silver-light)]">
-                {ExhibitionFormatters.formatTokenWithSymbol(
-                  project.maxContribution || 0n,
-                  project.contributionTokenSymbol || 'Tokens',
-                  project.contributionTokenDecimals,
-                )}
-              </span>
+              {formatTokenWithUSD(
+                project.maxContribution || 0n,
+                project.contributionTokenSymbol || 'Tokens',
+                project.contributionTokenAddress as Address,
+                project.contributionTokenDecimals || 0,
+              )}
             </div>
           </div>
         </Card>
 
-        {/* Vesting Information - Conditionally render if properties exist */}
+        {/* Vesting Information */}
         <Card hover>
           <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-4">Vesting Schedule</h3>
           <div className="space-y-3">
@@ -480,9 +574,9 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
         </Card>
       </div>
 
-      {/* Bottom Grid - Project Information (Left) and Status Messages (Right) */}
+      {/* Bottom Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Project Information Card - Always shows on left */}
+        {/* Project Information Card */}
         <Card hover>
           <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-4">Project Information</h3>
           <div className="grid grid-cols-1 gap-4 text-sm">
@@ -516,7 +610,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project, isProje
           </div>
         </Card>
 
-        {/* Status Message Card - Shows for both owner and users on right */}
+        {/* Status Message Card */}
         {(showOwnerMessage && ownerMessage) && (
           <Card hover>
             <div className="text-center space-y-3">

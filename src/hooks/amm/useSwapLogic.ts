@@ -5,9 +5,10 @@ import { parseUnits, type Address, erc20Abi } from 'viem';
 import { exhibitionAmmAbi } from '@/generated/wagmi';
 import { CONTRACT_ADDRESSES } from '@/config/contracts';
 import { AMMFormatters } from '@/utils/ammFormatters';
-import { useTokenApproval } from '@/hooks/useTokenApproval';
+import { useTokenApproval } from '@/hooks/utilities/useTokenApproval';
 import { publicClient } from '@/config/wagmi';
 import { logger } from '@/utils/logger';
+import { useBlockchainTime } from '@/hooks/utilities/useBlockchainTime'; // ✅ Import the hook
 
 interface SwapLogicProps {
   defaultTokenIn?: Address;
@@ -16,6 +17,12 @@ interface SwapLogicProps {
 
 export const useSwapLogic = ({ defaultTokenIn, defaultTokenOut }: SwapLogicProps = {}) => {
   const { address, isConnected } = useAccount();
+  
+  // ✅ Get blockchain time
+  const { timestampNumber: blockchainTime, isLoading: isLoadingTime } = useBlockchainTime({
+    refetchInterval: 5000,
+    enabled: true,
+  });
 
   // Swap state
   const [tokenIn, setTokenIn] = useState<Address | undefined>();
@@ -283,6 +290,14 @@ export const useSwapLogic = ({ defaultTokenIn, defaultTokenOut }: SwapLogicProps
         message: 'Price impact too high (>15%)',
         step: 'impact' as const,
       };
+    
+    // ✅ Check if blockchain time is loaded
+    if (isLoadingTime || blockchainTime === 0)
+      return {
+        canProceed: false,
+        message: 'Loading blockchain time...',
+        step: 'loading' as const,
+      };
 
     if (approval.needsApproval) {
       return {
@@ -312,6 +327,8 @@ export const useSwapLogic = ({ defaultTokenIn, defaultTokenOut }: SwapLogicProps
     isLoadingQuote,
     priceImpact,
     approval.needsApproval,
+    isLoadingTime,
+    blockchainTime,
   ]);
 
   // Wait for transaction helper
@@ -327,6 +344,11 @@ export const useSwapLogic = ({ defaultTokenIn, defaultTokenOut }: SwapLogicProps
   const executeSwap = useCallback(async () => {
     if (!address || !tokenIn || !tokenOut || !amountInBigInt || !amountOutValue) {
       throw new Error('Missing required data for swap');
+    }
+
+    // ✅ Check if blockchain time is loaded
+    if (isLoadingTime || blockchainTime === 0) {
+      throw new Error('Waiting for blockchain time...');
     }
 
     setIsProcessing(true);
@@ -373,7 +395,15 @@ export const useSwapLogic = ({ defaultTokenIn, defaultTokenOut }: SwapLogicProps
       const minAmountOut =
         amountOutValue -
         (amountOutValue * BigInt(Math.floor(slippage * 100))) / BigInt(10000);
-      const deadlineTimestamp = BigInt(Math.floor(Date.now() / 1000) + deadline * 60);
+      
+      // ✅ Use blockchain time instead of Date.now()
+      const deadlineTimestamp = BigInt(blockchainTime + deadline * 60);
+      
+      logger.info('💡 Using blockchain time for deadline:', {
+        blockchainTime,
+        deadlineMinutes: deadline,
+        deadline: deadlineTimestamp.toString(),
+      });
 
       const txHash = await new Promise<`0x${string}`>((resolve, reject) => {
         writeSwap(
@@ -437,6 +467,8 @@ export const useSwapLogic = ({ defaultTokenIn, defaultTokenOut }: SwapLogicProps
     waitForTx,
     refetchSwapData,
     resetSwapWrite,
+    blockchainTime,
+    isLoadingTime,
   ]);
 
   // Default tokens on mount
@@ -497,6 +529,15 @@ export const useSwapLogic = ({ defaultTokenIn, defaultTokenOut }: SwapLogicProps
 
   // Button state
   const buttonState = useMemo(() => {
+    // ✅ Show loading state while waiting for blockchain time
+    if (isLoadingTime || blockchainTime === 0) {
+      return {
+        text: 'Loading blockchain time...',
+        disabled: true,
+        loading: true,
+      };
+    }
+    
     if (isProcessing) {
       switch (currentStep) {
         case 'approving':
@@ -533,6 +574,8 @@ export const useSwapLogic = ({ defaultTokenIn, defaultTokenOut }: SwapLogicProps
     isLoadingQuote,
     amountIn,
     validation,
+    isLoadingTime,
+    blockchainTime,
   ]);
 
   return {
@@ -570,6 +613,8 @@ export const useSwapLogic = ({ defaultTokenIn, defaultTokenOut }: SwapLogicProps
     validation,
     isConnected,
     buttonState,
+    blockchainTime, // ✅ Expose for debugging
+    isLoadingTime, // ✅ Expose for debugging
 
     // Actions
     setTokenIn,

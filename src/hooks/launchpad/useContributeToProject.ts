@@ -7,7 +7,7 @@ import { exhibitionAbi } from '@/generated/wagmi'
 import { EXHIBITION_ADDRESS, EXPLORER_URL } from '@/config/contracts'
 import type { Hash, Address } from 'viem'
 import type { ProjectDisplayData, UserProjectSummary } from '@/types/project'
-import { useTokenApproval } from '../useTokenApproval'
+import { useTokenApproval } from '../utilities/useTokenApproval'
 
 type Step = 'idle' | 'approving' | 'submitting' | 'confirming' | 'confirmed' | 'error'
 

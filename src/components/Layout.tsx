@@ -73,13 +73,13 @@ export const Layout: React.FC<LayoutProps> = ({
   const [verified, setVerified] = React.useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = React.useState(false)
 
-  const customMessage = "Welcome to Exhibition, a verifiable token launchpad and DEX with dedicated liquidity lock, built on Nexus verifiable network for the AI era."
+  const customMessage ="Welcome to Exhibition. A trustless launch infrastructure on Nexus Layer 1 where public sale funds secure liquidity by default. No market makers. No broken agreements.";
 
   // ✅ Memoize navigation array - it never changes
   const navigation = useMemo(() => [
     { name: 'Home', href: '/', icon: Home },
-    { name: 'Projects', href: '/projects', icon: Rocket },
-    { name: 'Create Project', href: '/create', icon: PlusCircle },
+    { name: 'Launches', href: '/projects', icon: Rocket },
+    { name: 'Create Launch', href: '/create', icon: PlusCircle },
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Swap', href: '/swap', icon: ArrowUpDown },
     { name: 'Liquidity', href: '/liquidity', icon: Droplets },

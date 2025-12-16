@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { exhibitionAbi } from '@/generated/wagmi'
 import { EXHIBITION_ADDRESS } from '@/config/contracts'
-import { useTokenInfo } from '@/hooks/useTokenInfo'
+import { useTokenInfo } from '@/hooks/utilities/useTokenInfo'
+import { useBlockchainTime } from '@/hooks/utilities/useBlockchainTime'
 import type { ProjectDisplayData } from '@/types/project'
 import { ProjectStatus } from '@/types/project'
 import { toast } from 'sonner'
@@ -59,6 +60,12 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
 
   const { isConnected, address } = useAccount()
   
+  // Use blockchain time instead of system time
+  const { timestampNumber: blockchainTime } = useBlockchainTime({
+    refetchInterval: 30_000, // Match vesting info refetch interval
+    enabled: !!address && !!project?.id,
+  })
+  
   // State for modal visibility
   const [showModal, setShowModal] = useState(false)
   
@@ -84,7 +91,7 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
   
   const [vestingInfo, setVestingInfo] = useState<UserVestingInfo | null>(null)
   const [availableAmount, setAvailableAmount] = useState<bigint>(0n)
-  const [nextClaimDate, setNextClaimDate] = useState<Date | null>(null)
+  const [timeUntilNextClaim, setTimeUntilNextClaim] = useState<number>(0)
 
   // Get project token info
   const { 
@@ -115,7 +122,7 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
     }
   })
 
-  // Calculate available tokens to claim
+  // Calculate available tokens to claim and time until next claim
   useEffect(() => {
     if (!userVestingData || !userContribution || !address || !project) return
 
@@ -134,11 +141,15 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
     // Use the availableAmount calculated by the contract
     setAvailableAmount(info.availableAmount > 0n ? info.availableAmount : 0n)
 
-    // Calculate next claim date
-    if (info.nextClaimTime > 0n) {
-      setNextClaimDate(new Date(Number(info.nextClaimTime) * 1000))
+    // Calculate time until next claim using blockchain time
+    if (info.nextClaimTime > 0n && blockchainTime > 0) {
+      const nextClaimTimestamp = Number(info.nextClaimTime)
+      const timeRemaining = nextClaimTimestamp - blockchainTime
+      setTimeUntilNextClaim(timeRemaining > 0 ? timeRemaining : 0)
+    } else {
+      setTimeUntilNextClaim(0)
     }
-  }, [userVestingData, userContribution, project, address])
+  }, [userVestingData, userContribution, project, address, blockchainTime])
 
   // Check if user can claim tokens
   const validStatuses: number[] = [
@@ -153,8 +164,9 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
     validStatuses.includes(Number(project.status)) &&
     userContribution &&
     (userContribution as bigint) > 0n &&
-    availableAmount > 0n
-  ), [isConnected, project, userContribution, availableAmount])
+    availableAmount > 0n &&
+    timeUntilNextClaim <= 0 // Can only claim if time has passed
+  ), [isConnected, project, userContribution, availableAmount, timeUntilNextClaim])
 
   const hasContributed = Boolean(userContribution && (userContribution as bigint) > 0n)
 
@@ -177,6 +189,13 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
     if (availableAmount <= 0n) {
       const err = new Error('No tokens available to claim')
       if (showToast) toast.error('No tokens available to claim')
+      onError?.(err)
+      return
+    }
+
+    if (timeUntilNextClaim > 0) {
+      const err = new Error('Cannot claim yet - vesting period not reached')
+      if (showToast) toast.error('Cannot claim yet - vesting period not reached')
       onError?.(err)
       return
     }
@@ -207,7 +226,7 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
         onError(error)
       }
     }
-  }, [writeContract, isConnected, availableAmount, project, onSuccess, onError, showToast, hash])
+  }, [writeContract, isConnected, availableAmount, timeUntilNextClaim, project, onSuccess, onError, showToast, hash])
 
   // Reset function
   const reset = useCallback(() => {
@@ -280,6 +299,9 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
     }
     
     if (availableAmount > 0n) {
+      if (timeUntilNextClaim > 0) {
+        return { text: 'Vesting Period Active', disabled: true }
+      }
       return { text: 'Claim Tokens', disabled: false }
     }
     return { text: 'No Tokens Available', disabled: true }
@@ -319,7 +341,7 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
     // Vesting data
     vestingInfo,
     availableAmount,
-    nextClaimDate,
+    timeUntilNextClaim, // Changed from nextClaimDate to timeUntilNextClaim (seconds)
     canClaim,
     hasContributed,
     
@@ -329,6 +351,9 @@ export function useClaimTokens(options: UseClaimTokensOptions = {}) {
     
     // User data
     userContribution: (userContribution as bigint) || 0n,
+    
+    // Blockchain time
+    blockchainTime,
     
     // Control functions
     reset,

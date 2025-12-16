@@ -1,4 +1,4 @@
-// src/hooks/projects/useDepositLiquidityTokens.ts
+// src/hooks/projects/useDepositProjectTokens.ts
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
@@ -7,7 +7,7 @@ import { exhibitionAbi } from '@/generated/wagmi'
 import { EXHIBITION_ADDRESS, EXPLORER_URL } from '@/config/contracts'
 import type { Hash, Address } from 'viem'
 import type { ProjectDisplayData } from '@/types/project'
-import { useTokenApproval } from '../useTokenApproval'
+import { useTokenApproval } from '../utilities/useTokenApproval'
 import { logger } from '@/utils/logger'
 
 type Step = 'idle' | 'approving' | 'submitting' | 'confirming' | 'confirmed' | 'error'
@@ -29,7 +29,7 @@ interface TxStatus {
   message?: string
 }
 
-interface LiquidityDepositInfo {
+interface ProjectTokenDepositInfo {
   required: bigint
   deposited: bigint
   remaining: bigint
@@ -40,9 +40,9 @@ interface LiquidityDepositInfo {
   formattedRemaining: string
 }
 
-interface UseDepositLiquidityTokensOptions {
+interface UseDepositProjectTokensOptions {
   project?: ProjectDisplayData
-  liquidityTokenAddress?: Address
+  projectTokenAddress?: Address
   amount?: bigint
   onSuccess?: (hash?: Hash) => void
   onConfirmed?: (hash?: Hash) => void
@@ -50,10 +50,10 @@ interface UseDepositLiquidityTokensOptions {
   showToast?: boolean
 }
 
-export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOptions = {}) {
+export function useDepositProjectTokens(options: UseDepositProjectTokensOptions = {}) {
   const { 
     project,
-    liquidityTokenAddress: externalTokenAddress, 
+    projectTokenAddress: externalTokenAddress, 
     amount: externalAmount, 
     onSuccess, 
     onConfirmed, 
@@ -62,7 +62,7 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
   } = options
 
   // Determine token address: project token takes priority over external
-  const liquidityTokenAddress = useMemo(() => {
+  const projectTokenAddress = useMemo(() => {
     return project?.projectToken ?? externalTokenAddress
   }, [project?.projectToken, externalTokenAddress])
 
@@ -71,8 +71,8 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
     return project?.tokenDecimals ?? 18
   }, [project?.tokenDecimals])
 
-  // 🆕 Calculate liquidity deposit information
-  const liquidityInfo: LiquidityDepositInfo = useMemo(() => {
+  // Calculate project token deposit information using canContribute flag
+  const projectTokenInfo: ProjectTokenDepositInfo = useMemo(() => {
     if (!project) {
       return {
         required: BigInt(0),
@@ -86,13 +86,14 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
       }
     }
 
-    const required = project.requiredLiquidityTokens
-    const deposited = project.depositedLiquidityTokens
-    const remaining = required > deposited ? required - deposited : BigInt(0)
-    const progressPercentage = required > 0 
-      ? Math.min(100, Number((deposited * BigInt(100)) / required))
-      : 0
-    const isComplete = deposited >= required
+    const required = project.amountTokensForSale
+    
+    // canContribute = false means tokens NOT deposited
+    // canContribute = true means tokens ARE deposited
+    const deposited = project.canContribute ? required : BigInt(0)
+    const remaining = project.canContribute ? BigInt(0) : required
+    const progressPercentage = project.canContribute ? 100 : 0
+    const isComplete = project.canContribute
 
     return {
       required,
@@ -131,18 +132,24 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
   const [showStatus, setShowStatus] = useState(false)
   const [transactionType, setTransactionType] = useState<'approval' | 'deposit' | null>(null)
   const [pendingDeposit, setPendingDeposit] = useState<{ projectId: bigint; amount: bigint } | null>(null)
+  const [hasProcessedApproval, setHasProcessedApproval] = useState(false)
 
-  // Calculate amount for approval - use external amount if provided, otherwise use pending deposit amount
+  // Calculate amount for approval - only when we have an active transaction
   const amountForApproval = useMemo(() => {
+    // Don't update amount if modal is closed or we're in idle state
+    if (!showStatus || step === 'idle') return BigInt(0)
+    
     if (externalAmount) return externalAmount
     if (pendingDeposit) return pendingDeposit.amount
     return BigInt(0)
-  }, [externalAmount, pendingDeposit])
+  }, [externalAmount, pendingDeposit, showStatus, step])
 
   logger.info('💰 Amount for approval updated:', {
     amountForApproval: amountForApproval.toString(),
     pendingDeposit: pendingDeposit ? `${pendingDeposit.projectId}:${pendingDeposit.amount}` : 'none',
-    externalAmount: externalAmount?.toString() ?? 'none'
+    externalAmount: externalAmount?.toString() ?? 'none',
+    showStatus,
+    step
   })
 
   // Token approval hook
@@ -154,7 +161,7 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
     submitApproval,
     writeState: approvalWriteState,
   } = useTokenApproval({
-    tokenAddress: liquidityTokenAddress,
+    tokenAddress: projectTokenAddress,
     spenderAddress: EXHIBITION_ADDRESS,
     requiredAmount: amountForApproval,
   })
@@ -170,9 +177,13 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
 
   // Watch for approval success and execute pending deposit
   useEffect(() => {
+    // Don't process if modal is closed or already processed
+    if (!showStatus || hasProcessedApproval) return
+    
     if (isApprovalSuccess && pendingDeposit && step === 'approving') {
       const { projectId, amount } = pendingDeposit
       
+      setHasProcessedApproval(true) // Mark as processed
       setTransactionType('deposit')
       
       if (showToast) {
@@ -188,7 +199,7 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
           setPendingDeposit(null)
         })
     }
-  }, [isApprovalSuccess, pendingDeposit, step, showToast])
+  }, [isApprovalSuccess, pendingDeposit, step, showToast, showStatus, hasProcessedApproval])
 
   // Compose transactionStatus object for MultiTransactionModal
   const transactionStatus: TxStatus = useMemo(() => {
@@ -202,24 +213,24 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
       error: txError ?? (wagmiError as Error | undefined) ?? null,
       message:
         step === 'approving'
-          ? 'Approving liquidity tokens...'
+          ? 'Approving project tokens...'
           : step === 'submitting'
           ? 'Submitting deposit transaction...'
           : step === 'confirming'
           ? 'Waiting for blockchain confirmation...'
           : step === 'confirmed'
-          ? 'Liquidity deposited successfully'
+          ? 'Project tokens deposited successfully'
           : step === 'error'
           ? txError?.message ?? 'Transaction failed'
           : undefined,
     }
   }, [showStatus, txHash, step, wagmiIsPending, isConfirming, isConfirmed, wagmiIsError, receiptError, txError, wagmiError])
 
-  // 🆕 Enhanced button state with deposit completion check
+  // Enhanced button state with deposit completion check
   const buttonState: ButtonState = useMemo(() => {
     // Check if deposit is complete
-    if (liquidityInfo.isComplete) {
-      return { text: 'Liquidity Deposited', disabled: true, loading: false }
+    if (projectTokenInfo.isComplete) {
+      return { text: 'Tokens Deposited', disabled: true, loading: false }
     }
 
     switch (step) {
@@ -238,12 +249,12 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
       case 'error':
         return { text: 'Retry Deposit', disabled: false, loading: false }
       default:
-        if (needsApproval && liquidityTokenAddress) {
+        if (needsApproval && projectTokenAddress) {
           return { text: 'Approve & Deposit', disabled: false, loading: false }
         }
-        return { text: 'Deposit Liquidity', disabled: false, loading: false }
+        return { text: 'Deposit Tokens', disabled: false, loading: false }
     }
-  }, [step, needsApproval, liquidityTokenAddress, approvalWriteState?.isPending, isApprovalConfirming, liquidityInfo.isComplete])
+  }, [step, needsApproval, projectTokenAddress, approvalWriteState?.isPending, isApprovalConfirming, projectTokenInfo.isComplete])
 
   // Execute deposit only (after approval if needed)
   const executeDepositOnly = useCallback(
@@ -254,7 +265,7 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
         await writeContract({
           address: EXHIBITION_ADDRESS,
           abi: exhibitionAbi,
-          functionName: 'depositLiquidityTokens',
+          functionName: 'depositProjectTokens',
           args: [projectId, amount],
         })
 
@@ -288,38 +299,37 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
       setTxHash(undefined)
       setShowStatus(true)
       setStep('idle')
+      setHasProcessedApproval(false) // Reset approval processing flag
 
       logger.info('🚀 executeDeposit called', { 
         projectId: projectId.toString(), 
         amount: amount.toString(),
         needsApproval,
         currentAllowance: currentAllowance?.toString(),
-        liquidityInfo: {
-          required: liquidityInfo.required.toString(),
-          deposited: liquidityInfo.deposited.toString(),
-          remaining: liquidityInfo.remaining.toString(),
-          isComplete: liquidityInfo.isComplete,
+        projectTokenInfo: {
+          required: projectTokenInfo.required.toString(),
+          deposited: projectTokenInfo.deposited.toString(),
+          remaining: projectTokenInfo.remaining.toString(),
+          isComplete: projectTokenInfo.isComplete,
         }
       })
 
-      // 🆕 Validate deposit not already complete
-      if (liquidityInfo.isComplete) {
-        const error = new Error('Liquidity deposit already complete')
+      // Validate deposit not already complete
+      if (projectTokenInfo.isComplete) {
+        const error = new Error('Project token deposit already complete')
         setTxError(error)
         setStep('error')
         if (showToast) {
-          toast.error('Liquidity has already been fully deposited')
+          toast.error('Project tokens have already been fully deposited')
         }
         onError?.(error)
         return Promise.reject(error)
       }
 
-      // 🆕 Validate amount doesn't exceed remaining
-      // Allow a small tolerance for rounding errors (0.01%)
-      const maxAllowedAmount = liquidityInfo.remaining + (liquidityInfo.remaining / BigInt(10000))
-      
-      if (amount > maxAllowedAmount) {
-        const error = new Error(`Amount exceeds remaining liquidity needed (${liquidityInfo.formattedRemaining} ${project?.tokenSymbol ?? 'tokens'})`)
+      // For new deposits, the amount should equal the required amount
+      // since canContribute=false means 0 deposited, canContribute=true means fully deposited
+      if (amount !== projectTokenInfo.required) {
+        const error = new Error(`Please deposit the full amount required: ${projectTokenInfo.formattedRequired} ${project?.tokenSymbol ?? 'tokens'}`)
         setTxError(error)
         setStep('error')
         if (showToast) {
@@ -329,18 +339,16 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
         return Promise.reject(error)
       }
 
-      // If amount is slightly over the exact remaining, cap it to remaining
-      const depositAmount = amount > liquidityInfo.remaining ? liquidityInfo.remaining : amount
+      const depositAmount = amount
 
       try {
-        if (!liquidityTokenAddress) {
+        if (!projectTokenAddress) {
           setTransactionType('deposit')
           await executeDepositOnly(projectId, depositAmount)
           return
         }
 
-        // 🔥 KEY FIX: Set pendingDeposit BEFORE checking approval
-        // This ensures amountForApproval updates before submitApproval is called
+        // Set pendingDeposit BEFORE checking approval
         setPendingDeposit({ projectId, amount: depositAmount })
 
         const currentAllowanceValue = currentAllowance ?? BigInt(0)
@@ -369,15 +377,12 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
           logger.info('📝 Submitting approval with explicit amount')
 
           try {
-            // 🔥 KEY FIX: Pass amount directly to submitApproval
             const approvalTxHash = await submitApproval(depositAmount)
             
             if (approvalTxHash) {
               setApprovalHash(approvalTxHash)
               logger.info('✅ Approval hash received:', approvalTxHash)
             }
-            // Note: Don't clear pendingDeposit here - the useEffect watching 
-            // isApprovalSuccess will handle the deposit execution and cleanup
           } catch (approvalErr) {
             const e = approvalErr as Error
             logger.error('❌ Approval error:', e)
@@ -394,9 +399,7 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
               toast.error(isUserRejection ? 'Approval was rejected' : errorMessage)
             }
             
-            // Only clear pendingDeposit after error handling is complete
             setPendingDeposit(null)
-            
             onError?.(e)
             return Promise.reject(e)
           }
@@ -426,14 +429,12 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
         return Promise.reject(e)
       }
     },
-    [liquidityTokenAddress, needsApproval, currentAllowance, submitApproval, executeDepositOnly, showToast, onError, liquidityInfo, project, amountForApproval, pendingDeposit]
+    [projectTokenAddress, needsApproval, currentAllowance, submitApproval, executeDepositOnly, showToast, onError, projectTokenInfo, project, amountForApproval, pendingDeposit]
   )
 
   // React to wagmi-provided hash (transaction submitted)
   useEffect(() => {
     if (!hash) return
-
-    logger.info('🟡 Transaction submitted, setting step to confirming')
     setTxHash(hash as Hash)
     setStep('confirming')
     setShowStatus(true)
@@ -444,21 +445,17 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
     }
   }, [hash, showToast])
 
-  // React to receipt confirmation (transition: confirming → confirmed)
+  // React to receipt confirmation
   useEffect(() => {
     if (isConfirmed && step === 'confirming') {
       logger.info('✅ Deposit confirmed, setting step to confirmed')
       setStep('confirmed')
       setShowStatus(true)
-
-      if (showToast) {
-        toast.dismiss()
-        toast.success('Liquidity deposited successfully')
-      }
-
+      toast.dismiss()
+      toast.success('Project tokens deposited successfully')
       onConfirmed?.(txHash)
     }
-  }, [isConfirmed, step, txHash, showToast, onConfirmed])
+  }, [isConfirmed, step, txHash, onConfirmed])
 
   // Handle receipt / wagmi errors
   useEffect(() => {
@@ -477,14 +474,21 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
 
   // Auto-reset UX after success/error
   useEffect(() => {
-    if (step === 'confirmed' || (isApprovalSuccess && !pendingDeposit)) {
+    // Only run auto-close when modal is showing and in terminal state
+    if (!showStatus) return
+
+    if (step === 'confirmed') {
       logger.info('⏱️ Starting auto-close timer (10s)')
       const t = setTimeout(() => {
-        logger.info('⏱️ Auto-closing modal and resetting state')
+        logger.info('⏱️ Auto-closing modal and resetting all state')
         setShowStatus(false)
         setApprovalHash(undefined)
         setTransactionType(null)
         setStep('idle')
+        setTxHash(undefined)
+        setTxError(null)
+        setPendingDeposit(null)
+        setHasProcessedApproval(false)
       }, 10_000)
       return () => {
         logger.info('⏱️ Cleanup: clearing auto-close timer')
@@ -492,24 +496,25 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
       }
     }
     
-    // ✅ Also auto-close on error after 10 seconds
     if (step === 'error') {
       logger.info('⏱️ Starting error auto-close timer (10s)')
       const t = setTimeout(() => {
-        logger.info('⏱️ Auto-closing error modal and resetting state')
+        logger.info('⏱️ Auto-closing error modal and resetting all state')
         setShowStatus(false)
         setApprovalHash(undefined)
         setTransactionType(null)
         setStep('idle')
+        setTxHash(undefined)
+        setTxError(null)
+        setPendingDeposit(null)
+        setHasProcessedApproval(false)
       }, 10_000)
       return () => {
         logger.info('⏱️ Cleanup: clearing error auto-close timer')
         clearTimeout(t)
       }
     }
-    
-    return
-  }, [step, isApprovalSuccess, pendingDeposit])
+  }, [step, showStatus])
 
   // Manual reset util
   const reset = useCallback(() => {
@@ -523,9 +528,10 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
     setTransactionType(null)
     setApprovalHash(undefined)
     setPendingDeposit(null)
+    setHasProcessedApproval(false)
   }, [showToast])
 
-  // ✅ Close handler for modal - ensures proper cleanup without showing new toasts
+  // Close handler for modal - ensures proper cleanup without showing new toasts
   const closeModal = useCallback(() => {
     // Dismiss toasts first
     toast.dismiss()
@@ -541,18 +547,19 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
       setTransactionType(null)
       setApprovalHash(undefined)
       setPendingDeposit(null)
+      setHasProcessedApproval(false)
     }, 100)
 
     return () => clearTimeout(cleanup)
   }, [])
 
   return {
-    // 🆕 Liquidity deposit information
-    liquidityInfo,
+    // Project token deposit information
+    projectTokenInfo,
 
     // Main action
     executeDeposit,
-    depositLiquidity: executeDeposit,
+    depositProjectTokens: executeDeposit,
 
     // Button state for UI
     buttonState,
@@ -582,7 +589,7 @@ export function useDepositLiquidityTokens(options: UseDepositLiquidityTokensOpti
 
     // Utilities
     reset,
-    closeModal, // ✅ New: Use this to close the modal properly
+    closeModal,
     explorerUrl: EXPLORER_URL,
   }
 }
