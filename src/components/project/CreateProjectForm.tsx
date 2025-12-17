@@ -1,39 +1,32 @@
 // src/components/projects/CreateProjectForm.tsx
-import React, { useState, useEffect } from 'react'
-import { useReadContract } from 'wagmi'
-import { erc20Abi } from 'viem'
-import { ChevronLeft, ChevronRight, Check, Info, AlertCircle } from 'lucide-react'
+import React, { useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '../ui/Button'
-import { Input } from '../ui/Input'
-import { Label } from '../ui/Label'
-import { Checkbox } from '../ui/Checkbox'
 import { Alert } from '../ui/Alert'
 import type { CreateProjectFormData } from '@/hooks/launchpad/useCreateProject'
-import { SUPPORTED_EXH, SUPPORTED_EXUSD, SUPPORTED_EXNEX } from '@/config/contracts'
-import { useTokenomicsValidation } from '@/hooks/launchpad/useTokenomicsValidation'
-import { TokenomicsValidationDisplay } from './TokenomicsValidationDisplay'
+import { SUPPORTED_EXH } from '@/config/contracts'
+import { useProjectFormPricing } from '@/hooks/launchpad/useProjectFormPricing'
+
+// Step components
+import { Step1TokenParameters } from './steps/Step1TokenParameters'
+import { Step2FundingConfiguration } from './steps/Step2FundingConfiguration'
+import { Step3LaunchTimeline } from './steps/Step3LaunchTimeline'
+import { Step4LiquidityLock } from './steps/Step4LiquidityLock'
+import { Step5VestingConfig } from './steps/Step5VestingConfig'
+import { Step6ReviewSubmit } from './steps/Step6ReviewSubmit'
 
 // 🔒 SECURITY: Import sanitization utilities
 import {
   sanitizeText,
   sanitizeUrl,
-  sanitizeNumber,
   hasSuspiciousContent,
-  logSanitization,
 } from '@/utils/sanitization'
-import { logger } from '@/utils/logger'
 
 interface CreateProjectFormProps {
   onSubmit: (data: CreateProjectFormData) => void
   isSubmitting: boolean
   error?: Error | null
 }
-
-const CONTRIBUTION_TOKENS = [
-  { address: SUPPORTED_EXH, symbol: 'EXH', name: 'Exhibition Token' },
-  { address: SUPPORTED_EXUSD, symbol: 'exUSD', name: 'Exhibition USD' },
-  { address: SUPPORTED_EXNEX, symbol: 'exNEX', name: 'Exhibition NEX' },
-] as const
 
 const getDefaultStartTime = (): Date => {
   const date = new Date()
@@ -51,28 +44,6 @@ const getDefaultEndTime = (): Date => {
   date.setSeconds(0)
   date.setMilliseconds(0)
   return date
-}
-
-const dateToLocalISO = (date: Date): string => {
-  try {
-    if (!date || isNaN(date.getTime())) return ''
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const hours = String(date.getHours()).padStart(2, '0')
-    const minutes = String(date.getMinutes()).padStart(2, '0')
-    return `${year}-${month}-${day}T${hours}:${minutes}`
-  } catch {
-    return ''
-  }
-}
-
-const localISOToDate = (isoString: string): Date => {
-  if (!isoString) return new Date()
-  const [datePart, timePart] = isoString.split('T')
-  const [year, month, day] = datePart.split('-').map(Number)
-  const [hours, minutes] = timePart.split(':').map(Number)
-  return new Date(year, month - 1, day, hours, minutes, 0, 0)
 }
 
 export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
@@ -106,101 +77,13 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
   })
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
-  const tokenomicsValidation = useTokenomicsValidation(formData)
 
-  const { data: tokenDecimals } = useReadContract({
-    address: formData.contributionTokenAddress,
-    abi: erc20Abi,
-    functionName: 'decimals',
-  })
+  // Get pricing data for USD displays
+  const pricing = useProjectFormPricing(formData)
 
-  useEffect(() => {
-    if (tokenDecimals !== undefined) {
-      setFormData((prev) => ({ ...prev, contributionTokenDecimals: tokenDecimals }))
-    }
-  }, [tokenDecimals])
-
-  // 🔒 SECURITY: Sanitized handleChange with input validation
+  // Generic change handler
   const handleChange = (field: keyof CreateProjectFormData, value: any) => {
-    let sanitizedValue = value
-
-    // Auto-calculate soft cap when funding goal changes
-    if (field === 'fundingGoal' && value) {
-      const fundingGoalValue = parseFloat(value)
-      if (!isNaN(fundingGoalValue) && fundingGoalValue > 0) {
-        const autoSoftCap = (fundingGoalValue * 0.510).toFixed(2)
-        setFormData((prev) => ({ ...prev, softCap: autoSoftCap }))
-      }
-    }
-
-    // Apply field-specific sanitization
-    switch (field) {
-      case 'projectTokenName':
-        // Text&Number only: allow only letters, numbers and spaces
-        sanitizedValue = value
-          .replace(/[^a-zA-Z0-9\s]/g, '') // Only allow letters and space
-          .replace(/\s{2,}/g, ' ') // Replace multiple spaces with single space
-          .slice(0, 100) // Limit length
-        logSanitization(field, value, sanitizedValue)
-        
-        // Check for suspicious content
-        if (hasSuspiciousContent(sanitizedValue)) {
-          logger.warn('⚠️ Suspicious content detected in token name')
-          return // Block the update
-        }
-        break
-
-      case 'projectTokenSymbol':
-        // Remove special characters and limit length
-        sanitizedValue = sanitizeText(value)
-          .toUpperCase()
-          .replace(/[^A-Z0-9]/g, '')
-          .slice(0, 10)
-        logSanitization(field, value, sanitizedValue)
-        break
-
-      case 'projectTokenLogoURI':
-        sanitizedValue = sanitizeUrl(value)
-        if (value && !sanitizedValue) {
-          setValidationErrors(prev => ({
-            ...prev,
-            [field]: 'Invalid or unsafe URL'
-          }))
-          return
-        }
-        logSanitization(field, value, sanitizedValue)
-        break
-
-      case 'initialTotalSupply':
-      case 'tokenPrice':
-        // Remove non-numeric characters
-        sanitizedValue = value.replace(/[^\d.]/g, '')
-        break
-
-      case 'fundingGoal':
-      case 'softCap':
-      case 'minContribution':
-      case 'maxContribution':
-      case 'amountTokensForSale':
-      case 'liquidityPercentage':
-      case 'lockDuration':
-      case 'vestingCliff':
-      case 'vestingDuration':
-      case 'vestingInterval':
-      case 'vestingInitialRelease':
-        // Sanitize numeric inputs
-        const num = sanitizeNumber(value, { min: 0 })
-        sanitizedValue = num !== null ? num.toString() : ''
-        break
-
-      default:
-        // For other fields, basic sanitization
-        if (typeof value === 'string') {
-          sanitizedValue = sanitizeText(value)
-        }
-    }
-
-    setFormData((prev) => ({ ...prev, [field]: sanitizedValue }))
+    setFormData((prev) => ({ ...prev, [field]: value }))
     
     // Clear validation error for this field
     if (validationErrors[field]) {
@@ -212,11 +95,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
     }
   }
 
-  const handleDateChange = (field: 'startTime' | 'endTime', value: string) => {
-    const date = localISOToDate(value)
-    handleChange(field, date)
-  }
-
+  // Validation logic for each step
   const validateStep = (step: number): boolean => {
     const errors: Record<string, string> = {}
 
@@ -326,7 +205,6 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
       projectTokenName: sanitizeText(formData.projectTokenName).slice(0, 100),
       projectTokenSymbol: sanitizeText(formData.projectTokenSymbol).toUpperCase().slice(0, 10),
       projectTokenLogoURI: sanitizeUrl(formData.projectTokenLogoURI) || '',
-      // Numbers are already sanitized in handleChange
     }
 
     // Final security check
@@ -338,829 +216,64 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
       setCurrentStep(1)
       return
     }
+    
     onSubmit(sanitizedData)
   }
 
+  // Render current step
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-8">
-            <div className="border border-l-4 border-[var(--neon-blue)] pl-4">
-              <h3 className="text-2xl font-bold text-[var(--silver-light)] mb-2">
-                Token Parameters
-              </h3>
-              <p className="text-[var(--metallic-silver)] leading-relaxed">
-                Specify the core properties of the launch token. All tokens use 18 decimals for compatibility with on-chain exchange and DeFi standards.
-              </p>
-            </div>
-
-            <div className="grid gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="projectTokenName" className="text-base">
-                  Token Name <span className="text-[var(--neon-orange)]">*</span>
-                </Label>
-                <Input
-                  id="projectTokenName"
-                  value={formData.projectTokenName}
-                  onChange={(e) => handleChange('projectTokenName', e.target.value)}
-                  placeholder="e.g., Nexus Supporter Token"
-                  error={validationErrors.projectTokenName}
-                  className="text-base"
-                  maxLength={100}
-                />
-                <p className="text-sm text-[var(--metallic-silver)] flex items-start gap-2">
-                  <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  The full name of your token that will be displayed across the platform
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="projectTokenSymbol" className="text-base">
-                  Token Symbol <span className="text-[var(--neon-orange)]">*</span>
-                </Label>
-                <Input
-                  id="projectTokenSymbol"
-                  value={formData.projectTokenSymbol}
-                  onChange={(e) => handleChange('projectTokenSymbol', e.target.value)}
-                  placeholder="e.g., NST"
-                  maxLength={10}
-                  error={validationErrors.projectTokenSymbol}
-                  className="text-base font-mono"
-                />
-                <p className="text-sm text-[var(--metallic-silver)] flex items-start gap-2">
-                  <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  A short identifier for your token (3-10 characters, letters and numbers only)
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="initialTotalSupply" className="text-base">
-                  Total Supply <span className="text-[var(--neon-orange)]">*</span>
-                </Label>
-                <Input
-                  id="initialTotalSupply"
-                  type="number"
-                  value={formData.initialTotalSupply}
-                  onChange={(e) => handleChange('initialTotalSupply', e.target.value)}
-                  placeholder="1000000"
-                  error={validationErrors.initialTotalSupply}
-                  className="text-base font-mono"
-                />
-                <p className="text-sm text-[var(--metallic-silver)] flex items-start gap-2">
-                  <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  Total number of tokens that will exist (18 decimals standard)
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="projectTokenLogoURI" className="text-base">
-                  Logo URI <span className="text-[var(--metallic-silver)] text-sm"></span>
-                </Label>
-                <Input
-                  id="projectTokenLogoURI"
-                  value={formData.projectTokenLogoURI}
-                  onChange={(e) => handleChange('projectTokenLogoURI', e.target.value)}
-                  placeholder="https://example.com/logo.png"
-                  error={validationErrors.projectTokenLogoURI}
-                  className="text-base font-mono text-sm"
-                />
-                <p className="text-sm text-[var(--metallic-silver)] flex items-start gap-2">
-                  <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  Public accessible URL to your token logo image (e.g ., PNG, JPG and SVG formats)
-                </p>
-              </div>
-            </div>
-          </div>
+          <Step1TokenParameters
+            formData={formData}
+            validationErrors={validationErrors}
+            onChange={handleChange}
+          />
         )
 
       case 2:
         return (
-          <div className="space-y-8">
-            <div className="border-l-4 border-[var(--neon-blue)] pl-4">
-              <h3 className="text-2xl font-bold text-[var(--silver-light)] mb-2">
-                Funding Configuration
-              </h3>
-              <p className="text-[var(--metallic-silver)] leading-relaxed">
-                 Configure funding targets, contribution bounds, and initial pricing parameters enforced by the protocol.
-              </p>
-            </div>
-
-            <div className="bg-[var(--charcoal)] border border-[var(--neon-blue)]/30 rounded-lg p-4">
-              <div className="flex gap-3">
-                <AlertCircle className="w-5 h-5 text-[var(--neon-blue)] flex-shrink-0 mt-0.5" />
-                <div className="space-y-2 text-sm text-[var(--silver-light)]">
-                  <p className="font-semibold">Protocol Constraints:</p>
-                  <ul className="space-y-1 ml-4 list-disc">
-                    <li>Soft cap must be less than or equal to the hard cap</li>
-                    <li>Tokens allocated for sale must not exceed total token supply</li>
-                    <li>Per-contributor limits should be configured to bound capital intake</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="contributionTokenAddress" className="text-base">
-                  Contribution Token <span className="text-[var(--neon-orange)]">*</span>
-                </Label>
-                <select
-                  id="contributionTokenAddress"
-                  value={formData.contributionTokenAddress}
-                  onChange={(e) => handleChange('contributionTokenAddress', e.target.value as `0x${string}`)}
-                  className="w-full px-4 py-3 bg-[var(--charcoal)] border border-[var(--silver-dark)]/20 rounded-lg text-[var(--silver-light)] focus:outline-none focus:border-[var(--neon-blue)] focus:ring-2 focus:ring-[var(--neon-blue)]/20 transition-all text-base"
-                >
-                  {CONTRIBUTION_TOKENS.map((token) => (
-                    <option key={token.address} value={token.address}>
-                      {token.symbol} - {token.name}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-sm text-[var(--metallic-silver)]">
-                  Decimals: {formData.contributionTokenDecimals} • Token used for contributions
-                </p>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="fundingGoal" className="text-base">
-                    Funding Goal (Hard Cap) <span className="text-[var(--neon-orange)]">*</span>
-                  </Label>
-                  <Input
-                    id="fundingGoal"
-                    type="number"
-                    step="0.01"
-                    value={formData.fundingGoal}
-                    onChange={(e) => handleChange('fundingGoal', e.target.value)}
-                    placeholder="100000"
-                    error={validationErrors.fundingGoal}
-                    className="text-base font-mono"
-                  />
-                  <p className="text-sm text-[var(--metallic-silver)]">Maximum amount to raise</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="softCap" className="text-base">
-                    Soft Cap <span className="text-[var(--neon-orange)]">*</span>
-                  </Label>
-                  <Input
-                    id="softCap"
-                    type="number"
-                    step="0.01"
-                    value={formData.softCap}
-                    onChange={(e) => handleChange('softCap', e.target.value)}
-                    placeholder="Auto-calculated"
-                    error={validationErrors.softCap}
-                    className="text-base font-mono"
-                    readOnly
-                    disabled
-                  />
-                  <p className="text-sm text-[var(--metallic-silver)]">Auto-calculated as 51% of funding goal</p>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="minContribution" className="text-base">
-                    Min Contribution <span className="text-[var(--neon-orange)]">*</span>
-                  </Label>
-                  <Input
-                    id="minContribution"
-                    type="number"
-                    step="0.01"
-                    value={formData.minContribution}
-                    onChange={(e) => handleChange('minContribution', e.target.value)}
-                    placeholder="10"
-                    error={validationErrors.minContribution}
-                    className="text-base font-mono"
-                  />
-                  <p className="text-sm text-[var(--metallic-silver)]">Per wallet minimum</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="maxContribution" className="text-base">
-                    Max Contribution <span className="text-[var(--neon-orange)]">*</span>
-                  </Label>
-                  <Input
-                    id="maxContribution"
-                    type="number"
-                    step="0.01"
-                    value={formData.maxContribution}
-                    onChange={(e) => handleChange('maxContribution', e.target.value)}
-                    placeholder="1000"
-                    error={validationErrors.maxContribution}
-                    className="text-base font-mono"
-                  />
-                  <p className="text-sm text-[var(--metallic-silver)]">Per wallet maximum</p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="tokenPrice" className="text-base">
-                  Token Price <span className="text-[var(--neon-orange)]">*</span>
-                </Label>
-                <Input
-                  id="tokenPrice"
-                  type="number"
-                  step="0.000000000000000001"
-                  value={formData.tokenPrice}
-                  onChange={(e) => handleChange('tokenPrice', e.target.value)}
-                  placeholder="0.001"
-                  error={validationErrors.tokenPrice}
-                  className="text-base font-mono"
-                />
-                <p className="text-sm text-[var(--metallic-silver)] flex items-start gap-2">
-                  <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  Price per token in contribution token (18 decimal format)
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="amountTokensForSale" className="text-base">
-                  Tokens For Sale <span className="text-[var(--neon-orange)]">*</span>
-                </Label>
-                <Input
-                  id="amountTokensForSale"
-                  type="number"
-                  value={formData.amountTokensForSale}
-                  onChange={(e) => handleChange('amountTokensForSale', e.target.value)}
-                  placeholder="500000"
-                  error={validationErrors.amountTokensForSale}
-                  className="text-base font-mono"
-                />
-                <p className="text-sm text-[var(--metallic-silver)]">
-                  Number of tokens available in this sale
-                </p>
-              </div>
-
-              {/* 🎯 TOKENOMICS VALIDATION - ADD THIS ENTIRE BLOCK */}
-              {tokenomicsValidation && (
-                <TokenomicsValidationDisplay
-                  validation={tokenomicsValidation}
-                 tokenSymbol={formData.projectTokenSymbol}
-                />
-              )}
-            </div>
-          </div>
+          <Step2FundingConfiguration
+            formData={formData}
+            validationErrors={validationErrors}
+            onChange={handleChange}
+            pricing={pricing}
+          />
         )
 
       case 3:
-        const duration = formData.endTime && formData.startTime 
-          ? ((formData.endTime.getTime() - formData.startTime.getTime()) / (24 * 60 * 60 * 1000)).toFixed(1)
-          : '0'
-        const durationExceeded = parseFloat(duration) > 21
-
         return (
-          <div className="space-y-8">
-            <div className="border-l-4 border-[var(--neon-blue)] pl-4">
-              <h3 className="text-2xl font-bold text-[var(--silver-light)] mb-2">
-                Launch Timeline
-              </h3>
-              <p className="text-[var(--metallic-silver)] leading-relaxed">
-                Specify the on-chain start and end times for contribution acceptance and sale finalization.
-              </p>
-            </div>
-
-            <div className="bg-[var(--charcoal)] border border-[var(--neon-blue)]/30 rounded-lg p-4">
-              <div className="flex gap-3">
-                <AlertCircle className="w-5 h-5 text-[var(--neon-blue)] flex-shrink-0 mt-0.5" />
-                <div className="space-y-2 text-sm text-[var(--silver-light)]">
-                  <p className="font-semibold">Timeline Requirements:</p>
-                  <ul className="space-y-1 ml-4 list-disc">
-                    <li>Start time must be at least 20 minutes in the future</li>
-                    <li className="font-bold text-[var(--neon-orange)]">Maximum launch duration is 21 days</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="startTime" className="text-base">
-                  Start Time <span className="text-[var(--neon-orange)]">*</span>
-                </Label>
-                <Input
-                  id="startTime"
-                  type="datetime-local"
-                  value={dateToLocalISO(formData.startTime)}
-                  onChange={(e) => handleDateChange('startTime', e.target.value)}
-                  error={validationErrors.startTime}
-                  className="text-base font-mono"
-                />
-                <p className="text-sm text-[var(--metallic-silver)] bg-[var(--charcoal)] px-3 py-2 rounded border border-[var(--silver-dark)]/10">
-                  📅 {formData.startTime.toLocaleString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric', 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="endTime" className="text-base">
-                  End Time <span className="text-[var(--neon-orange)]">*</span>
-                </Label>
-                <Input
-                  id="endTime"
-                  type="datetime-local"
-                  value={dateToLocalISO(formData.endTime)}
-                  onChange={(e) => handleDateChange('endTime', e.target.value)}
-                  error={validationErrors.endTime}
-                  className="text-base font-mono"
-                />
-                <p className="text-sm text-[var(--metallic-silver)] bg-[var(--charcoal)] px-3 py-2 rounded border border-[var(--silver-dark)]/10">
-                  📅 {formData.endTime.toLocaleString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric', 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </p>
-              </div>
-
-              <div className={`p-6 rounded-xl border-2 ${
-                durationExceeded 
-                  ? 'bg-[var(--neon-orange)]/5 border-[var(--neon-orange)]' 
-                  : 'bg-[var(--neon-blue)]/5 border-[var(--neon-blue)]'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-[var(--metallic-silver)] mb-1">
-                      Lunch Duration
-                    </p>
-                    <p className={`text-3xl font-bold ${
-                      durationExceeded ? 'text-[var(--neon-orange)]' : 'text-[var(--neon-blue)]'
-                    }`}>
-                      {duration} days
-                    </p>
-                  </div>
-                  {durationExceeded && (
-                    <AlertCircle className="w-8 h-8 text-[var(--neon-orange)]" />
-                  )}
-                </div>
-                {durationExceeded && (
-                  <p className="text-sm text-[var(--neon-orange)] mt-3">
-                    Duration exceeds 21-day maximum
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+          <Step3LaunchTimeline
+            formData={formData}
+            validationErrors={validationErrors}
+            onChange={handleChange}
+          />
         )
 
       case 4:
         return (
-          <div className="space-y-8">
-            <div className="border-l-4 border-[var(--neon-blue)] pl-4">
-              <h3 className="text-2xl font-bold text-[var(--silver-light)] mb-2">
-                Liquidity & Lock Settings
-              </h3>
-              <p className="text-[var(--metallic-silver)] leading-relaxed">
-                Configure how much of the raised funds will be added to liquidity pools and how long it will remain locked for investor protection.
-              </p>
-            </div>
-
-            <div className="bg-[var(--charcoal)] border border-[var(--neon-blue)]/30 rounded-lg p-4">
-              <div className="flex gap-3">
-                <AlertCircle className="w-5 h-5 text-[var(--neon-blue)] flex-shrink-0 mt-0.5" />
-                <div className="space-y-2 text-sm text-[var(--silver-light)]">
-                  <p className="font-semibold">Liquidity Requirements:</p>
-                  <ul className="space-y-1 ml-4 list-disc">
-                    <li>Liquidity percentage must be between 70-100%</li>
-                    <li className="font-bold text-[var(--neon-orange)]">Minimum lock duration is 14 days</li>
-                    <li>Higher percentages and longer locks build investor confidence</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="liquidityPercentage" className="text-base">
-                  Liquidity Percentage <span className="text-[var(--neon-orange)]">*</span>
-                </Label>
-                <Input
-                  id="liquidityPercentage"
-                  type="number"
-                  min={70}
-                  max={100}
-                  value={formData.liquidityPercentage}
-                  onChange={(e) => handleChange('liquidityPercentage', e.target.value)}
-                  placeholder="80"
-                  error={validationErrors.liquidityPercentage}
-                  className="text-base font-mono"
-                />
-                <p className="text-sm text-[var(--metallic-silver)] flex items-start gap-2">
-                  <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  Percentage of raised funds to add to liquidity pool (70-100%)
-                </p>
-                {formData.liquidityPercentage && (
-                  <div className="mt-3 p-3 bg-[var(--charcoal)] rounded-lg border border-[var(--silver-dark)]/10">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-[var(--metallic-silver)]">To Liquidity:</span>
-                      <span className="text-[var(--neon-blue)] font-semibold">{formData.liquidityPercentage}%</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm mt-1">
-                      <span className="text-[var(--metallic-silver)]">To Project:</span>
-                      <span className="text-[var(--silver-light)] font-semibold">{100 - parseFloat(formData.liquidityPercentage || '0')}%</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="lockDuration" className="text-base">
-                  Lock Duration (days) <span className="text-[var(--neon-orange)]">*</span>
-                </Label>
-                <Input
-                  id="lockDuration"
-                  type="number"
-                  value={formData.lockDuration}
-                  onChange={(e) => handleChange('lockDuration', e.target.value)}
-                  placeholder="14"
-                  error={validationErrors.lockDuration}
-                  className="text-base font-mono"
-                />
-                <p className="text-sm text-[var(--metallic-silver)] flex items-start gap-2">
-                  <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  How long liquidity tokens will be locked after liquidity is added (minimum 14 days)
-                </p>
-                {formData.lockDuration && parseFloat(formData.lockDuration) >= 14 && (
-                  <div className="mt-3 p-3 bg-[var(--neon-blue)]/5 rounded-lg border border-[var(--neon-blue)]/30">
-                    <p className="text-sm text-[var(--neon-blue)] flex items-center gap-2">
-                      <Check className="w-4 h-4" />
-                      Liquidity will be locked for {formData.lockDuration} days after being added to the pool
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <Step4LiquidityLock
+            formData={formData}
+            validationErrors={validationErrors}
+            onChange={handleChange}
+          />
         )
 
       case 5:
         return (
-          <div className="space-y-8">
-            <div className="border-l-4 border-[var(--neon-blue)] pl-4">
-              <h3 className="text-2xl font-bold text-[var(--silver-light)] mb-2">
-                Token Vesting Configuration
-              </h3>
-              <p className="text-[var(--metallic-silver)] leading-relaxed">
-                Optional feature to release tokens gradually over time, which can help with price stability and long-term holder alignment.
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              <div className="flex items-start gap-4 p-4 bg-[var(--charcoal)] rounded-lg border border-[var(--silver-dark)]/20">
-                <Checkbox
-                  id="vestingEnabled"
-                  checked={formData.vestingEnabled}
-                  onChange={(e) => handleChange('vestingEnabled', e.target.checked)}
-                  label=""
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <label htmlFor="vestingEnabled" className="text-base font-semibold text-[var(--silver-light)] cursor-pointer block mb-1">
-                    Enable Token Vesting
-                  </label>
-                  <p className="text-sm text-[var(--metallic-silver)]">
-                    Release tokens gradually to contributors over a defined schedule
-                  </p>
-                </div>
-              </div>
-
-              {!formData.vestingEnabled && (
-                <div className="bg-[var(--neon-blue)]/5 border border-[var(--neon-blue)]/30 rounded-lg p-4">
-                  <div className="flex gap-3">
-                    <Check className="w-5 h-5 text-[var(--neon-blue)] flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-[var(--silver-light)]">
-                      <p className="font-semibold mb-1">Immediate Token Distribution</p>
-                      <p className="text-[var(--metallic-silver)]">
-                        All tokens will be available for immediate claiming after the project successfully ends.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {formData.vestingEnabled && (
-                <>
-                  <div className="bg-[var(--charcoal)] border border-[var(--neon-blue)]/30 rounded-lg p-4">
-                    <div className="flex gap-3">
-                      <Info className="w-5 h-5 text-[var(--neon-blue)] flex-shrink-0 mt-0.5" />
-                      <div className="space-y-2 text-sm text-[var(--silver-light)]">
-                        <p className="font-semibold">Vesting Schedule Benefits:</p>
-                        <ul className="space-y-1 ml-4 list-disc text-[var(--metallic-silver)]">
-                          <li>Encourages long-term holding and reduces sell pressure</li>
-                          <li>Aligns contributor interests with project success</li>
-                          <li>Demonstrates commitment to sustainable tokenomics</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="vestingCliff" className="text-base">
-                        Cliff Period (days)
-                      </Label>
-                      <Input
-                        id="vestingCliff"
-                        type="number"
-                        min={0}
-                        value={formData.vestingCliff}
-                        onChange={(e) => handleChange('vestingCliff', e.target.value)}
-                        placeholder="0"
-                        className="text-base font-mono"
-                      />
-                      <p className="text-sm text-[var(--metallic-silver)]">
-                        Initial waiting period before any vesting begins
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="vestingDuration" className="text-base">
-                        Total Duration (days) <span className="text-[var(--neon-orange)]">*</span>
-                      </Label>
-                      <Input
-                        id="vestingDuration"
-                        type="number"
-                        min={1}
-                        value={formData.vestingDuration}
-                        onChange={(e) => handleChange('vestingDuration', e.target.value)}
-                        placeholder="180"
-                        error={validationErrors.vestingDuration}
-                        className="text-base font-mono"
-                      />
-                      <p className="text-sm text-[var(--metallic-silver)]">
-                        Total time over which tokens vest
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="vestingInterval" className="text-base">
-                        Release Interval (days) <span className="text-[var(--neon-orange)]">*</span>
-                      </Label>
-                      <Input
-                        id="vestingInterval"
-                        type="number"
-                        min={1}
-                        value={formData.vestingInterval}
-                        onChange={(e) => handleChange('vestingInterval', e.target.value)}
-                        placeholder="30"
-                        error={validationErrors.vestingInterval}
-                        className="text-base font-mono"
-                      />
-                      <p className="text-sm text-[var(--metallic-silver)]">
-                        Frequency of token releases
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="vestingInitialRelease" className="text-base">
-                        Initial Release (%)
-                      </Label>
-                      <Input
-                        id="vestingInitialRelease"
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={formData.vestingInitialRelease}
-                        onChange={(e) => handleChange('vestingInitialRelease', e.target.value)}
-                        placeholder="10"
-                        className="text-base font-mono"
-                      />
-                      <p className="text-sm text-[var(--metallic-silver)]">
-                        Percentage unlocked immediately
-                      </p>
-                    </div>
-                  </div>
-
-                  {formData.vestingDuration && formData.vestingInterval && (
-                    <div className="p-4 bg-[var(--charcoal)] rounded-lg border border-[var(--silver-dark)]/20">
-                      <p className="text-sm font-semibold text-[var(--silver-light)] mb-3">Vesting Summary:</p>
-                      <div className="space-y-2 text-sm text-[var(--metallic-silver)]">
-                        <div className="flex justify-between">
-                          <span>Initial Release:</span>
-                          <span className="text-[var(--silver-light)] font-mono">{formData.vestingInitialRelease}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Cliff Period:</span>
-                          <span className="text-[var(--silver-light)] font-mono">{formData.vestingCliff} days</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Total Releases:</span>
-                          <span className="text-[var(--silver-light)] font-mono">
-                            ~{Math.ceil(parseFloat(formData.vestingDuration) / parseFloat(formData.vestingInterval))} releases
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Release Frequency:</span>
-                          <span className="text-[var(--silver-light)] font-mono">Every {formData.vestingInterval} days</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
+          <Step5VestingConfig
+            formData={formData}
+            validationErrors={validationErrors}
+            onChange={handleChange}
+          />
         )
 
       case 6:
-        const selectedToken = CONTRIBUTION_TOKENS.find(t => t.address === formData.contributionTokenAddress)
-        
         return (
-          <div className="space-y-8">
-            <div className="border-l-4 border-[var(--neon-blue)] pl-4">
-              <h3 className="text-2xl font-bold text-[var(--silver-light)] mb-2">
-                Review & Submit
-              </h3>
-              <p className="text-[var(--metallic-silver)] leading-relaxed">
-                Please carefully review all Launch details before submission. Once created, these parameters cannot be changed.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="bg-[var(--charcoal)] border border-[var(--silver-dark)]/20 rounded-xl overflow-hidden">
-                <div className="bg-[var(--neon-blue)]/10 border-b border-[var(--silver-dark)]/20 px-6 py-4">
-                  <h4 className="font-bold text-lg text-[var(--silver-light)]">Token Details</h4>
-                </div>
-                <div className="p-6 space-y-3">
-                  <div className="flex justify-between items-start py-2 border-b border-[var(--silver-dark)]/10">
-                    <span className="text-[var(--metallic-silver)]">Name:</span>
-                    <span className="text-[var(--silver-light)] font-semibold text-right">{formData.projectTokenName}</span>
-                  </div>
-                  <div className="flex justify-between items-start py-2 border-b border-[var(--silver-dark)]/10">
-                    <span className="text-[var(--metallic-silver)]">Symbol:</span>
-                    <span className="text-[var(--silver-light)] font-mono font-semibold">{formData.projectTokenSymbol}</span>
-                  </div>
-                  <div className="flex justify-between items-start py-2">
-                    <span className="text-[var(--metallic-silver)]">Total Supply:</span>
-                    <span className="text-[var(--silver-light)] font-mono font-semibold">{parseFloat(formData.initialTotalSupply).toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-[var(--charcoal)] border border-[var(--silver-dark)]/20 rounded-xl overflow-hidden">
-                <div className="bg-[var(--neon-blue)]/10 border-b border-[var(--silver-dark)]/20 px-6 py-4">
-                  <h4 className="font-bold text-lg text-[var(--silver-light)]">Funding Configuration</h4>
-                </div>
-                <div className="p-6 space-y-3">
-                  <div className="flex justify-between items-start py-2 border-b border-[var(--silver-dark)]/10">
-                    <span className="text-[var(--metallic-silver)]">Contribution Token:</span>
-                    <span className="text-[var(--silver-light)] font-semibold">{selectedToken?.symbol}</span>
-                  </div>
-                  <div className="flex justify-between items-start py-2 border-b border-[var(--silver-dark)]/10">
-                    <span className="text-[var(--metallic-silver)]">Hard Cap:</span>
-                    <span className="text-[var(--silver-light)] font-mono font-semibold">{parseFloat(formData.fundingGoal).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between items-start py-2 border-b border-[var(--silver-dark)]/10">
-                    <span className="text-[var(--metallic-silver)]">Soft Cap:</span>
-                    <span className="text-[var(--silver-light)] font-mono font-semibold">{parseFloat(formData.softCap).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between items-start py-2 border-b border-[var(--silver-dark)]/10">
-                    <span className="text-[var(--metallic-silver)]">Token Price:</span>
-                    <span className="text-[var(--silver-light)] font-mono font-semibold">{formData.tokenPrice}</span>
-                  </div>
-                  <div className="flex justify-between items-start py-2 border-b border-[var(--silver-dark)]/10">
-                    <span className="text-[var(--metallic-silver)]">Contribution Range:</span>
-                    <span className="text-[var(--silver-light)] font-mono font-semibold">
-                      {formData.minContribution} - {formData.maxContribution}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-start py-2">
-                    <span className="text-[var(--metallic-silver)]">Tokens for Sale:</span>
-                    <span className="text-[var(--silver-light)] font-mono font-semibold">{parseFloat(formData.amountTokensForSale).toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-[var(--charcoal)] border border-[var(--silver-dark)]/20 rounded-xl overflow-hidden">
-                <div className="bg-[var(--neon-blue)]/10 border-b border-[var(--silver-dark)]/20 px-6 py-4">
-                  <h4 className="font-bold text-lg text-[var(--silver-light)]">Timeline</h4>
-                </div>
-                <div className="p-6 space-y-3">
-                  <div className="flex justify-between items-start py-2 border-b border-[var(--silver-dark)]/10">
-                    <span className="text-[var(--metallic-silver)]">Start Time:</span>
-                    <span className="text-[var(--silver-light)] font-semibold text-right">
-                      {formData.startTime.toLocaleString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric',
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-start py-2 border-b border-[var(--silver-dark)]/10">
-                    <span className="text-[var(--metallic-silver)]">End Time:</span>
-                    <span className="text-[var(--silver-light)] font-semibold text-right">
-                      {formData.endTime.toLocaleString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric',
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-start py-2">
-                    <span className="text-[var(--metallic-silver)]">Duration:</span>
-                    <span className="text-[var(--neon-blue)] font-bold">
-                      {((formData.endTime.getTime() - formData.startTime.getTime()) / (24 * 60 * 60 * 1000)).toFixed(1)} days
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-[var(--charcoal)] border border-[var(--silver-dark)]/20 rounded-xl overflow-hidden">
-                <div className="bg-[var(--neon-blue)]/10 border-b border-[var(--silver-dark)]/20 px-6 py-4">
-                  <h4 className="font-bold text-lg text-[var(--silver-light)]">Liquidity & Lock</h4>
-                </div>
-                <div className="p-6 space-y-3">
-                  <div className="flex justify-between items-start py-2 border-b border-[var(--silver-dark)]/10">
-                    <span className="text-[var(--metallic-silver)]">Liquidity Percentage:</span>
-                    <span className="text-[var(--silver-light)] font-mono font-semibold">{formData.liquidityPercentage}%</span>
-                  </div>
-                  <div className="flex justify-between items-start py-2">
-                    <span className="text-[var(--metallic-silver)]">Lock Duration:</span>
-                    <span className="text-[var(--silver-light)] font-mono font-semibold">{formData.lockDuration} days</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-[var(--charcoal)] border border-[var(--silver-dark)]/20 rounded-xl overflow-hidden">
-                <div className="bg-[var(--neon-blue)]/10 border-b border-[var(--silver-dark)]/20 px-6 py-4">
-                  <h4 className="font-bold text-lg text-[var(--silver-light)]">Vesting Schedule</h4>
-                </div>
-                <div className="p-6">
-                  {formData.vestingEnabled ? (
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-start py-2 border-b border-[var(--silver-dark)]/10">
-                        <span className="text-[var(--metallic-silver)]">Status:</span>
-                        <span className="text-[var(--neon-blue)] font-semibold">Enabled</span>
-                      </div>
-                      <div className="flex justify-between items-start py-2 border-b border-[var(--silver-dark)]/10">
-                        <span className="text-[var(--metallic-silver)]">Initial Release:</span>
-                        <span className="text-[var(--silver-light)] font-mono font-semibold">{formData.vestingInitialRelease}%</span>
-                      </div>
-                      <div className="flex justify-between items-start py-2 border-b border-[var(--silver-dark)]/10">
-                        <span className="text-[var(--metallic-silver)]">Cliff Period:</span>
-                        <span className="text-[var(--silver-light)] font-mono font-semibold">{formData.vestingCliff} days</span>
-                      </div>
-                      <div className="flex justify-between items-start py-2 border-b border-[var(--silver-dark)]/10">
-                        <span className="text-[var(--metallic-silver)]">Total Duration:</span>
-                        <span className="text-[var(--silver-light)] font-mono font-semibold">{formData.vestingDuration} days</span>
-                      </div>
-                      <div className="flex justify-between items-start py-2">
-                        <span className="text-[var(--metallic-silver)]">Release Interval:</span>
-                        <span className="text-[var(--silver-light)] font-mono font-semibold">{formData.vestingInterval} days</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-3 text-[var(--neon-blue)]">
-                      <Check className="w-5 h-5" />
-                      <span className="font-semibold">No vesting - Immediate token distribution</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="bg-[var(--neon-orange)]/5 border-2 border-[var(--neon-orange)]/30 rounded-xl p-6">
-                <div className="flex gap-4">
-                  <AlertCircle className="w-6 h-6 text-[var(--neon-orange)] flex-shrink-0 mt-1" />
-                  <div>
-                    <h5 className="font-bold text-[var(--neon-orange)] mb-3 text-lg">Before You Submit</h5>
-                    <ul className="space-y-2 text-sm text-[var(--silver-light)]">
-                      <li className="flex items-start gap-2">
-                        <span className="text-[var(--neon-orange)] mt-1">•</span>
-                        <span>Ensure all information is correct - parameters cannot be changed after creation</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-[var(--neon-orange)] mt-1">•</span>
-                        <span>You will need to approve and deposit tokens after project creation</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-[var(--neon-orange)] mt-1">•</span>
-                        <span>Transaction will require gas fees on the Exhibition network</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-[var(--neon-orange)] mt-1">•</span>
-                        <span>Make sure you have sufficient funds in your wallet</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Step6ReviewSubmit
+            formData={formData}
+          />
         )
 
       default:
