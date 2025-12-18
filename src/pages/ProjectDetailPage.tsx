@@ -156,7 +156,7 @@ export const ProjectDetailPage: React.FC = () => {
         <Link to="/projects">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Projects
+            Back to Launches
           </Button>
         </Link>
 
@@ -181,7 +181,7 @@ export const ProjectDetailPage: React.FC = () => {
             <Link to={`/dashboard?project=${projectId}`}>
               <Button variant="outline" size="sm">
                 <Settings className="h-4 w-4 mr-2" />
-                Manage Project
+                Manage Launches
               </Button>
             </Link>
           )}

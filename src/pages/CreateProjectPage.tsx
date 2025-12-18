@@ -155,7 +155,8 @@ export const CreateProjectPage: React.FC = () => {
                   Create a Token Launch
                 </h1>
                 <p className="text-lg text-[var(--metallic-silver)] leading-relaxed">
-                  Define and deploy a primary-market token launch on Exhibition.
+                  Define and deploy a primary-market token launch on Nexus Layer 1 
+                  <span className="font-bold text-[var(--neon-orange)]"> testnet</span> via Exhibition. 
                   Total supply, sale allocation, funding, vesting, and liquidity parameters
                   are enforced as immutable on-chain rules that instantiate the initial market.
                 </p>
@@ -208,7 +209,7 @@ export const CreateProjectPage: React.FC = () => {
           Before You Proceed
         </h4>
         <p className="text-sm text-[var(--metallic-silver)] mb-4">
-          Creating a launch configures immutable on-chain parameters. Ensure you have:
+          Creating a launch configures immutable on-chain parameters on Nexus Layer 1  <span className="text-[var(--neon-orange)]"> testnet</span>. Ensure you have:
         </p>
         <ul className="space-y-2 text-sm text-[var(--metallic-silver)]">
           <li className="flex items-start gap-2">
@@ -217,7 +218,7 @@ export const CreateProjectPage: React.FC = () => {
           </li>
           <li className="flex items-start gap-2">
             <span className="text-[var(--neon-blue)] mt-0.5">✓</span>
-            <span>Sufficient balance to cover deployment and transaction fees</span>
+            <span>Sufficient NEX test token to cover transaction fees</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-[var(--neon-blue)] mt-0.5">✓</span>

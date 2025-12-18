@@ -168,7 +168,7 @@ export const ProjectsPage: React.FC = () => {
           <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)] rounded-full opacity-60"></div>
         </div>
         <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--metallic-silver)' }}>
-          Browse primary-market launches with protocol-enforced liquidity,
+          Browse primary-market launches on Nexus Layer 1 <span className="text-[var(--neon-orange)]">testnet</span> with protocol-enforced liquidity,
           deterministic finalization, and verifiable on-chain execution.
         </p>
 
