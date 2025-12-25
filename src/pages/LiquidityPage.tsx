@@ -36,7 +36,7 @@ export const LiquidityPage: React.FC = () => {
             {/* Right: Stats Cards */}
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:flex-shrink-0">
               {/* TVL Card */}
-              <Card className="p-4 sm:p-5 bg-gradient-to-br from-[var(--deep-black)] to-[var(--charcoal)] border-[var(--silver-dark)] border-opacity-30 min-w-[140px] sm:min-w-[160px] lg:w-[200px]">
+              <Card className="p-4 sm:p-5 bg-gradient-to-br from-[var(--deep-black)] to-[var(--charcoal)] border border-[var(--silver-dark)] border-opacity-30 min-w-[140px] sm:min-w-[160px] lg:w-[200px]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs sm:text-sm text-[var(--metallic-silver)]">TVL</span>
                   <Droplet className="w-4 h-4 text-[var(--neon-blue)]" />
@@ -58,7 +58,7 @@ export const LiquidityPage: React.FC = () => {
               </Card>
 
               {/* Volume Card */}
-              <Card className="p-4 sm:p-5 bg-gradient-to-br from-[var(--deep-black)] to-[var(--charcoal)] border-[var(--silver-dark)] border-opacity-30 min-w-[140px] sm:min-w-[160px] lg:w-[200px]">
+              <Card className="p-4 sm:p-5 bg-gradient-to-br from-[var(--deep-black)] to-[var(--charcoal)] border border-[var(--silver-dark)] border-opacity-30 min-w-[140px] sm:min-w-[160px] lg:w-[200px]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs sm:text-sm text-[var(--metallic-silver)]">Volume (24h)</span>
                   <TrendingUp className="w-4 h-4 text-[var(--neon-orange)]" />

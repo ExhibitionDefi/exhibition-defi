@@ -4,24 +4,37 @@ import { ProjectFilters } from '../components/project/ProjectFilters'
 import { useProjects } from '../hooks/launchpad/useProjects'
 import { useProjectStore } from '../stores/projectStore'
 import { Button } from '../components/ui/Button'
-import { Search, TrendingUp, AlertCircle } from 'lucide-react'
+import { Search, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { ProjectStatus } from '@/types/project'
+import { useLocalPricing } from '@/hooks/utilities/useLocalPricing'
+import { formatUnits } from 'viem'
 
-// ✅ Lazy load ProjectCard
 const ProjectCard = lazy(() => import('../components/project/ProjectCard').then(module => ({
   default: module.ProjectCard
 })))
 
-const PROJECTS_PER_LOAD = 12 // Load 12 at a time
+const PROJECTS_PER_LOAD = 12
 
 export const ProjectsPage: React.FC = () => {
   const { projects: allProjects, isLoading, error } = useProjects()
   const { searchQuery, statusFilter } = useProjectStore()
+  const { getTokenPrice, isReady: isPricingReady } = useLocalPricing()
   
   const [displayCount, setDisplayCount] = useState(PROJECTS_PER_LOAD)
   const loadMoreRef = useRef<HTMLDivElement>(null)
 
-  // Apply filters
+  const calculateProjectUSD = React.useCallback((project: typeof allProjects[0]): number => {
+    if (!isPricingReady || !project.contributionTokenAddress) return 0
+    
+    const tokenPrice = getTokenPrice(project.contributionTokenAddress)
+    if (tokenPrice === null) return 0
+    
+    const decimals = project.contributionTokenDecimals || 18
+    const raisedDecimal = parseFloat(formatUnits(project.totalRaised, decimals))
+    
+    return raisedDecimal * tokenPrice
+  }, [isPricingReady, getTokenPrice])
+
   const filteredProjects = React.useMemo(() => {
     let filtered = allProjects
 
@@ -55,27 +68,25 @@ export const ProjectsPage: React.FC = () => {
         return aPriority - bPriority
       }
       
-      if (a.totalRaised > b.totalRaised) return -1
-      if (a.totalRaised < b.totalRaised) return 1
-      return 0
+      const aUSD = calculateProjectUSD(a)
+      const bUSD = calculateProjectUSD(b)
+      
+      return bUSD - aUSD
     })
 
     return filtered
-  }, [allProjects, statusFilter, searchQuery])
+  }, [allProjects, statusFilter, searchQuery, calculateProjectUSD])
 
-  // Reset display count when filters change
   useEffect(() => {
     setDisplayCount(PROJECTS_PER_LOAD)
   }, [searchQuery, statusFilter])
 
-  // Projects to display (only show displayCount number)
   const displayedProjects = React.useMemo(() => {
     return filteredProjects.slice(0, displayCount)
   }, [filteredProjects, displayCount])
 
   const hasMore = displayCount < filteredProjects.length
 
-  // Intersection Observer for infinite scroll
   useEffect(() => {
     if (!hasMore || isLoading) return
 
@@ -100,7 +111,6 @@ export const ProjectsPage: React.FC = () => {
     }
   }, [hasMore, isLoading])
 
-  // Stats
   const stats = React.useMemo(() => {
     const totalProjects = allProjects.length
     const completedCount = allProjects.filter(p => p.status === ProjectStatus.Completed).length
@@ -112,7 +122,7 @@ export const ProjectsPage: React.FC = () => {
     ).length
 
     return { totalProjects, completedCount, successfulCount, liveCount }
-  }, [allProjects.length])
+  }, [allProjects])
 
   if (isLoading) {
     return (
@@ -122,7 +132,7 @@ export const ProjectsPage: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-[var(--neon-blue)]/20 to-[var(--neon-orange)]/20 rounded-full blur-xl animate-pulse"></div>
         </div>
         <p className="text-lg font-medium" style={{ color: 'var(--silver-light)' }}>
-          Loading projects...
+          Loading launches...
         </p>
         <p className="text-sm" style={{ color: 'var(--metallic-silver)' }}>
           Discovering innovative token launches
@@ -140,10 +150,10 @@ export const ProjectsPage: React.FC = () => {
             style={{ color: '#ef4444' }}
           />
           <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--silver-light)' }}>
-            Failed to Load Projects
+            Failed to Load launches
           </h3>
           <p className="text-red-400 mb-4">
-            Unable to fetch project data. Please check your connection and try again.
+            Unable to fetch launch data. Please check your connection and try again.
           </p>
           <Button 
             variant="outline" 
@@ -158,88 +168,71 @@ export const ProjectsPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Enhanced Header */}
-      <div className="text-center space-y-6">
+    <div className="space-y-5">
+      {/* Compact Header */}
+      <div className="text-center space-y-3">
         <div className="relative">
-          <h1 className="text-4xl font-bold mb-2" style={{ color: 'var(--silver-light)' }}>
+          <h1 className="text-3xl font-bold mb-1" style={{ color: 'var(--silver-light)' }}>
             Live & Upcoming Launches
           </h1>
-          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)] rounded-full opacity-60"></div>
+          <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-20 h-0.5 bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)] rounded-full opacity-60"></div>
         </div>
-        <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--metallic-silver)' }}>
-          Browse primary-market launches on Nexus Layer 1 <span className="text-[var(--neon-orange)]">testnet</span> with protocol-enforced liquidity,
-          deterministic finalization, and verifiable on-chain execution.
+        <p className="text-sm max-w-2xl mx-auto leading-relaxed" style={{ color: 'var(--metallic-silver)' }}>
+          Browse primary-market launches on Nexus Layer 1 <span className="text-[var(--neon-orange)]">testnet</span> with protocol-enforced liquidity, deterministic finalization, and verifiable on-chain execution.
         </p>
 
-        {/* Stats Banner */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto mt-8">
-          <div className="bg-gradient-to-br from-[var(--charcoal)] to-[var(--deep-black)] p-4 rounded-xl border border-[var(--neon-blue)]/30 transition-all duration-300 hover:border-[var(--neon-blue)]/50">
-            <div className="flex items-center justify-center space-x-2">
-              <TrendingUp 
-                className="h-5 w-5 drop-shadow-[0_0_6px_var(--neon-blue)]" 
-                style={{ color: 'var(--neon-blue)' }}
-              />
-              <div className="text-center">
-                <p className="text-2xl font-bold" style={{ color: 'var(--silver-light)' }}>
-                  {stats.totalProjects}
-                </p>
-                <p className="text-xs" style={{ color: 'var(--metallic-silver)' }}>
-                  Total Projects
-                </p>
-              </div>
-            </div>
+        {/* Compact Stats - Single Row, Inline */}
+        <div className="flex items-center justify-center gap-6 text-xs pt-2">
+          <div className="flex items-center gap-1.5">
+            <TrendingUp className="h-3.5 w-3.5" style={{ color: 'var(--neon-blue)' }} />
+            <span className="font-bold text-base" style={{ color: 'var(--silver-light)' }}>
+              {stats.totalProjects}
+            </span>
+            <span style={{ color: 'var(--metallic-silver)' }}>Total</span>
           </div>
-
-          <div className="bg-gradient-to-br from-[var(--charcoal)] to-[var(--deep-black)] p-4 rounded-xl border border-[var(--neon-orange)]/30 transition-all duration-300 hover:border-[var(--neon-orange)]/50">
-            <div className="flex items-center justify-center space-x-2">
-              <Search 
-                className="h-5 w-5 drop-shadow-[0_0_6px_var(--neon-orange)]" 
-                style={{ color: 'var(--neon-orange)' }}
-              />
-              <div className="text-center">
-                <p className="text-2xl font-bold" style={{ color: 'var(--silver-light)' }}>
-                  {stats.completedCount}
-                </p>
-                <p className="text-xs" style={{ color: 'var(--metallic-silver)' }}>
-                  Completed Projects
-                </p>
-              </div>
-            </div>
+          
+          <div className="w-px h-4 bg-[var(--metallic-silver)]/30"></div>
+          
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-[var(--neon-orange)] animate-pulse"></div>
+            <span className="font-bold text-base" style={{ color: 'var(--silver-light)' }}>
+              {stats.liveCount}
+            </span>
+            <span style={{ color: 'var(--metallic-silver)' }}>Live</span>
           </div>
-
-          <div className="bg-gradient-to-br from-[var(--charcoal)] to-[var(--deep-black)] p-4 rounded-xl border border-[var(--metallic-silver)]/30 transition-all duration-300 hover:border-[var(--metallic-silver)]/50">
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)] drop-shadow-[0_0_4px_var(--neon-blue)]"></div>
-              <div className="text-center">
-                <p className="text-2xl font-bold" style={{ color: 'var(--silver-light)' }}>
-                  {stats.liveCount}
-                </p>
-                <p className="text-xs" style={{ color: 'var(--metallic-silver)' }}>
-                  Live Projects
-                </p>
-              </div>
-            </div>
+          
+          <div className="w-px h-4 bg-[var(--metallic-silver)]/30"></div>
+          
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="h-3.5 w-3.5" style={{ color: 'var(--neon-blue)' }} />
+            <span className="font-bold text-base" style={{ color: 'var(--silver-light)' }}>
+              {stats.completedCount}
+            </span>
+            <span style={{ color: 'var(--metallic-silver)' }}>Completed</span>
           </div>
         </div>
       </div>
 
-      {/* Enhanced Filters */}
-      <div className="bg-gradient-to-r from-[var(--charcoal)]/60 to-[var(--deep-black)]/60 p-6 rounded-xl border border-[var(--metallic-silver)]/20">
+      {/* Compact Filters - No background card */}
+      <div className="border-t border-b border-[var(--metallic-silver)]/10 py-3">
         <ProjectFilters />
       </div>
 
-      {/* Enhanced Results Count */}
-      <div className="flex justify-between items-center px-1">
-        <div className="flex items-center space-x-3">
-          <div className="w-1 h-1 rounded-full bg-[var(--neon-blue)] drop-shadow-[0_0_3px_var(--neon-blue)] animate-pulse"></div>
-          <p className="text-sm font-medium" style={{ color: 'var(--silver-light)' }}>
-            Showing {displayedProjects.length} of {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'}
+      {/* Compact Results Count - Smaller, inline */}
+      <div className="flex justify-between items-center text-xs px-1">
+        <p style={{ color: 'var(--metallic-silver)' }}>
+          <span className="font-medium" style={{ color: 'var(--silver-light)' }}>
+            {displayedProjects.length}
+          </span> of {filteredProjects.length} {filteredProjects.length === 1 ? 'launch' : 'launches'}
+        </p>
+        {isPricingReady && (
+          <p style={{ color: 'var(--metallic-silver)' }}>
+            Ranked by USD value
           </p>
-        </div>
+        )}
       </div>
 
-      {/* Enhanced Projects Grid */}
+      {/* Projects Grid */}
       {filteredProjects.length === 0 ? (
         <div className="text-center py-16">
           <div className="bg-gradient-to-r from-[var(--charcoal)]/60 to-[var(--deep-black)]/60 p-8 rounded-xl border border-[var(--metallic-silver)]/20 max-w-md mx-auto">
@@ -248,16 +241,16 @@ export const ProjectsPage: React.FC = () => {
               style={{ color: 'var(--metallic-silver)' }}
             />
             <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--silver-light)' }}>
-              No Projects Found
+              No Launches Found
             </h3>
             <p style={{ color: 'var(--metallic-silver)' }}>
-              No projects match your current search criteria. Try adjusting your filters or check back later for new launches.
+              No launches match your current search criteria. Try adjusting your filters or check back later for new launches.
             </p>
           </div>
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {displayedProjects.map((project, index) => (
               <div 
                 key={project.id.toString()}
@@ -279,17 +272,15 @@ export const ProjectsPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Infinite Scroll Trigger */}
           {hasMore && (
             <div ref={loadMoreRef} className="flex justify-center py-8">
               <LoadingSpinner size="md" />
               <p className="ml-3 text-sm" style={{ color: 'var(--metallic-silver)' }}>
-                Loading more projects...
+                Loading more launches...
               </p>
             </div>
           )}
 
-          {/* End of Results */}
           {!hasMore && filteredProjects.length > PROJECTS_PER_LOAD && (
             <div className="text-center py-8">
               <p className="text-sm" style={{ color: 'var(--metallic-silver)' }}>

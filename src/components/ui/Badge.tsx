@@ -20,7 +20,7 @@ export const Badge: React.FC<BadgeProps> = ({
     default: 'text-[var(--deep-black)]',
     success: 'text-[var(--neon-blue)] border border-[var(--neon-blue)]',
     warning: 'text-[var(--neon-orange)] border border-[var(--neon-orange)]',
-    error: 'bg-[var(--neon-orange)] text-[var(--deep-black)]',
+    error: 'bg-[var(--neon-orange-tone)] text-[var(--neon-orange)]',
     info: 'text-[var(--neon-blue)] border border-[var(--neon-blue)]',
   }
   
@@ -35,7 +35,7 @@ export const Badge: React.FC<BadgeProps> = ({
       case 'default':
         return 'bg-[var(--metallic-silver)]'
       case 'success':
-        return 'bg-[var(--charcoal)]'
+        return 'bg-[var(--neon-blue-tone)]'
       case 'warning':
         return 'bg-[var(--charcoal)]'
       case 'error':

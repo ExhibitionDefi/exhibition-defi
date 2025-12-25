@@ -43,7 +43,7 @@ export const ProjectFilters: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[var(--neon-blue)] opacity-60" />
               <Input
                 type="text"
-                placeholder="Search projects by name, symbol, or owner..."
+                placeholder="Search launches by name, symbol, or owner..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 w-full bg-[var(--charcoal)] border-[var(--silver-dark)] border-opacity-30 text-[var(--silver-light)] placeholder:text-[var(--metallic-silver)] focus:border-[var(--neon-blue)] focus:border-opacity-80 focus:ring-[var(--neon-blue)] focus:ring-opacity-20 hover:border-opacity-50 transition-all duration-300"

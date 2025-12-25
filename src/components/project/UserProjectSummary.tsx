@@ -133,7 +133,7 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
   }
 
   return (
-    <Card>
+    <Card hover className="border border-[var(--charcoal)] bg-[var(--deep-black)]">
       {/* Header with Logo */}
       <div className="flex items-center space-x-3 mb-4">
         {project.projectTokenLogoURI && (
@@ -148,7 +148,7 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
         )}
         <h3 className="text-lg font-semibold flex items-center" style={{ color: 'var(--silver-light)' }}>
           <Wallet className="h-5 w-5 mr-2" />
-          {userSummary.contributionAmount > 0n ? 'Your Participation' : 'Project Actions'}
+          {userSummary.contributionAmount > 0n ? 'Your Participation' : 'Launch Actions'}
         </h3>
       </div>
 
@@ -347,8 +347,8 @@ export const UserProjectSummary: React.FC<UserProjectSummaryProps> = ({
                   <p className="font-medium" style={{ color: 'var(--neon-orange)' }}>Funding Period Ended</p>
                   <p className="text-xs" style={{ color: 'var(--silver-dark)' }}>
                     {userSummary.contributionAmount === 0n 
-                      ? 'Anyone can help finalize this project'
-                      : 'Help finalize this project'}
+                      ? 'Anyone can help finalize this Launch'
+                      : 'Help finalize this Launch'}
                   </p>
                 </div>
               </div>

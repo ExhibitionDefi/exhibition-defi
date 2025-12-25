@@ -188,7 +188,7 @@ export function useFinalizeProject(
       return { text: 'Retry Finalize', disabled: false, loading: false }
     }
 
-    return { text: 'Finalize Project', disabled: false, loading: false }
+    return { text: 'Finalize Launch', disabled: false, loading: false }
   })()
 
   // Transaction status for modal

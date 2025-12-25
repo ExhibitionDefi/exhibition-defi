@@ -153,7 +153,7 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
   }
 
   return (
-    <Card hover className="border-[var(--charcoal)] bg-[var(--deep-black)]">
+    <Card hover className="border border-[var(--charcoal)] bg-[var(--deep-black)]">
       <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-4">
         Contribute to Project
       </h3>
@@ -191,7 +191,7 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
         </div>
       )}
 
-      <div className="flex justify-between items-center p-3 bg-[var(--charcoal)] rounded-lg border border-[var(--silver-dark)] border-opacity-20 hover:border-opacity-40 transition-all duration-300">
+      <div className="flex justify-between items-center p-3 bg-[var(--deep-black)] border border-[var(--charcoal)] rounded-lg mb-2">
         <span className="text-sm text-[var(--metallic-silver)]">Your Balance:</span>
         <div className="flex items-center space-x-2">
           <div className="text-right">
@@ -224,7 +224,7 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
 
       <div className="space-y-4">
         {/* Min/Max Contribution Info */}
-        <div className="flex items-center justify-between gap-2 p-3 bg-[var(--charcoal)] rounded-lg border border-[var(--silver-dark)] border-opacity-20">
+        <div className="flex items-center justify-between gap-2 p-3 bg-[var(--deep-black)] border border-[var(--charcoal)] rounded-lg">
           <div className="flex items-center gap-2">
             <span className="text-xs text-[var(--metallic-silver)]">Min:</span>
             <Badge variant="info" className="text-xs border-[var(--neon-blue)] text-[var(--neon-blue)] bg-transparent">
@@ -320,7 +320,7 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
         {contributionSuccess && (
           <div className="text-center py-3 px-4 bg-[var(--charcoal)] rounded-lg">
             <p className="text-xs text-[var(--silver-dark)]">
-              Your contribution has been recorded. Check "Your Participation" section above for details.
+              Your contribution has been recorded. Check "Your Participation" section below for details.
             </p>
           </div>
         )}

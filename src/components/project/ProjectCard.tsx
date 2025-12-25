@@ -52,19 +52,14 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       const tokenPrice = getTokenPriceUSD(tokenAddress as Address)
       if (tokenPrice === 'N/A') return 'N/A'
       
-      // Parse the price (remove $ and commas)
       const priceValue = parseFloat(tokenPrice.replace(/[$,]/g, ''))
-      
-      // Convert token amount to decimal
       const divisor = 10n ** BigInt(decimals)
       const tokenAmountDecimal = Number(tokenAmount) / Number(divisor)
-      
-      // Calculate USD value
       const usdValue = tokenAmountDecimal * priceValue
       
       return `$${usdValue.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
       })}`
     } catch (error) {
       logger.warn('Error calculating USD value:', error)
@@ -86,107 +81,78 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 
   return (
     <Link to={`/projects/${project.id}`} className="block">
-      <Card hover className="h-full transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,195,255,0.15)]">
-        <div className="space-y-4">
-          {/* Header with Logo, Name, Status */}
-          <div className="flex items-start space-x-3">
-            {/* Project Logo */}
+      <Card hover className="h-full transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,195,255,0.15)] relative">
+        {/* Floating Status Badge */}
+        <div className="absolute top-3 right-3 z-10">
+          <Badge variant={getStatusVariant(project.status)} size="sm">
+            {ProjectStatusLabels[project.status as ProjectStatus]}
+          </Badge>
+        </div>
+
+        <div className="space-y-3">
+          {/* Header - Logo + Name + Live indicator */}
+          <div className="flex items-center space-x-2.5 pr-20">
             {project.projectTokenLogoURI && (
-              <div className="flex-shrink-0">
-                <SafeImage
-                  src={project.projectTokenLogoURI}
-                  alt={`${project.tokenName || 'Token'} logo`}
-                  className="w-12 h-12 rounded-lg object-cover border border-[var(--metallic-silver)]/20"
-                  fallback={
-                    <div className="w-12 h-12 rounded-lg bg-[var(--charcoal)] flex items-center justify-center text-[var(--silver-dark)] text-xs">
-                      N/A
-                    </div>
-                  }
-                  onError={() => logger.warn('Failed to load token logo')}
-                />
-              </div>
+              <SafeImage
+                src={project.projectTokenLogoURI}
+                alt={`${project.tokenName || 'Token'} logo`}
+                className="w-10 h-10 rounded-lg object-cover border border-[var(--metallic-silver)]/20 flex-shrink-0"
+                fallback={
+                  <div className="w-10 h-10 rounded-lg bg-[var(--charcoal)] flex items-center justify-center text-[var(--silver-dark)] text-xs">
+                    N/A
+                  </div>
+                }
+                onError={() => logger.warn('Failed to load token logo')}
+              />
             )}
             
             <div className="flex-1 min-w-0">
-              <div className="flex items-center space-x-2 mb-1">
-                <h3 className="text-lg font-bold text-[var(--silver-light)] truncate">
+              <div className="flex items-center space-x-1.5">
+                <h3 className="text-base font-bold text-[var(--silver-light)] truncate">
                   <SafeHtml content={project.tokenName || 'Unknown Token'} />
                 </h3>
                 {isLive && (
-                  <div className="w-2 h-2 bg-[var(--neon-blue)] rounded-full animate-pulse shadow-[0_0_4px_var(--neon-blue)] flex-shrink-0" />
+                  <div className="w-1.5 h-1.5 bg-[var(--neon-blue)] rounded-full animate-pulse shadow-[0_0_4px_var(--neon-blue)] flex-shrink-0" />
                 )}
               </div>
-              
-              <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-                <span className="text-sm font-mono text-[var(--metallic-silver)]">
-                  <SafeHtml content={project.tokenSymbol || ''} />
-                </span>
-                <Badge variant={getStatusVariant(project.status)} size="sm">
-                  {ProjectStatusLabels[project.status as ProjectStatus]}
-                </Badge>
-              </div>
+              <span className="text-xs font-mono text-[var(--metallic-silver)]">
+                <SafeHtml content={project.tokenSymbol || ''} />
+              </span>
             </div>
           </div>
 
-          {/* Progress Section */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-[var(--metallic-silver)]">Progress</span>
-              <span className="text-lg font-bold text-[var(--neon-blue)]">
+          {/* Progress Bar with Percentage */}
+          <div className="space-y-0.5">
+            <div className="flex justify-end">
+              <span className="text-xs font-bold text-[var(--neon-blue)]">
                 {Number(progressPercentage.toFixed(1))}%
               </span>
             </div>
-            
             <Progress
               value={progressPercentage}
               variant={progressPercentage >= 1 ? 'success' : 'default'}
-              size="md"
+              size="sm"
             />
           </div>
 
-          {/* Key Metrics with USD values */}
-          <div className="grid grid-cols-3 gap-3 pt-2 border-t border-[var(--metallic-silver)]/10">
-            <div>
-              <p className="text-xs text-[var(--metallic-silver)] mb-1">Raised</p>
-              <p className="text-sm font-semibold text-[var(--silver-light)] truncate">
-                {raisedUSD}
-              </p>
-              <p className="text-xs text-[var(--metallic-silver)]/60 truncate mt-0.5">
-                {ExhibitionFormatters.formatTokenWithSymbol(
-                  project.totalRaised,
-                  project.contributionTokenSymbol || 'Tokens',
-                  project.contributionTokenDecimals,
-                )}
-              </p>
+          {/* Compact Metrics - Single Line */}
+          <div className="flex items-center justify-between text-xs pt-1">
+            <div className="flex items-center space-x-1 text-[var(--silver-light)]">
+              <span className="font-semibold">{raisedUSD}</span>
+              <span className="text-[var(--metallic-silver)]">/</span>
+              <span className="text-[var(--metallic-silver)]">{goalUSD}</span>
             </div>
             
-            <div>
-              <p className="text-xs text-[var(--metallic-silver)] mb-1">Goal</p>
-              <p className="text-sm font-semibold text-[var(--silver-light)] truncate">
-                {goalUSD}
-              </p>
-              <p className="text-xs text-[var(--metallic-silver)]/60 truncate mt-0.5">
-                {ExhibitionFormatters.formatTokenWithSymbol(
-                  project.fundingGoal,
-                  project.contributionTokenSymbol || 'Tokens',
-                  project.contributionTokenDecimals,
-                )}
-              </p>
-            </div>
-            
-            <div>
-              <p className="text-xs text-[var(--metallic-silver)] mb-1 flex items-center">
-                <Clock className="h-3 w-3 mr-1" />
-                {hasEnded ? 'Ended' : 'Remaining'}
-              </p>
-              <p className="text-sm font-semibold text-[var(--neon-blue)] truncate">
-                {hasEnded ? 'Completed' : formatTimeRemaining(project.timeRemaining)}
-              </p>
+            <div className="flex items-center space-x-1 text-[var(--neon-blue)]">
+              <Clock className="h-3 w-3" />
+              <span className="font-medium">
+                {hasEnded ? 'Ended' : formatTimeRemaining(project.timeRemaining)}
+              </span>
             </div>
           </div>
 
           {/* CTA Button */}
-          <button className="w-full bg-[var(--neon-blue)] hover:bg-[var(--neon-blue)]/80 text-[var(--deep-black)] font-medium py-2.5 px-4 rounded-lg transition-colors shadow-[0_0_8px_var(--neon-blue)]/30 text-sm">
+          <button className="w-full bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)] hover:from-[var(--neon-blue)]/90 hover:to-[var(--neon-orange)]/90 text-[var(--deep-black)] font-medium py-0.9 px-4 rounded-lg transition-all shadow-[0_0_10px_rgba(0,195,255,0.3),0_0_10px_rgba(255,107,0,0.2)] text-xs">
             View Details
           </button>
         </div>

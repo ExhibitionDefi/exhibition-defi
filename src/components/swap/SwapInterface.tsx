@@ -2,6 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Address } from 'viem';
 import { Settings, ChevronDown, ArrowUpDown } from 'lucide-react';
+import { useAppKit } from '@reown/appkit/react'; 
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { TokenSelector } from './TokenSelector';
@@ -67,6 +68,8 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
     defaultTokenIn: defaultTokenIn || COMMON_TOKENS[0]?.address,
     defaultTokenOut: defaultTokenOut || COMMON_TOKENS[1]?.address,
   });
+
+  const { open } = useAppKit();
 
   const { getTokenPriceUSD, isReady: isPricingReady } = useLocalPricing();
 
@@ -151,7 +154,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
   }, [customTokens, swapLogic.tokenInInfo, swapLogic.tokenOutInfo]);
 
   // Calculate USD values
-  const getUSDValue = (amount: string, decimals: number, tokenAddress?: Address): string => {
+  const getUSDValue = (amount: string, _decimals: number, tokenAddress?: Address): string => {
     if (!isPricingReady || !tokenAddress || !amount || amount === '0' || amount === '0.0') return '';
     
     try {
@@ -237,6 +240,12 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
   };
 
   const handleSwap = async () => {
+    // If not connected, open wallet connect modal
+    if (!swapLogic.isConnected) {  // ← NEW
+      open();                       // ← NEW
+      return;                       // ← NEW
+    } 
+    
     if (!swapLogic.validation.canProceed) return;
 
     try {
@@ -408,13 +417,13 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({
           </div>
         </div>
 
-        {/* Swap Button */}
+       {/* Swap Button */}
         <div className="mt-6">
           <button
             onClick={handleSwap}
-            disabled={swapLogic.buttonState.disabled}
+            disabled={swapLogic.buttonState.disabled && swapLogic.isConnected}
             className={`w-full py-4 text-lg font-semibold rounded-xl transition-all duration-300 relative ${
-              swapLogic.buttonState.disabled
+              swapLogic.buttonState.disabled && swapLogic.isConnected
                 ? 'bg-[var(--silver-dark)] text-[var(--charcoal)] cursor-not-allowed'
                 : swapLogic.currentStep === 'approving'
                 ? 'bg-gradient-to-r from-[var(--neon-orange)] to-[var(--neon-blue)] text-[var(--deep-black)] shadow-[0_0_20px_var(--neon-orange)]'

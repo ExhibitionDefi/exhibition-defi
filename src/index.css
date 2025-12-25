@@ -12,6 +12,8 @@
   --deep-black: #1A1A1A;
   --charcoal: #0A0A0A;
   --dark-black: #000000;
+  --neon-blue-tone: rgba(21, 198, 230, 0.15);
+  --neon-orange-tone: rgba(250, 126, 9, 0.09);
 }
 
 /* Reset body defaults */

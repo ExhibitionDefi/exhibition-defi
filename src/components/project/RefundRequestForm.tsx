@@ -107,7 +107,7 @@ export const RefundRequestForm: React.FC<RefundRequestFormProps> = ({
     : `This project has ${statusMessage}. You can request a refund for your contribution.`
 
   return (
-    <Card hover className="border-[var(--charcoal)] bg-[var(--deep-black)]">
+    <Card hover className="border border-[var(--charcoal)] bg-[var(--deep-black)]">
       <div className="flex items-start gap-3 mb-4">
         <div className={`p-2 ${isEmergencyRefund ? 'bg-red-500' : 'bg-[var(--neon-orange)]'} bg-opacity-10 rounded-lg`}>
           <AlertTriangle className={`h-5 w-5 ${isEmergencyRefund ? 'text-red-500' : 'text-[var(--neon-orange)]'}`} />

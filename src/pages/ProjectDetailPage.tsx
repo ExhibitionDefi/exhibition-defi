@@ -133,7 +133,7 @@ export const ProjectDetailPage: React.FC = () => {
         <Link to="/projects">
           <Button variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Projects
+            Back to Launches
           </Button>
         </Link>
       </div>
@@ -150,7 +150,7 @@ export const ProjectDetailPage: React.FC = () => {
   const canFinalize = project.status === ProjectStatus.Active && projectHasEnded
   
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {/* Back Navigation */}
       <div className="flex items-center justify-between">
         <Link to="/projects">
@@ -250,10 +250,10 @@ export const ProjectDetailPage: React.FC = () => {
       )}
 
       {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Left Column - Contribution/Refund Form */}
-        <div className="lg:col-span-2">
-          {/* REFUND REQUEST FORM - Show when project Failed/Refundable */}
+        <div className="lg:col-start-1">
+          {/* REFUND REQUEST FORM - Show when project Failed/Refundable and when successful/claimable but liquidity finalization deadline has passed */}
           {requestRefund.canRefund && (
             <RefundRequestForm
               project={project}
@@ -315,7 +315,7 @@ export const ProjectDetailPage: React.FC = () => {
         </div>
 
         {/* Right Column - User Summary & Actions */}
-        <div className="space-y-6">
+        <div className="lg:col-start-2">
           {address && userSummary && (
             <UserProjectSummary
               project={project}

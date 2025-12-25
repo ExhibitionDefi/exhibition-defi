@@ -1,3 +1,4 @@
+//src/hooks/launchpad/useWithdrawUnsoldTokens.ts
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { exhibitionAbi } from '@/generated/wagmi'
@@ -6,6 +7,7 @@ import type { ProjectDisplayData } from '@/types/project'
 import { ProjectStatus } from '@/types/project'
 import toast from 'react-hot-toast'
 import type { Hash } from 'viem'
+import { useBlockchainTime } from '@/hooks/utilities/useBlockchainTime'
 
 type Step = 'idle' | 'submitting' | 'confirming' | 'confirmed' | 'error'
 
@@ -99,6 +101,9 @@ export function useWithdrawUnsoldTokens(options: UseWithdrawUnsoldTokensOptions 
   } = options
 
   const { isConnected, address } = useAccount()
+  
+  // Use blockchain time instead of client time
+  const { timestampNumber: currentTime } = useBlockchainTime()
   
   const {
     writeContract,
@@ -200,8 +205,7 @@ export function useWithdrawUnsoldTokens(options: UseWithdrawUnsoldTokensOptions 
     }
   }, [project])
 
-  // Check if withdrawal delay has passed
-  const currentTime = Math.floor(Date.now() / 1000)
+  // Check if withdrawal delay has passed using blockchain time
   const WITHDRAWAL_DELAY = 1 * 24 * 60 * 60 // 1 day in seconds
   const withdrawalUnlocksAt = project ? Number(project.endTime) + WITHDRAWAL_DELAY : 0
   const isWithdrawalUnlocked = currentTime >= withdrawalUnlocksAt
@@ -307,7 +311,7 @@ export function useWithdrawUnsoldTokens(options: UseWithdrawUnsoldTokensOptions 
       if (showToast) toast.error(e.message || 'Failed to withdraw')
       onError?.(e)
     }
-  }, [writeContract, isConnected, isProjectOwner, project, onSuccess, onError, showToast, txHash, isWithdrawalUnlocked, withdrawalUnlocksAt, canWithdrawByStatus])
+  }, [writeContract, isConnected, isProjectOwner, project, onSuccess, onError, showToast, txHash, isWithdrawalUnlocked, withdrawalUnlocksAt, canWithdrawByStatus, tokenInfo.unsoldTokensAmount])
 
   // Handle hash
   useEffect(() => { 

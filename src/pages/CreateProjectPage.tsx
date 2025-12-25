@@ -204,8 +204,8 @@ export const CreateProjectPage: React.FC = () => {
       </div>
 
       {/* Rules Section */}
-      <div className="mt-8 bg-[var(--charcoal)] border border-[var(--silver-dark)]/20 rounded-xl p-6">
-        <h4 className="text-lg font-semibold text-[var(--silver-light)] mb-3">
+      <div className="mt-8 bg-[var(--charcoal)] rounded-xl p-6">
+        <h4 className="text-lg font-semibold text-[var(--neon-orange)] mb-3">
           Before You Proceed
         </h4>
         <p className="text-sm text-[var(--metallic-silver)] mb-4">

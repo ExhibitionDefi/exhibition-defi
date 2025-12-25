@@ -19,7 +19,7 @@ export const Card: React.FC<CardProps> = ({
   hover = false,
   fullWidth = false,
   widthClass,
-  baseClass = 'bg-[var(--charcoal)] rounded-lg shadow-sm border border-[var(--silver-dark)]/30',
+  baseClass = 'bg-[var(--charcoal)] rounded-lg shadow-sm',
 }) => {
   const hoverClasses = hover
     ? 'hover:shadow-lg hover:shadow-[var(--neon-blue)]/5 hover:border-[var(--neon-blue)]/50 transition-all duration-300'

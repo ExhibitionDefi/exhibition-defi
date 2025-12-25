@@ -16,7 +16,7 @@ import { useAccount } from 'wagmi'
 import { useMultiTransactionModal } from '@/components/common/MultiTransactionModal'
 import type { TransactionType } from '@/components/common/MultiTransactionModal'
 import { getCurrentUser, logout } from '@/utils/api'
-import exhLogo from '@/assets/010.svg'
+import exhLogo from '@/assets/svg.svg'
 
 // ✅ Lazy load the heavy MultiTransactionModal
 const MultiTransactionModal = lazy(() => 

@@ -9,12 +9,14 @@
       <stop offset="66%" stop-color="#ffc870" />
       <stop offset="100%" stop-color="#ff9500" />
     </linearGradient>
+
     <!-- Brighter border gradient -->
     <linearGradient id="border-grad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#00e5ff" />
       <stop offset="50%" stop-color="#d8d8d8" />
       <stop offset="100%" stop-color="#ff9500" />
     </linearGradient>
+
     <style>
       .logo-text {
         font-family: 'Arial Black', sans-serif;
@@ -27,12 +29,13 @@
     </style>
   </defs>
 
-  <!-- Sharper border with better visibility -->
-  <rect x="6" y="13" width="88" height="74" rx="10" ry="10"
+  <!-- Square-corner border -->
+  <rect x="6" y="13" width="88" height="74"
         fill="none"
         stroke="url(#border-grad)"
         stroke-width="3.5"
         opacity="1"/>
+
   <!-- Text with subtle dark outline for crispness -->
   <text class="logo-text"
         x="50" y="55"

@@ -77,7 +77,7 @@ export const LiquidityInterface: React.FC<LiquidityInterfaceProps> = ({
         </div>
 
         {/* Mode Switch */}
-        <div className="flex space-x-1 bg-[var(--charcoal)] p-1.5 sm:p-2 rounded-lg border border-[var(--silver-dark)] border-opacity-30 mb-4 sm:mb-6">
+        <div className="flex space-x-1 bg-[var(--charcoal)] p-1.5 sm:p-2 rounded-lg mb-4 sm:mb-6">
           <Button
             variant={mode === 'add' ? 'default' : 'ghost'}
             onClick={() => handleModeChange('add')} // ✅ Use new handler

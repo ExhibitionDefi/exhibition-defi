@@ -451,7 +451,7 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
 
         {/* ✅ User Position with Earnings */}
         {userShare && (
-          <div className="bg-gradient-to-br from-[var(--neon-blue)] from-opacity-10 to-[var(--charcoal)] rounded-lg p-4 border border-[var(--neon-blue)] border-opacity-30">
+          <div className="bg-gradient-to-br from-[var(--neon-blue)] from-opacity-10 to-[var(--charcoal)] rounded-lg p-4">
             <div className="flex items-center space-x-2 mb-3">
               <Percent className="w-4 h-4 text-[var(--neon-blue)]" />
               <span className="text-sm font-medium text-[var(--silver-light)]">

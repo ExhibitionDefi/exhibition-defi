@@ -147,7 +147,7 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
     <>
       <div className="space-y-1">
         {/* Token A */}
-        <div className="bg-[var(--charcoal)] rounded-xl p-3 sm:p-4 border border-[var(--silver-dark)] border-opacity-30 hover:border-opacity-50 transition-all duration-300">
+        <div className="bg-[var(--charcoal)] rounded-xl p-3 sm:p-4 transition-all duration-300">
           {/* Header with Balance */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2 sm:gap-0">
             <span className="text-xs sm:text-sm font-medium text-[var(--metallic-silver)]">Token A</span>
@@ -235,7 +235,7 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
         </div>
 
         {/* Token B */}
-        <div className="bg-[var(--charcoal)] rounded-xl p-3 sm:p-4 border border-[var(--silver-dark)] border-opacity-30 hover:border-opacity-50 transition-all duration-300">
+        <div className="bg-[var(--charcoal)] rounded-xl p-3 sm:p-4 transition-all duration-300">
           {/* Header with Balance */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2 sm:gap-0">
             <span className="text-xs sm:text-sm font-medium text-[var(--metallic-silver)]">Token B</span>

@@ -4,6 +4,7 @@ import { Calendar, Clock, TrendingUp, Info, Copy, Check } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
 import { Progress } from '../ui/Progress'
+import { ProjectMetadata } from './ProjectMetadata'
 import { type ProjectDisplayData, ProjectStatus, ProjectStatusLabels } from '../../types/project'
 import { ExhibitionFormatters } from '../../utils/exFormatters'
 import { formatTimeRemaining } from '../../utils/timeHelpers'
@@ -19,7 +20,6 @@ interface ProjectDetailsProps {
   hasDepositedProjectTokens?: boolean
 }
 
-// Helper functions for time calculations
 const calculateTimeRemaining = (endTime: number, currentTime: number): number => {
   const remaining = endTime - currentTime
   return remaining > 0 ? remaining : 0
@@ -37,13 +37,11 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
 }) => {
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
 
-  // ✨ Initialize pricing hook
   const { getTokenPrice, isReady: isPricingReady } = useLocalPricing({
     maxHops: 4,
     refetchInterval: 30_000,
   })
 
-  // ✨ Helper to format token amount with USD value
   const formatTokenWithUSD = (
     amount: bigint,
     tokenSymbol: string,
@@ -65,7 +63,6 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
       return <span className="font-medium text-[var(--silver-light)]">{tokenFormatted}</span>
     }
 
-    // Calculate USD value
     const amountNumber = Number(amount) / Math.pow(10, decimals)
     const usdValue = amountNumber * price
 
@@ -78,12 +75,11 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
     return (
       <div className="flex flex-col items-end">
         <span className="font-medium text-[var(--silver-light)]">{tokenFormatted}</span>
-        <span className="text-sm text-[var(--metallic-silver)]">{formattedUSD}</span>
+        <span className="text-xs text-[var(--metallic-silver)]">{formattedUSD}</span>
       </div>
     )
   }
 
-  // ✨ Helper to format token price with USD equivalent
   const formatTokenPriceWithUSD = (
     priceInContributionToken: bigint,
     projectTokenSymbol: string,
@@ -105,14 +101,13 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
       return <span className="font-medium text-[var(--silver-light)]">{priceFormatted}</span>
     }
 
-    // Price is in contribution token terms (e.g., 0.5 exUSD per PROJECT)
     const priceNumber = Number(priceInContributionToken) / 1e18
     const usdPrice = priceNumber * contributionTokenPrice
 
     return (
       <div className="flex flex-col items-end">
         <span className="font-medium text-[var(--silver-light)]">{priceFormatted}</span>
-        <span className="text-sm text-[var(--metallic-silver)]">
+        <span className="text-xs text-[var(--metallic-silver)]">
           ~${usdPrice.toFixed(4)}
         </span>
       </div>
@@ -168,7 +163,6 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
   const progressPercentage = Number(project.progressPercentage) / 100
   const isLive = project.status === ProjectStatus.Active
 
-  // Check current time and project timing using BLOCKCHAIN TIME
   const { timestampNumber: now } = useBlockchainTime()
   const hasStarted = now >= Number(project.startTime)
   const hasEnded = now >= Number(project.endTime)
@@ -206,7 +200,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
     if (isFundingEnded) {
       return {
         main: 'Funding period has ended.',
-        sub: 'Please finalize your project to proceed with the next steps.',
+        sub: 'Please finalize your launch to proceed with the next steps.',
         variant: 'warning' as const
       }
     }
@@ -215,7 +209,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
       if (hasDepositedProjectTokens === false) {
         return {
           main: '⚠️ Action Required: Deposit Project Tokens',
-          sub: 'You must deposit the required project tokens before the sale can begin. See the deposit card below.',
+          sub: 'You must deposit the required launch tokens before the sale can begin. See the deposit card below.',
           variant: 'warning' as MessageVariant
         }
       }
@@ -227,15 +221,15 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
     }
     if (isActive && !hasStarted) {
       return {
-        main: 'Your project is active but has not started yet.',
+        main: 'Your launch is active but has not started yet.',
         sub: 'Contributions will open soon.',
         variant: 'info' as const
       }
     }
     if (isActive && hasStarted && !hasEnded) {
       return {
-        main: 'Your project is live and accepting contributions!',
-        sub: 'As the project owner, you cannot contribute to your own project.',
+        main: 'Your launch is live and accepting contributions!',
+        sub: 'As the token owner, you cannot contribute to your own token launch.',
         variant: 'success' as const
       }
     }
@@ -245,15 +239,15 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
   const getUserMessage = () => {
     if (isSuccessful || isClaimable) {
       return {
-        main: 'Project Successful! 🎉',
-        sub: 'This project has reached its funding goal. If you contributed, you can claim your tokens!',
+        main: 'Launch Successful! 🎉',
+        sub: 'This launch has reached its funding goal. If you contributed, you can claim your tokens!',
         variant: 'success' as const
       }
     }
     
     if (isFailed || isRefundable) {
       return {
-        main: 'Project did not reach its funding goal.',
+        main: 'Launch did not reach its funding goal.',
         sub: 'If you contributed, you can request a refund of your contribution.',
         variant: 'error' as const
       }
@@ -262,22 +256,22 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
     if (isFundingEnded) {
       return {
         main: 'Funding period has ended.',
-        sub: 'This project is being finalized. Please check back soon for the final status.',
-        variant: 'warning' as const
+        sub: 'Finalization is pending. Connect a wallet to finalize and view the outcome.',
+        variant: 'info' as const
       }
     }
     
     if (isUpcoming || (isActive && !hasStarted)) {
       return {
-        main: 'This project has not started yet.',
+        main: 'This launch has not started yet.',
         sub: 'Contributions will open soon. Check the countdown below.',
         variant: 'info' as const
       }
     }
     if (isActive && hasStarted && !hasEnded) {
       return {
-        main: 'This project is live and accepting contributions!',
-        sub: 'Connect your wallet to participate in this project.',
+        main: 'This launch is live and accepting contributions!',
+        sub: 'Connect your wallet to participate in this launch.',
         variant: 'success' as const
       }
     }
@@ -288,21 +282,67 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
   const userMessage = getUserMessage()
 
   return (
-    <div className="space-y-6">
-      {/* Details Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Header Section */}
+    <div className="space-y-4">
+      {/* Status Banner - Moved to top for visibility */}
+      {(showOwnerMessage && ownerMessage) && (
+        <Card hover className="border-l-4" style={{
+          borderLeftColor: ownerMessage.variant === 'success' ? 'var(--neon-blue)' :
+                          ownerMessage.variant === 'warning' ? 'var(--neon-orange)' :
+                          ownerMessage.variant === 'error' ? 'var(--neon-orange)' :
+                          'var(--metallic-silver)'
+        }}>
+          <div className="space-y-1">
+            <p className={`text-base font-semibold ${
+              ownerMessage.variant === 'success' ? 'text-[var(--neon-blue)]' :
+              ownerMessage.variant === 'warning' ? 'text-[var(--neon-orange)]' :
+              ownerMessage.variant === 'error' ? 'text-[var(--neon-orange)]' :
+              'text-[var(--silver-light)]'
+            }`}>
+              {ownerMessage.main}
+            </p>
+            <p className="text-xs text-[var(--metallic-silver)]">
+              {ownerMessage.sub}
+            </p>
+          </div>
+        </Card>
+      )}
+
+      {(showUserMessage && userMessage) && (
+        <Card hover className="border-l-4" style={{
+          borderLeftColor: userMessage.variant === 'success' ? 'var(--neon-blue)' :
+                          userMessage.variant === 'info' ? 'var(--neon-orange)' :
+                          userMessage.variant === 'error' ? 'var(--neon-orange)' :
+                          'var(--metallic-silver)'
+        }}>
+          <div className="space-y-1">
+            <p className={`text-base font-semibold ${
+              userMessage.variant === 'success' ? 'text-[var(--neon-blue)]' :
+              userMessage.variant === 'info' ? 'text-[var(--neon-orange)]' :
+              userMessage.variant === 'error' ? 'text-[var(--neon-orange)]' :
+              'text-[var(--silver-light)]'
+            }`}>
+              {userMessage.main}
+            </p>
+            <p className="text-xs text-[var(--metallic-silver)]">
+              {userMessage.sub}
+            </p>
+          </div>
+        </Card>
+      )}
+
+      {/* Header + Progress Section - Combined */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Header Section - More Compact */}
         <Card hover>
-          <div className="space-y-4">
-            {/* Logo Row */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               {project.projectTokenLogoURI && (
                 <SafeImage
                   src={project.projectTokenLogoURI}
                   alt={`${project.tokenName} logo`}
-                  className="w-16 h-16 rounded-lg object-cover border border-[var(--metallic-silver)]/20"
+                  className="w-12 h-12 rounded-lg object-cover border border-[var(--metallic-silver)]/20"
                   fallback={
-                    <div className="w-16 h-16 rounded-lg bg-[var(--charcoal)] flex items-center justify-center text-[var(--silver-dark)] text-xs">
+                    <div className="w-12 h-12 rounded-lg bg-[var(--charcoal)] flex items-center justify-center text-[var(--silver-dark)] text-xs">
                       N/A
                     </div>
                   }
@@ -311,43 +351,40 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
               )}
               
               {isLive && hasStarted && !hasEnded && (
-                <div className="flex items-center space-x-2 text-[var(--neon-blue)]">
-                  <div className="w-2 h-2 bg-[var(--neon-blue)] rounded-full animate-pulse shadow-[0_0_4px_var(--neon-blue)]" />
+                <div className="flex items-center space-x-1.5 text-[var(--neon-blue)] text-sm">
+                  <div className="w-1.5 h-1.5 bg-[var(--neon-blue)] rounded-full animate-pulse shadow-[0_0_4px_var(--neon-blue)]" />
                   <span className="font-medium">Live Now</span>
                 </div>
               )}
             </div>
 
-            {/* Title and Badge Row */}
-            <div className="flex items-center space-x-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-[var(--silver-light)]">
+            <div className="flex items-center space-x-2 flex-wrap">
+              <h1 className="text-xl font-bold text-[var(--silver-light)]">
                 <SafeHtml content={project.tokenName || 'Unknown Token'} />
               </h1>
-              <Badge variant={getStatusVariant(project.status as ProjectStatus)} size="md">
+              <Badge variant={getStatusVariant(project.status as ProjectStatus)} size="sm">
                 {isFundingEnded ? 'Funding Ended' : ProjectStatusLabels[project.status as keyof typeof ProjectStatusLabels]}
               </Badge>
             </div>
 
-            {/* Token Symbol and Owner Row */}
-            <div className="flex items-center space-x-4 text-sm text-[var(--metallic-silver)] flex-wrap">
+            <div className="flex items-center space-x-3 text-xs text-[var(--metallic-silver)] flex-wrap">
               <span className="font-mono">
                 <SafeHtml content={project.tokenSymbol || ''} />
               </span>
-              <span>•</span>
-              <div className="flex items-center space-x-2">
-                <span>Owner:</span>
-                <CopyableAddress address={project.projectOwner} />
+              <div className="flex items-center gap-1"> 
+                <span>Launch Address:</span>
+                <CopyableAddress address={project.projectToken} />
               </div>
             </div>
           </div>
         </Card>
 
-        {/* Progress Section - ✨ UPDATED WITH USD VALUES */}
+        {/* Progress Section - Compact Style */}
         <Card hover>
-          <div className="space-y-4">
+          <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-[var(--silver-light)]">Funding Progress</h3>
-              <span className="text-2xl font-bold text-[var(--neon-blue)]">
+              <span className="text-sm text-[var(--metallic-silver)]">Funding Progress</span>
+              <span className="text-xl font-bold text-[var(--neon-blue)]">
                 {Number(progressPercentage.toFixed(1))}%
               </span>
             </div>
@@ -355,50 +392,56 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
             <Progress
               value={progressPercentage}
               variant={progressPercentage >= 1 ? 'success' : 'default'}
-              size="lg"
+              size="md"
             />
           
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-3 gap-2 text-xs pt-1">
               <div className="text-center">
-                <p className="text-[var(--metallic-silver)] mb-1">Raised</p>
-                {formatTokenWithUSD(
-                  typeof project.totalRaised === 'string' 
-                    ? BigInt(project.totalRaised)
-                    : typeof project.totalRaised === 'number'
-                    ? BigInt(project.totalRaised)
-                    : project.totalRaised,
-                  project.contributionTokenSymbol || 'Tokens',
-                  project.contributionTokenAddress as Address,
-                  project.contributionTokenDecimals || 0,
-                )}
+                <p className="text-[var(--metallic-silver)] mb-0.5">Raised</p>
+                <div className="flex flex-col items-center">
+                  {formatTokenWithUSD(
+                    typeof project.totalRaised === 'string' 
+                      ? BigInt(project.totalRaised)
+                      : typeof project.totalRaised === 'number'
+                      ? BigInt(project.totalRaised)
+                      : project.totalRaised,
+                    project.contributionTokenSymbol || 'Tokens',
+                    project.contributionTokenAddress as Address,
+                    project.contributionTokenDecimals || 0,
+                  )}
+                </div>
               </div>
             
               <div className="text-center">
-                <p className="text-[var(--metallic-silver)] mb-1">Soft Cap</p>
-                {formatTokenWithUSD(
-                  typeof project.softCap === 'string' 
-                    ? BigInt(project.softCap)
-                    : typeof project.softCap === 'number'
-                    ? BigInt(project.softCap)
-                    : project.softCap,
-                  project.contributionTokenSymbol || 'Tokens',
-                  project.contributionTokenAddress as Address,
-                  project.contributionTokenDecimals || 0,
-                )}
+                <p className="text-[var(--metallic-silver)] mb-0.5">Soft Cap</p>
+                <div className="flex flex-col items-center">
+                  {formatTokenWithUSD(
+                    typeof project.softCap === 'string' 
+                      ? BigInt(project.softCap)
+                      : typeof project.softCap === 'number'
+                      ? BigInt(project.softCap)
+                      : project.softCap,
+                    project.contributionTokenSymbol || 'Tokens',
+                    project.contributionTokenAddress as Address,
+                    project.contributionTokenDecimals || 0,
+                  )}
+                </div>
               </div>
             
               <div className="text-center">
-                <p className="text-[var(--metallic-silver)] mb-1">Hard Cap</p>
-                {formatTokenWithUSD(
-                  typeof project.fundingGoal === 'string' 
-                    ? BigInt(project.fundingGoal)
-                    : typeof project.fundingGoal === 'number'
-                    ? BigInt(project.fundingGoal)
-                    : project.fundingGoal,
-                  project.contributionTokenSymbol || 'Tokens',
-                  project.contributionTokenAddress as Address,
-                  project.contributionTokenDecimals || 0,
-                )}
+                <p className="text-[var(--metallic-silver)] mb-0.5">Hard Cap</p>
+                <div className="flex flex-col items-center">
+                  {formatTokenWithUSD(
+                    typeof project.fundingGoal === 'string' 
+                      ? BigInt(project.fundingGoal)
+                      : typeof project.fundingGoal === 'number'
+                      ? BigInt(project.fundingGoal)
+                      : project.fundingGoal,
+                    project.contributionTokenSymbol || 'Tokens',
+                    project.contributionTokenAddress as Address,
+                    project.contributionTokenDecimals || 0,
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -406,37 +449,37 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
       </div>
 
       {/* Details Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Timeline */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Timeline - More Compact */}
         <Card hover>
-          <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-4">Timeline</h3>
-          <div className="space-y-3">
+          <h3 className="text-base font-semibold text-[var(--silver-light)] mb-3">Timeline</h3>
+          <div className="space-y-2.5">
             {!hasStarted ? (
-              <div className="flex items-center space-x-3">
-                <Clock className="h-5 w-5 text-[var(--neon-blue)]" />
-                <div>
-                  <p className="text-sm text-[var(--metallic-silver)]">⏳ Contribution Opens In</p>
-                  <p className="font-medium text-[var(--neon-blue)]">
+              <div className="flex items-center space-x-2.5">
+                <Clock className="h-4 w-4 text-[var(--neon-blue)] flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs text-[var(--metallic-silver)]">⏳ Contribution Opens In</p>
+                  <p className="text-sm font-medium text-[var(--neon-blue)] truncate">
                     {formatTimeRemaining(calculateTimeUntilStart(Number(project.startTime), now))}
                   </p>
                 </div>
               </div>
             ) : !hasEnded ? (
-              <div className="flex items-center space-x-3">
-                <TrendingUp className="h-5 w-5 text-[var(--neon-orange)]" />
-                <div>
-                  <p className="text-sm text-[var(--metallic-silver)]">⏰ Contribution Ends In</p>
-                  <p className="font-medium text-[var(--neon-blue)]">
+              <div className="flex items-center space-x-2.5">
+                <TrendingUp className="h-4 w-4 text-[var(--neon-orange)] flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs text-[var(--metallic-silver)]">⏰ Contribution Ends In</p>
+                  <p className="text-sm font-medium text-[var(--neon-blue)] truncate">
                     {formatTimeRemaining(calculateTimeRemaining(Number(project.endTime), now))}
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center space-x-3">
-                <Clock className="h-5 w-5 text-[var(--metallic-silver)]" />
-                <div>
-                  <p className="text-sm text-[var(--metallic-silver)]">Status</p>
-                  <p className="font-medium text-[var(--metallic-silver)]">
+              <div className="flex items-center space-x-2.5">
+                <Clock className="h-4 w-4 text-[var(--metallic-silver)] flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs text-[var(--metallic-silver)]">Status</p>
+                  <p className="text-sm font-medium text-[var(--metallic-silver)] truncate">
                     Contribution Period Ended
                   </p>
                 </div>
@@ -444,24 +487,48 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
             )}
 
             {('totalContributors' in project) && (
-              <div className="flex items-center space-x-3">
-                <Calendar className="h-5 w-5 text-[var(--neon-blue)]" />
-                <div>
-                  <p className="text-sm text-[var(--metallic-silver)]">👥 Total Contributors</p>
-                  <p className="font-medium text-[var(--silver-light)]">
+              <div className="flex items-center space-x-2.5">
+                <Calendar className="h-4 w-4 text-[var(--neon-blue)] flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs text-[var(--metallic-silver)]">👥 Total Contributors</p>
+                  <p className="text-sm font-medium text-[var(--silver-light)] truncate">
                     {(project as any).totalContributors || 0}
                   </p>
                 </div>
               </div>
             )}
+
+            <div className="pt-2 border-t border-[var(--metallic-silver)]/10">
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between items-start">
+                  <span className="text-[var(--metallic-silver)]">Minimum</span>
+                  {formatTokenWithUSD(
+                    project.minContribution || 0n,
+                    project.contributionTokenSymbol || 'Tokens',
+                    project.contributionTokenAddress as Address,
+                    project.contributionTokenDecimals || 0,
+                  )}
+                </div>
+            
+                <div className="flex justify-between items-start">
+                  <span className="text-[var(--metallic-silver)]">Maximum</span>
+                  {formatTokenWithUSD(
+                    project.maxContribution || 0n,
+                    project.contributionTokenSymbol || 'Tokens',
+                    project.contributionTokenAddress as Address,
+                    project.contributionTokenDecimals || 0,
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </Card>
 
-        {/* Token Economics - ✨ UPDATED WITH USD VALUES */}
+        {/* Token Economics - More Compact */}
         <Card hover>
-          <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-4">Token Economics</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between items-start">
+          <h3 className="text-base font-semibold text-[var(--silver-light)] mb-3">Token Economics</h3>
+          <div className="space-y-12">
+            <div className="flex justify-between items-start text-sm">
               <span className="text-[var(--metallic-silver)]">Token Price</span>
               {formatTokenPriceWithUSD(
                 BigInt(project.tokenPrice),
@@ -471,63 +538,75 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
               )}
             </div>
             
-            <div className="flex justify-between">
-              <span className="text-[var(--metallic-silver)]">Tokens for Sale</span>
-              <span className="font-medium text-[var(--silver-light)]">
-                {ExhibitionFormatters.formatLargeNumber(project.amountTokensForSale)}
-              </span>
-            </div>
+            <div className="pt-2 border-t border-[var(--metallic-silver)]/10">
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-[var(--metallic-silver)]">Tokens for Sale</span>
+                  <span className="font-medium text-[var(--silver-light)]">
+                    {ExhibitionFormatters.formatLargeNumber(project.amountTokensForSale)}
+                  </span>
+                </div>
             
-            <div className="flex justify-between">
-              <span className="text-[var(--metallic-silver)]">Liquidity %</span>
-              <span className="font-medium text-[var(--silver-light)]">
-                {Number(project.liquidityPercentage) / 100}%
-              </span>
-            </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--metallic-silver)]">Liquidity %</span>
+                  <span className="font-medium text-[var(--silver-light)]">
+                    {Number(project.liquidityPercentage) / 100}%
+                  </span>
+                </div>
             
-            {('totalProjectTokenSupply' in project) && (
-              <div className="flex justify-between">
-                <span className="text-[var(--metallic-silver)]">Total Supply</span>
-                <span className="font-medium text-[var(--silver-light)]">
-                  {ExhibitionFormatters.formatLargeNumber((project as any).totalProjectTokenSupply || 0)}
-                </span>
+                {('totalProjectTokenSupply' in project) && (
+                  <div className="flex justify-between">
+                    <span className="text-[var(--metallic-silver)]">Total Supply</span>
+                    <span className="font-medium text-[var(--silver-light)]">
+                      {ExhibitionFormatters.formatLargeNumber((project as any).totalProjectTokenSupply || 0)}
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </Card>
 
-        {/* Contribution Limits - ✨ UPDATED WITH USD VALUES */}
+        {/* Project Information Card - More Compact */}
         <Card hover>
-          <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-4">Contribution Limits</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between items-start">
-              <span className="text-[var(--metallic-silver)]">Minimum</span>
-              {formatTokenWithUSD(
-                project.minContribution || 0n,
-                project.contributionTokenSymbol || 'Tokens',
-                project.contributionTokenAddress as Address,
-                project.contributionTokenDecimals || 0,
-              )}
+          <h3 className="text-base font-semibold text-[var(--silver-light)] mb-3">Launch Information</h3>
+          <div className="space-y-2.5 text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[var(--metallic-silver)]">Owner:</span>
+              <CopyableAddress address={project.projectOwner} />
             </div>
             
-            <div className="flex justify-between items-start">
-              <span className="text-[var(--metallic-silver)]">Maximum</span>
-              {formatTokenWithUSD(
-                project.maxContribution || 0n,
-                project.contributionTokenSymbol || 'Tokens',
-                project.contributionTokenAddress as Address,
-                project.contributionTokenDecimals || 0,
+            <div>
+              <p className="text-[var(--metallic-silver)] mb-1">Contribution Token</p>
+              <CopyableAddress address={project.contributionTokenAddress} />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[var(--metallic-silver)]/10">
+              {('lockDuration' in project) && (
+                <div>
+                  <p className="text-[var(--metallic-silver)] mb-0.5">Lock Duration</p>
+                  <p className="font-medium text-[var(--silver-light)]">
+                    {ExhibitionFormatters.formatDuration(Number((project as any).lockDuration || 0))}
+                  </p>
+                </div>
               )}
+              
+              <div>
+                <p className="text-[var(--metallic-silver)] mb-0.5">Launch ID</p>
+                <p className="font-medium text-[var(--silver-light)]">
+                  #{project.id.toString()}
+                </p>
+              </div>
             </div>
           </div>
         </Card>
 
-        {/* Vesting Information */}
+        {/* Vesting Information - More Compact */}
         <Card hover>
-          <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-4">Vesting Schedule</h3>
-          <div className="space-y-3">
+          <h3 className="text-base font-semibold text-[var(--silver-light)] mb-3">Vesting Schedule</h3>
+          <div className="space-y-2.5">
             {('vestingEnabled' in project) && (project as any).vestingEnabled ? (
-              <>
+              <div className="space-y-2 text-xs">
                 {('vestingCliff' in project) && (
                   <div className="flex justify-between">
                     <span className="text-[var(--metallic-silver)]">Cliff Period</span>
@@ -563,89 +642,24 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
                     </span>
                   </div>
                 )}
-              </>
+              </div>
             ) : (
               <div className="flex items-center space-x-2 text-[var(--neon-blue)]">
-                <Info className="h-4 w-4" />
-                <span className="text-sm">No vesting - tokens unlocked immediately</span>
+                <Info className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="text-xs">No vesting - tokens unlocked immediately</span>
               </div>
             )}
           </div>
         </Card>
       </div>
 
-      {/* Bottom Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Project Information Card */}
-        <Card hover>
-          <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-4">Project Information</h3>
-          <div className="grid grid-cols-1 gap-4 text-sm">
-            <div>
-              <p className="text-[var(--metallic-silver)] mb-1">Project Token Address</p>
-              <CopyableAddress address={project.projectToken} />
-            </div>
-            
-            <div>
-              <p className="text-[var(--metallic-silver)] mb-1">Contribution Token</p>
-              <CopyableAddress address={project.contributionTokenAddress} />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              {('lockDuration' in project) && (
-                <div>
-                  <p className="text-[var(--metallic-silver)]">Lock Duration</p>
-                  <p className="font-medium text-[var(--silver-light)]">
-                    {ExhibitionFormatters.formatDuration(Number((project as any).lockDuration || 0))}
-                  </p>
-                </div>
-              )}
-              
-              <div>
-                <p className="text-[var(--metallic-silver)]">Project ID</p>
-                <p className="font-medium text-[var(--silver-light)]">
-                  #{project.id.toString()}
-                </p>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Status Message Card */}
-        {(showOwnerMessage && ownerMessage) && (
-          <Card hover>
-            <div className="text-center space-y-3">
-              <p className={`text-lg font-semibold ${
-                ownerMessage.variant === 'success' ? 'text-[var(--neon-blue)]' :
-                ownerMessage.variant === 'warning' ? 'text-[var(--neon-orange)]' :
-                ownerMessage.variant === 'error' ? 'text-[var(--neon-orange)]' :
-                'text-[var(--silver-light)]'
-              }`}>
-                {ownerMessage.main}
-              </p>
-              <p className="text-sm text-[var(--metallic-silver)]">
-                {ownerMessage.sub}
-              </p>
-            </div>
-          </Card>
-        )}
-
-        {(showUserMessage && userMessage) && (
-          <Card hover>
-            <div className="text-center space-y-3">
-              <p className={`text-lg font-semibold ${
-                userMessage.variant === 'success' ? 'text-[var(--neon-blue)]' :
-                userMessage.variant === 'warning' ? 'text-[var(--neon-orange)]' :
-                userMessage.variant === 'error' ? 'text-[var(--neon-orange)]' :
-                'text-[var(--silver-light)]'
-              }`}>
-                {userMessage.main}
-              </p>
-              <p className="text-sm text-[var(--metallic-silver)]">
-                {userMessage.sub}
-              </p>
-            </div>
-          </Card>
-        )}
+      {/* Project Metadata */}
+      <div className="flex justify-center">
+        <ProjectMetadata 
+          projectId={project.id.toString()}
+          isProjectOwner={isProjectOwner}
+          projectOwner={project.projectOwner}
+        />
       </div>
     </div>
   )

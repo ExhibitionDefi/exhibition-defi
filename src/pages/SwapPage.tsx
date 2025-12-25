@@ -27,16 +27,16 @@ export const SwapPage: React.FC = () => {
   }, [tokenAParam, tokenBParam]);
 
   return (
-    <div className="container mx-auto px-4 py-8 min-h-screen bg-[var(--deep-black)]">
+    <div className="container mx-auto px-4 py-6 min-h-screen bg-[var(--deep-black)]">
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-4 text-[var(--silver-light)] bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)] bg-clip-text text-transparent">
+      <div className="text-center mb-6">
+        <h1 className="text-3xl font-bold mb-3 text-[var(--silver-light)] bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)] bg-clip-text text-transparent">
           Token Swap
         </h1>
-        <p className="text-[var(--metallic-silver)] text-lg">
+        <p className="text-[var(--metallic-silver)] text-base">
           Swap tokens instantly with minimal slippage and smart routing
         </p>
-        <div className="mt-4 flex items-center justify-center space-x-2">
+        <div className="mt-3 flex items-center justify-center space-x-2">
           <div className="h-1 w-8 bg-gradient-to-r from-[var(--neon-blue)] to-transparent rounded-full"></div>
           <div className="h-1 w-4 bg-[var(--neon-orange)] rounded-full opacity-60"></div>
           <div className="h-1 w-8 bg-gradient-to-l from-[var(--neon-orange)] to-transparent rounded-full"></div>
@@ -44,7 +44,7 @@ export const SwapPage: React.FC = () => {
       </div>
 
       {/* Desktop Layout: Side by Side */}
-      <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6 lg:max-w-7xl lg:mx-auto">
+      <div className="hidden lg:grid lg:grid-cols-2 lg:gap-4 lg:max-w-7xl lg:mx-auto">
         {/* Swap Interface */}
         <div>
           <SwapInterface 
@@ -56,7 +56,7 @@ export const SwapPage: React.FC = () => {
         </div>
 
         {/* Pool Details Panel */}
-        <div className="sticky top-8 self-start">
+        <div className="sticky top-6 self-start">
           <PoolDetailsPanel 
             tokenA={selectedTokenIn}
             tokenB={selectedTokenOut}
@@ -78,20 +78,20 @@ export const SwapPage: React.FC = () => {
         {(selectedTokenIn || selectedTokenOut) && (
           <button
             onClick={() => setShowPoolDetails(!showPoolDetails)}
-            className="w-full mt-4 px-4 py-3 bg-[var(--charcoal)] hover:bg-opacity-80 rounded-lg border border-[var(--metallic-silver)] border-opacity-20 transition-colors flex items-center justify-between text-[var(--silver-light)]"
+            className="w-full mt-3 px-4 py-2.5 bg-[var(--charcoal)] hover:bg-opacity-80 rounded-lg border border-[var(--metallic-silver)] border-opacity-20 transition-colors flex items-center justify-between text-[var(--silver-light)]"
           >
             <span className="font-medium">Pool Details</span>
             {showPoolDetails ? (
-              <ChevronUp className="w-5 h-5" />
+              <ChevronUp className="w-4 h-4" />
             ) : (
-              <ChevronDown className="w-5 h-5" />
+              <ChevronDown className="w-4 h-4" />
             )}
           </button>
         )}
 
         {/* Pool Details Panel (Collapsible on Mobile) */}
         {showPoolDetails && (
-          <div className="mt-4 animate-in slide-in-from-top duration-300">
+          <div className="mt-3 animate-in slide-in-from-top duration-300">
             <PoolDetailsPanel 
               tokenA={selectedTokenIn}
               tokenB={selectedTokenOut}

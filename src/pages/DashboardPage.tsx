@@ -11,7 +11,6 @@ import { useProject } from '@/hooks/launchpad/useProject'
 import { useLocalPricing } from '@/hooks/utilities/useLocalPricing'
 import { formatUnits } from 'viem'
 
-// ✅ Lazy load ProjectCard for better performance
 const ProjectCard = lazy(() => import('../components/project/ProjectCard').then(module => ({
   default: module.ProjectCard
 })))
@@ -31,28 +30,28 @@ const ContributionCard: React.FC<{ projectId: string; amount: string | bigint; i
         animationDelay: `${index * 100}ms`
       }}
     >
-      <div className="flex items-center justify-between p-6">
-        <div className="flex items-center space-x-4">
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center space-x-3">
           {/* Project Logo */}
           {project?.projectTokenLogoURI ? (
             <img
               src={project.projectTokenLogoURI}
               alt={`${project.tokenName || 'Project'} logo`}
-              className="w-12 h-12 rounded-lg object-cover border border-[var(--metallic-silver)]/20 flex-shrink-0"
+              className="w-10 h-10 rounded-lg object-cover border border-[var(--metallic-silver)]/20 flex-shrink-0"
               loading="lazy"
               onError={(e) => {
                 e.currentTarget.style.display = 'none'
               }}
             />
           ) : (
-            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-[var(--neon-orange)] to-[var(--neon-orange)]/70 drop-shadow-[0_0_4px_var(--neon-orange)]"></div>
+            <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-[var(--neon-orange)] to-[var(--neon-orange)]/70 drop-shadow-[0_0_4px_var(--neon-orange)]"></div>
           )}
           
           <div>
-            <p className="font-semibold" style={{ color: 'var(--silver-light)' }}>
+            <p className="font-semibold text-sm" style={{ color: 'var(--silver-light)' }}>
               {project?.tokenName || `Project #${projectId}`}
             </p>
-            <p className="text-sm" style={{ color: 'var(--metallic-silver)' }}>
+            <p className="text-xs" style={{ color: 'var(--metallic-silver)' }}>
               Contributed: {ExhibitionFormatters.formatLargeNumber(BigInt(amount), 18, 2)} tokens
             </p>
             {project?.tokenSymbol && (
@@ -70,8 +69,8 @@ const ContributionCard: React.FC<{ projectId: string; amount: string | bigint; i
             className="border-[var(--neon-orange)]/50 hover:bg-[var(--neon-orange)]/10 hover:border-[var(--neon-orange)] transition-all duration-300"
             style={{ color: 'var(--silver-light)' }}
           >
-            <Eye className="h-4 w-4 mr-2" />
-            View Project
+            <Eye className="h-3.5 w-3.5 mr-1.5" />
+            View Launch
           </Button>
         </Link>
       </div>
@@ -79,20 +78,17 @@ const ContributionCard: React.FC<{ projectId: string; amount: string | bigint; i
   )
 }
 
-// ✅ Memoize ContributionCard to prevent unnecessary re-renders
 const MemoizedContributionCard = React.memo(ContributionCard)
 
 export const DashboardPage: React.FC = () => {
   const { isConnected } = useAccount()
   
-  // Use the new hook that fetches everything
   const {
     userProjects,
     userContributions,
     isLoading,
   } = useUserProjects()
 
-  // Get pricing data
   const { getTokenPrice, isReady: isPricingReady } = useLocalPricing()
 
   // Calculate total raised in USD
@@ -106,7 +102,8 @@ export const DashboardPage: React.FC = () => {
         const tokenPrice = getTokenPrice(project.contributionTokenAddress)
         
         if (tokenPrice !== null) {
-          const raisedDecimal = parseFloat(formatUnits(raisedAmount, 18))
+          const decimals = project.contributionTokenDecimals || 18
+          const raisedDecimal = parseFloat(formatUnits(raisedAmount, decimals))
           total += raisedDecimal * tokenPrice
         }
       }
@@ -115,7 +112,6 @@ export const DashboardPage: React.FC = () => {
     return total
   }, [userProjects, isPricingReady, getTokenPrice])
 
-  // ✅ Memoize sorted projects to avoid re-sorting on every render
   const sortedProjects = React.useMemo(() => {
     if (!userProjects) return []
     
@@ -142,7 +138,6 @@ export const DashboardPage: React.FC = () => {
     })
   }, [userProjects])
 
-  // ✅ Memoize sorted contributions
   const sortedContributions = React.useMemo(() => {
     if (!userContributions) return []
     
@@ -167,10 +162,10 @@ export const DashboardPage: React.FC = () => {
                 Connect Your Wallet
               </h2>
               <p style={{ color: 'var(--metallic-silver)' }}>
-                Connect your wallet to access your personalized dashboard and manage your projects
+                Connect your wallet to access your personalized dashboard and manage your Launches
               </p>
             </div>
-            <div className="bg-gradient-to-r from-[var(--neon-blue)]/10 to-[var(--neon-orange)]/10 p-4 rounded-lg">
+            <div className="bg-gradient-to-r from-[var(--neon-blue)]/10 to-[var(--neon-orange)]/10 p-4 rounded-lg ">
               <w3m-button />
             </div>
           </div>
@@ -180,24 +175,24 @@ export const DashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Enhanced Header */}
-      <div className="bg-gradient-to-r from-[var(--charcoal)]/60 to-[var(--deep-black)]/60 p-6 rounded-xl border border-[var(--metallic-silver)]/20">
+    <div className="space-y-6">
+      {/* Compact Header */}
+      <div className="bg-gradient-to-r from-[var(--charcoal)]/60 to-[var(--deep-black)]/60 p-4 rounded-xl border border-[var(--metallic-silver)]/20">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <div className="relative">
               <LayoutDashboard 
-                className="h-10 w-10 drop-shadow-[0_0_8px_var(--neon-blue)]" 
+                className="h-8 w-8 drop-shadow-[0_0_8px_var(--neon-blue)]" 
                 style={{ color: 'var(--neon-blue)' }}
               />
               <div className="absolute -inset-2 bg-[var(--neon-blue)]/20 rounded-full blur-sm"></div>
             </div>
             <div>
-              <h1 className="text-3xl font-bold" style={{ color: 'var(--silver-light)' }}>
+              <h1 className="text-2xl font-bold" style={{ color: 'var(--silver-light)' }}>
                 Dashboard
               </h1>
-              <p style={{ color: 'var(--metallic-silver)' }}>
-                Manage your projects and track your contributions
+              <p className="text-sm" style={{ color: 'var(--metallic-silver)' }}>
+                Manage your Launches and track your contributions
               </p>
             </div>
           </div>
@@ -211,23 +206,23 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Enhanced Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Compact Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-[var(--charcoal)] to-[var(--deep-black)] border border-[var(--neon-blue)]/40 transition-all duration-300 hover:border-[var(--neon-blue)]/60 hover:shadow-lg hover:shadow-[var(--neon-blue)]/20">
-          <div className="text-center space-y-4 p-6">
+          <div className="text-center space-y-3 p-4">
             <div className="relative">
               <TrendingUp 
-                className="h-10 w-10 mx-auto drop-shadow-[0_0_8px_var(--neon-blue)]" 
+                className="h-8 w-8 mx-auto drop-shadow-[0_0_8px_var(--neon-blue)]" 
                 style={{ color: 'var(--neon-blue)' }}
               />
               <div className="absolute -inset-3 bg-[var(--neon-blue)]/10 rounded-full blur-md"></div>
             </div>
             <div>
-              <p className="text-3xl font-bold mb-1" style={{ color: 'var(--silver-light)' }}>
+              <p className="text-2xl font-bold mb-0.5" style={{ color: 'var(--silver-light)' }}>
                 {sortedProjects.length}
               </p>
-              <p className="text-sm" style={{ color: 'var(--metallic-silver)' }}>
-                Your Projects
+              <p className="text-xs" style={{ color: 'var(--metallic-silver)' }}>
+                Your Launches
               </p>
             </div>
             <div className="w-full bg-[var(--charcoal)] rounded-full h-2">
@@ -240,19 +235,19 @@ export const DashboardPage: React.FC = () => {
         </Card>
         
         <Card className="bg-gradient-to-br from-[var(--charcoal)] to-[var(--deep-black)] border border-[var(--neon-orange)]/40 transition-all duration-300 hover:border-[var(--neon-orange)]/60 hover:shadow-lg hover:shadow-[var(--neon-orange)]/20">
-          <div className="text-center space-y-4 p-6">
+          <div className="text-center space-y-3 p-4">
             <div className="relative">
               <Activity 
-                className="h-10 w-10 mx-auto drop-shadow-[0_0_8px_var(--neon-orange)]" 
+                className="h-8 w-8 mx-auto drop-shadow-[0_0_8px_var(--neon-orange)]" 
                 style={{ color: 'var(--neon-orange)' }}
               />
               <div className="absolute -inset-3 bg-[var(--neon-orange)]/10 rounded-full blur-md"></div>
             </div>
             <div>
-              <p className="text-3xl font-bold mb-1" style={{ color: 'var(--silver-light)' }}>
+              <p className="text-2xl font-bold mb-0.5" style={{ color: 'var(--silver-light)' }}>
                 {sortedContributions.length}
               </p>
-              <p className="text-sm" style={{ color: 'var(--metallic-silver)' }}>
+              <p className="text-xs" style={{ color: 'var(--metallic-silver)' }}>
                 Contributions Made
               </p>
             </div>
@@ -266,21 +261,21 @@ export const DashboardPage: React.FC = () => {
         </Card>
         
         <Card className="bg-gradient-to-br from-[var(--charcoal)] to-[var(--deep-black)] border border-[var(--metallic-silver)]/40 transition-all duration-300 hover:border-[var(--metallic-silver)]/60 hover:shadow-lg hover:shadow-[var(--metallic-silver)]/10">
-          <div className="text-center space-y-4 p-6">
+          <div className="text-center space-y-3 p-4">
             <div className="relative">
               <div className="absolute -inset-3 bg-gradient-to-r from-[var(--neon-blue)]/10 to-[var(--neon-orange)]/10 rounded-full blur-md"></div>
-              <div className="relative z-10 w-10 h-10 bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)] rounded-full mx-auto flex items-center justify-center drop-shadow-[0_0_8px_var(--neon-blue)]">
-                <DollarSign className="h-6 w-6 text-white drop-shadow-[0_0_2px_rgba(0,0,0,0.8)]" />
+              <div className="relative z-10 w-8 h-8 bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)] rounded-full mx-auto flex items-center justify-center drop-shadow-[0_0_8px_var(--neon-blue)]">
+                <DollarSign className="h-5 w-5 text-white drop-shadow-[0_0_2px_rgba(0,0,0,0.8)]" />
               </div>
             </div>
             <div>
-              <p className="text-3xl font-bold mb-1" style={{ color: 'var(--silver-light)' }}>
+              <p className="text-2xl font-bold mb-0.5" style={{ color: 'var(--silver-light)' }}>
                 {isPricingReady 
                   ? `$${totalRaisedUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                   : '...'
                 }
               </p>
-              <p className="text-sm" style={{ color: 'var(--metallic-silver)' }}>
+              <p className="text-xs" style={{ color: 'var(--metallic-silver)' }}>
                 Total Raised (USD)
               </p>
             </div>
@@ -294,21 +289,21 @@ export const DashboardPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Enhanced Your Projects Section */}
-      <section className="space-y-6">
+      {/* Your Projects Section */}
+      <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2.5">
             <Target 
-              className="h-6 w-6 drop-shadow-[0_0_6px_var(--neon-blue)]" 
+              className="h-5 w-5 drop-shadow-[0_0_6px_var(--neon-blue)]" 
               style={{ color: 'var(--neon-blue)' }}
             />
-            <h2 className="text-2xl font-bold" style={{ color: 'var(--silver-light)' }}>
-              Your Projects
+            <h2 className="text-xl font-bold" style={{ color: 'var(--silver-light)' }}>
+              Your Launches
             </h2>
           </div>
           {sortedProjects.length > 0 && (
-            <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--metallic-silver)' }}>
-              <div className="w-2 h-2 rounded-full bg-[var(--neon-blue)] animate-pulse"></div>
+            <div className="flex items-center space-x-2 text-xs" style={{ color: 'var(--metallic-silver)' }}>
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--neon-blue)] animate-pulse"></div>
               <span>{sortedProjects.length} Active</span>
             </div>
           )}
@@ -320,10 +315,10 @@ export const DashboardPage: React.FC = () => {
               <LoadingSpinner size="lg" />
               <div className="absolute inset-0 bg-gradient-to-r from-[var(--neon-blue)]/20 to-[var(--neon-orange)]/20 rounded-full blur-xl animate-pulse"></div>
             </div>
-            <p style={{ color: 'var(--metallic-silver)' }}>Loading your projects...</p>
+            <p style={{ color: 'var(--metallic-silver)' }}>Loading your launches...</p>
           </div>
         ) : sortedProjects.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {sortedProjects.map((project, index) => (
               <div 
                 key={project.id.toString()}
@@ -345,24 +340,24 @@ export const DashboardPage: React.FC = () => {
             ))}
           </div>
         ) : (
-          <Card className="text-center py-12 bg-gradient-to-br from-[var(--charcoal)]/60 to-[var(--deep-black)]/60 border border-[var(--neon-orange)]/30">
-            <div className="space-y-6">
+          <Card className="text-center py-8 bg-gradient-to-br from-[var(--charcoal)]/60 to-[var(--deep-black)]/60 border border-[var(--neon-orange)]/30">
+            <div className="space-y-4">
               <Zap 
-                className="h-16 w-16 mx-auto opacity-50" 
+                className="h-12 w-12 mx-auto opacity-50" 
                 style={{ color: 'var(--metallic-silver)' }}
               />
               <div>
-                <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--silver-light)' }}>
+                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--silver-light)' }}>
                   Ready to Launch?
                 </h3>
-                <p className="mb-6 max-w-md mx-auto" style={{ color: 'var(--metallic-silver)' }}>
+                <p className="mb-4 max-w-md mx-auto text-sm" style={{ color: 'var(--metallic-silver)' }}>
                   You haven't created any projects yet. Start your journey by launching your first token project.
                 </p>
               </div>
               <Link to="/create">
                 <Button className="bg-gradient-to-r from-[var(--neon-orange)]/80 to-[var(--neon-orange)] hover:from-[var(--neon-orange)] hover:to-[var(--neon-orange)]/80 border-[var(--neon-orange)] shadow-lg shadow-[var(--neon-orange)]/30">
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Project
+                  Create Your First Launch
                 </Button>
               </Link>
             </div>
@@ -370,21 +365,21 @@ export const DashboardPage: React.FC = () => {
         )}
       </section>
 
-      {/* Enhanced Your Contributions Section */}
-      <section className="space-y-6">
+      {/* Your Contributions Section */}
+      <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2.5">
             <Award 
-              className="h-6 w-6 drop-shadow-[0_0_6px_var(--neon-orange)]" 
+              className="h-5 w-5 drop-shadow-[0_0_6px_var(--neon-orange)]" 
               style={{ color: 'var(--neon-orange)' }}
             />
-            <h2 className="text-2xl font-bold" style={{ color: 'var(--silver-light)' }}>
+            <h2 className="text-xl font-bold" style={{ color: 'var(--silver-light)' }}>
               Your Contributions
             </h2>
           </div>
           {sortedContributions.length > 0 && (
-            <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--metallic-silver)' }}>
-              <div className="w-2 h-2 rounded-full bg-[var(--neon-orange)] animate-pulse"></div>
+            <div className="flex items-center space-x-2 text-xs" style={{ color: 'var(--metallic-silver)' }}>
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--neon-orange)] animate-pulse"></div>
               <span>{sortedContributions.length} Active</span>
             </div>
           )}
@@ -399,7 +394,7 @@ export const DashboardPage: React.FC = () => {
             <p style={{ color: 'var(--metallic-silver)' }}>Loading your contributions...</p>
           </div>
         ) : sortedContributions.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {sortedContributions.map(({ projectId, amount }, index) => (
               <MemoizedContributionCard
                 key={projectId}
@@ -410,17 +405,17 @@ export const DashboardPage: React.FC = () => {
             ))}
           </div>
         ) : (
-          <Card className="text-center py-12 bg-gradient-to-br from-[var(--charcoal)]/60 to-[var(--deep-black)]/60 border border-[var(--neon-blue)]/30">
-            <div className="space-y-6">
+          <Card className="text-center py-8 bg-gradient-to-br from-[var(--charcoal)]/60 to-[var(--deep-black)]/60 border border-[var(--neon-blue)]/30">
+            <div className="space-y-4">
               <Target 
-                className="h-16 w-16 mx-auto opacity-50" 
+                className="h-12 w-12 mx-auto opacity-50" 
                 style={{ color: 'var(--metallic-silver)' }}
               />
               <div>
-                <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--silver-light)' }}>
+                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--silver-light)' }}>
                   Start Contributing
                 </h3>
-                <p className="mb-6 max-w-md mx-auto" style={{ color: 'var(--metallic-silver)' }}>
+                <p className="mb-4 max-w-md mx-auto text-sm" style={{ color: 'var(--metallic-silver)' }}>
                   You haven't contributed to any projects yet. Explore innovative projects and support the ecosystem.
                 </p>
               </div>
