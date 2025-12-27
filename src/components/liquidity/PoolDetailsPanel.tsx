@@ -28,12 +28,10 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
 }) => {
   const { address } = useAccount();
 
-  // Check if we have valid tokens
   const hasValidTokens = useMemo(() => {
     return tokenA && tokenB && tokenA !== tokenB;
   }, [tokenA, tokenB]);
 
-  // Fetch pool data - following your pattern
   const { data: poolData } = useReadContracts({
     contracts: [
       {
@@ -80,7 +78,6 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
     },
   });
 
-  // Extract results - following your pattern
   const tokensInfo = poolData?.[0]?.result as
     | readonly [readonly string[], readonly bigint[], readonly bigint[]]
     | undefined;
@@ -90,7 +87,6 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
   const onChainLogoURIA = poolData?.[4]?.result as string | undefined;
   const onChainLogoURIB = poolData?.[5]?.result as string | undefined;
 
-  // ✨ CHANGED: Resolve logos with fallback chain
   const logoURIA = useMemo(() => {
     if (!tokenA) return '';
     return resolveTokenLogo(tokenA, onChainLogoURIA);
@@ -101,7 +97,6 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
     return resolveTokenLogo(tokenB, onChainLogoURIB);
   }, [tokenB, onChainLogoURIB]);
 
-  // Parse token info
   const tokenInfo = useMemo(() => {
     if (!tokensInfo) return null;
 
@@ -115,7 +110,6 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
     };
   }, [tokensInfo]);
 
-  // ✅ Fetch earnings data (only if user has a position)
   const hasPosition = useMemo(() => {
     return Boolean(userLPBalance && userLPBalance > BigInt(0));
   }, [userLPBalance]);
@@ -128,13 +122,10 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
     enabled: hasPosition && !!tokenInfo,
   });
 
-  // ✅ Fetch fee config
   const { feeConfig } = useFeeConfig();
 
-  // ✅ Use local pricing
   const { calculateTVL, getTokenPriceUSD, isReady: isPricingReady } = useLocalPricing();
 
-  // Calculate pool stats with pricing
   const poolStats = useMemo(() => {
     if (!reserves || !tokenInfo) {
       return {
@@ -153,28 +144,23 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
     const formattedReserveA = formatUnits(reserveA, tokenInfo.decimalsA);
     const formattedReserveB = formatUnits(reserveB, tokenInfo.decimalsB);
 
-    // Calculate price ratio
     const priceRatio =
       parseFloat(formattedReserveA) > 0
         ? (parseFloat(formattedReserveB) / parseFloat(formattedReserveA)).toFixed(6)
         : '0';
 
-    // Simple sum for display (not USD value)
     const totalLiquidity = (
       parseFloat(formattedReserveA) + parseFloat(formattedReserveB)
     ).toFixed(2);
 
-    // Calculate USD value using pricing
     let totalLiquidityUSD = 'N/A';
     let priceA = 'N/A';
     let priceB = 'N/A';
 
     if (isPricingReady && tokenA && tokenB) {
-      // Get individual token prices
       priceA = getTokenPriceUSD(tokenA);
       priceB = getTokenPriceUSD(tokenB);
 
-      // Calculate total USD value
       const tvlUSD = calculateTVL(
         tokenA,
         reserveA,
@@ -203,7 +189,6 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
     };
   }, [reserves, tokenInfo, isPricingReady, tokenA, tokenB, calculateTVL, getTokenPriceUSD]);
 
-  // User position - calculate share percentage
   const userShare = useMemo(() => {
     if (!userLPBalance || !reserves || userLPBalance === BigInt(0)) {
       return null;
@@ -216,7 +201,6 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
     };
   }, [userLPBalance, reserves]);
 
-  // Loading state - check if data exists
   if (!poolData && hasValidTokens) {
     return (
       <Card className={`p-6 ${className}`}>
@@ -227,7 +211,6 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
     );
   }
 
-  // No tokens selected
   if (!hasValidTokens) {
     return (
       <Card className={`p-6 ${className}`}>
@@ -241,7 +224,6 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
     );
   }
 
-  // Pool doesn't exist
   if (!poolExists) {
     return (
       <Card className={`p-6 ${className}`}>
@@ -252,16 +234,16 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
                 <SafeImage
                   src={logoURIA}
                   alt={tokenInfo?.symbolA || ''}
-                  className="w-12 h-12 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)]"
+                  className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)]"
                   fallback={
-                    <div className="w-12 h-12 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center">
                       ?
                     </div>
                   }
                   onError={() => logger.warn('Failed to load logo A')}
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-[var(--silver-dark)]">
+                <div className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-[var(--silver-dark)]">
                   {tokenInfo?.symbolA[0] || '?'}
                 </div>
               )}
@@ -269,21 +251,21 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
                 <SafeImage
                   src={logoURIB}
                   alt={tokenInfo?.symbolB || ''}
-                  className="w-12 h-12 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)]"
+                  className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)]"
                   fallback={
-                    <div className="w-12 h-12 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center">
                       ?
                     </div>
                   }
                   onError={() => logger.warn('Failed to load logo B')}
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-[var(--silver-dark)]">
+                <div className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-[var(--silver-dark)]">
                   {tokenInfo?.symbolB[0] || '?'}
                 </div>
               )}
             </div>
-            <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-2">
+            <h3 className="text-base font-semibold text-[var(--silver-light)] mb-2">
               <SafeHtml
                 content={`${tokenInfo?.symbolA || 'Token A'}/${
                   tokenInfo?.symbolB || 'Token B'
@@ -305,28 +287,27 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
     );
   }
 
-  // Pool exists - show details
   return (
-    <Card className={`p-6 ${className}`}>
+    <Card className={`p-4 ${className}`}>
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2.5">
             <div className="flex items-center -space-x-2">
               {logoURIA ? (
                 <SafeImage
                   src={logoURIA}
                   alt={tokenInfo?.symbolA || ''}
-                  className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)]"
+                  className="w-8 h-8 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)]"
                   fallback={
-                    <div className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs">
+                    <div className="w-8 h-8 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs">
                       ?
                     </div>
                   }
                   onError={() => logger.warn('Failed to load logo A')}
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs text-[var(--silver-dark)]">
+                <div className="w-8 h-8 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs text-[var(--silver-dark)]">
                   {tokenInfo?.symbolA[0] || '?'}
                 </div>
               )}
@@ -334,22 +315,22 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
                 <SafeImage
                   src={logoURIB}
                   alt={tokenInfo?.symbolB || ''}
-                  className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)]"
+                  className="w-8 h-8 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)]"
                   fallback={
-                    <div className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs">
+                    <div className="w-8 h-8 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs">
                       ?
                     </div>
                   }
                   onError={() => logger.warn('Failed to load logo B')}
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs text-[var(--silver-dark)]">
+                <div className="w-8 h-8 rounded-full border-2 border-[var(--deep-black)] bg-[var(--charcoal)] flex items-center justify-center text-xs text-[var(--silver-dark)]">
                   {tokenInfo?.symbolB[0] || '?'}
                 </div>
               )}
             </div>
             <div>
-              <h3 className="text-xl font-bold text-[var(--silver-light)]">
+              <h3 className="text-lg font-bold text-[var(--silver-light)]">
                 <SafeHtml
                   content={`${tokenInfo?.symbolA || 'Token A'}/${
                     tokenInfo?.symbolB || 'Token B'
@@ -359,18 +340,17 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
               <Badge
                 variant="default"
                 size="sm"
-                className="bg-[var(--neon-blue)] bg-opacity-20 text-[var(--neon-blue)] border-[var(--neon-blue)] border-opacity-40 mt-1"
+                className="bg-[var(--neon-blue)] bg-opacity-20 text-[var(--neon-blue)] border-[var(--neon-blue)] border-opacity-40 mt-0.5"
               >
                 {feeConfig?.formatted.tradingFee || '0.30%'} Fee
               </Badge>
             </div>
           </div>
 
-          {/* ✅ APY Badge (if user has position) */}
           {earnings && (
             <div className="text-right">
               <div className="text-xs text-[var(--silver-dark)] mb-1">APY</div>
-              <div className="text-xl font-bold text-[var(--neon-blue)]">
+              <div className="text-lg font-bold text-[var(--neon-blue)]">
                 {earnings.formatted.apy}
               </div>
             </div>
@@ -379,16 +359,16 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
       </div>
 
       {/* Stats */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Total Liquidity */}
-        <div className="bg-[var(--charcoal)] bg-opacity-50 rounded-lg p-4">
+        <div className="bg-[var(--charcoal)] bg-opacity-50 rounded-lg p-3">
           <div className="flex items-center space-x-2 mb-2">
             <Droplet className="w-4 h-4 text-[var(--neon-blue)]" />
             <span className="text-sm text-[var(--metallic-silver)]">
               Total Liquidity
             </span>
           </div>
-          <div className="text-2xl font-bold text-[var(--silver-light)]">
+          <div className="text-lg font-bold text-[var(--silver-light)]">
             ${poolStats.totalLiquidityUSD}
           </div>
           {isPricingReady && (
@@ -399,8 +379,8 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
         </div>
 
         {/* Reserves */}
-        <div className="bg-[var(--charcoal)] bg-opacity-50 rounded-lg p-4">
-          <div className="flex items-center space-x-2 mb-3">
+        <div className="bg-[var(--charcoal)] bg-opacity-50 rounded-lg p-3">
+          <div className="flex items-center space-x-2 mb-2">
             <BarChart3 className="w-4 h-4 text-[var(--neon-blue)]" />
             <span className="text-sm text-[var(--metallic-silver)]">Reserves</span>
           </div>
@@ -439,28 +419,27 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
         </div>
 
         {/* Price */}
-        <div className="bg-[var(--charcoal)] bg-opacity-50 rounded-lg p-4">
+        <div className="bg-[var(--charcoal)] bg-opacity-50 rounded-lg p-3">
           <div className="flex items-center space-x-2 mb-2">
             <TrendingUp className="w-4 h-4 text-[var(--neon-orange)]" />
             <span className="text-sm text-[var(--metallic-silver)]">Price</span>
           </div>
-          <div className="text-lg font-semibold text-[var(--silver-light)]">
+          <div className="text-base font-semibold text-[var(--silver-light)]">
             1 {tokenInfo?.symbolA} = {poolStats.priceRatio} {tokenInfo?.symbolB}
           </div>
         </div>
 
-        {/* ✅ User Position with Earnings */}
+        {/* User Position with Earnings */}
         {userShare && (
-          <div className="bg-gradient-to-br from-[var(--neon-blue)] from-opacity-10 to-[var(--charcoal)] rounded-lg p-4">
-            <div className="flex items-center space-x-2 mb-3">
+          <div className="bg-gradient-to-br from-[var(--neon-blue)] from-opacity-10 to-[var(--charcoal)] rounded-lg p-3">
+            <div className="flex items-center space-x-2 mb-2">
               <Percent className="w-4 h-4 text-[var(--neon-blue)]" />
               <span className="text-sm font-medium text-[var(--silver-light)]">
                 Your Position
               </span>
             </div>
             
-            {/* LP Balance */}
-            <div className="flex justify-between mb-3">
+            <div className="flex justify-between mb-2">
               <span className="text-sm text-[var(--metallic-silver)]">
                 LP Tokens:
               </span>
@@ -469,15 +448,13 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
               </span>
             </div>
 
-            {/* ✅ Earnings Section */}
             {isLoadingEarnings ? (
               <div className="flex items-center justify-center py-2">
                 <div className="w-4 h-4 border-2 border-[var(--neon-blue)] border-t-transparent rounded-full animate-spin" />
               </div>
             ) : earnings ? (
               <>
-                {/* Position Value */}
-                <div className="mb-3 pb-3 border-b border-[var(--charcoal)]">
+                <div className="mb-2 pb-2 border-b border-[var(--charcoal)]">
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-[var(--silver-dark)]">
                       Position Value
@@ -496,9 +473,8 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
                   </div>
                 </div>
 
-                {/* Unrealized Earnings */}
-                <div className="mb-3">
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="mb-2">
+                  <div className="flex items-center gap-2 mb-1.5">
                     <Sparkles className="w-3 h-3 text-[var(--neon-blue)]" />
                     <span className="text-xs font-medium text-[var(--metallic-silver)]">
                       Unrealized Earnings
@@ -524,10 +500,9 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
                   </div>
                 </div>
 
-                {/* Total Earnings (if has realized earnings) */}
                 {(earnings.realizedEarningsA > 0n || earnings.realizedEarningsB > 0n) && (
-                  <div className="mb-3">
-                    <div className="flex items-center gap-2 mb-2">
+                  <div className="mb-2">
+                    <div className="flex items-center gap-2 mb-1.5">
                       <DollarSign className="w-3 h-3 text-[var(--neon-blue)]" />
                       <span className="text-xs font-medium text-[var(--metallic-silver)]">
                         Total Earnings
@@ -554,7 +529,6 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
                   </div>
                 )}
 
-                {/* Days Active */}
                 <div className="flex items-center justify-between text-xs text-[var(--silver-dark)] pt-2 border-t border-[var(--charcoal)]">
                   <div className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
@@ -569,7 +543,6 @@ export const PoolDetailsPanel: React.FC<PoolDetailsPanelProps> = ({
           </div>
         )}
 
-        {/* No Position */}
         {!userShare && address && (
           <div className="bg-[var(--charcoal)] bg-opacity-30 rounded-lg p-4 text-center">
             <p className="text-sm text-[var(--silver-dark)]">

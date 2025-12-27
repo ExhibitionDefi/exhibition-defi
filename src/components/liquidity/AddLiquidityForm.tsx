@@ -43,13 +43,11 @@ const COMMON_TOKENS: Token[] = [
   },
 ].filter((token) => token.address !== AMMFormatters.CONSTANTS.ZERO_ADDRESS);
 
-// ✅ Add props interface to accept hook from parent
 interface AddLiquidityFormProps {
   addLiquidity?: ReturnType<typeof useAddLiquidity>;
 }
 
 export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity: addLiquidityProp }) => {
-  // ✅ Fallback to default hook if not provided (for standalone usage)
   const defaultAddLiquidity = useAddLiquidity();
   const addLiquidity = addLiquidityProp || defaultAddLiquidity;
   
@@ -67,13 +65,11 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
     return [...tokensWithDecimals, ...customTokens];
   }, [customTokens, addLiquidity.tokenAInfo, addLiquidity.tokenBInfo]);
 
-  // ✅ Validate and sanitize custom token before adding
   const handleAddCustomToken = useCallback((token: Token) => {
     setCustomTokens((prev) => {
       const exists = prev.some((t) => t.address.toLowerCase() === token.address.toLowerCase());
       if (exists) return prev;
       
-      // ✅ Sanitize token data
       const sanitizedToken: Token = {
         ...token,
         symbol: sanitizeText(token.symbol).slice(0, 20),
@@ -82,31 +78,24 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
         isCustom: true,
       };
       
-      return [...prev, sanitizedToken].slice(0, 50); // ✅ Limit to 50 custom tokens
+      return [...prev, sanitizedToken].slice(0, 50);
     });
   }, []);
 
-  // ✅ Sanitize amount input
   const handleAmountChange = useCallback((value: string, token: 'A' | 'B') => {
-    // Remove any non-numeric characters except decimal point
     const cleaned = value.replace(/[^\d.]/g, '');
-    
-    // Prevent multiple decimal points
     const parts = cleaned.split('.');
     const sanitized = parts.length > 2 
       ? parts[0] + '.' + parts.slice(1).join('') 
       : cleaned;
     
-    // Get token decimals
     const tokenInfo = token === 'A' ? addLiquidity.tokenAInfo : addLiquidity.tokenBInfo;
     const decimals = tokenInfo?.decimals || 18;
     
-    // Limit decimal places
     if (parts[1] && parts[1].length > decimals) {
-      return; // Don't update if exceeds token decimals
+      return;
     }
     
-    // Update state with sanitized value
     if (token === 'A') {
       addLiquidity.updateState({ amountA: sanitized });
     } else {
@@ -132,7 +121,6 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
     }
   }, [addLiquidity]);
 
-  // ✅ Safe token symbol display
   const safeTokenASymbol = useMemo(
     () => sanitizeText(addLiquidity.tokenAInfo?.symbol || 'Token A'),
     [addLiquidity.tokenAInfo?.symbol]
@@ -145,11 +133,10 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
 
   return (
     <>
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         {/* Token A */}
-        <div className="bg-[var(--charcoal)] rounded-xl p-3 sm:p-4 transition-all duration-300">
-          {/* Header with Balance */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2 sm:gap-0">
+        <div className="bg-[var(--charcoal)] rounded-xl p-2.5 sm:p-3 transition-all duration-300">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2 sm:gap-0">
             <span className="text-xs sm:text-sm font-medium text-[var(--metallic-silver)]">Token A</span>
             {addLiquidity.balanceA?.value !== undefined && addLiquidity.tokenAInfo && (
               <div className="text-xs sm:text-sm text-[var(--silver-dark)] flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
@@ -177,11 +164,10 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
             )}
           </div>
 
-          {/* Input Row */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <button
               onClick={() => setShowTokenSelector('tokenA')}
-              className="rounded-xl p-2 sm:p-3 hover:border-[var(--neon-blue)] hover:border-opacity-80 transition-all duration-300 group flex-shrink-0 w-full sm:w-auto"
+              className="rounded-xl p-2 sm:p-2.5 hover:border-[var(--neon-blue)] hover:border-opacity-80 transition-all duration-300 group flex-shrink-0 w-full sm:w-auto"
             >
               <div className="flex items-center space-x-2 justify-center sm:justify-start">
                 {addLiquidity.tokenAInfo ? (
@@ -210,7 +196,7 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
               value={addLiquidity.state.amountA}
               onChange={(e) => handleAmountChange(e.target.value, 'A')}
               maxLength={30}
-              className="flex-1 bg-transparent text-base sm:text-lg font-bold text-[var(--silver-light)] placeholder:text-[var(--silver-dark)] border-0 outline-none text-center sm:text-right"
+              className="flex-1 bg-transparent text-sm sm:text-base font-bold text-[var(--silver-light)] placeholder:text-[var(--silver-dark)] border-0 outline-none text-center sm:text-right"
             />
           </div>
         </div>
@@ -227,17 +213,16 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
               });
             }}
             disabled={!addLiquidity.state.tokenA || !addLiquidity.state.tokenB}
-            className="bg-[var(--deep-black)] p-2 sm:p-3 disabled:opacity-50 transition-all duration-300 group"
+            className="bg-[var(--deep-black)] p-1.5 sm:p-2 disabled:opacity-50 transition-all duration-300 group"
             aria-label="Swap token positions"
           >
-            <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--silver-light)] group-hover:text-[var(--neon-blue)] transition-colors duration-300" />
+            <ArrowLeftRight className="w-4 h-4 text-[var(--silver-light)] group-hover:text-[var(--neon-blue)] transition-colors duration-300" />
           </button>
         </div>
 
         {/* Token B */}
-        <div className="bg-[var(--charcoal)] rounded-xl p-3 sm:p-4 transition-all duration-300">
-          {/* Header with Balance */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2 sm:gap-0">
+        <div className="bg-[var(--charcoal)] rounded-xl p-2.5 sm:p-3 transition-all duration-300">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2 sm:gap-0">
             <span className="text-xs sm:text-sm font-medium text-[var(--metallic-silver)]">Token B</span>
             {addLiquidity.balanceB?.value !== undefined && addLiquidity.tokenBInfo && (
               <div className="text-xs sm:text-sm text-[var(--silver-dark)] flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
@@ -265,11 +250,10 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
             )}
           </div>
 
-          {/* Input Row */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <button
               onClick={() => setShowTokenSelector('tokenB')}
-              className="border-opacity-50 rounded-xl p-2 sm:p-3 hover:border-[var(--neon-orange)] hover:border-opacity-80 transition-all duration-300 group flex-shrink-0 w-full sm:w-auto"
+              className="border-opacity-50 rounded-xl p-2 sm:p-2.5 hover:border-[var(--neon-orange)] hover:border-opacity-80 transition-all duration-300 group flex-shrink-0 w-full sm:w-auto"
             >
               <div className="flex items-center space-x-2 justify-center sm:justify-start">
                 {addLiquidity.tokenBInfo ? (
@@ -298,7 +282,7 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
               value={addLiquidity.state.amountB}
               onChange={(e) => handleAmountChange(e.target.value, 'B')}
               maxLength={30}
-              className="flex-1 bg-transparent text-base sm:text-lg font-bold text-[var(--silver-light)] placeholder:text-[var(--silver-dark)] border-0 outline-none text-center sm:text-right"
+              className="flex-1 bg-transparent text-sm sm:text-base font-bold text-[var(--silver-light)] placeholder:text-[var(--silver-dark)] border-0 outline-none text-center sm:text-right"
             />
           </div>
         </div>
@@ -306,7 +290,7 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
 
       {/* Pool Information */}
       {addLiquidity.poolExists !== undefined && (
-        <div className="mt-4 space-y-2 text-xs sm:text-sm text-[var(--silver-dark)]">
+        <div className="mt-3 space-y-1.5 text-xs sm:text-sm text-[var(--silver-dark)]">
           <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
             <span className="whitespace-nowrap">Pool Status:</span>
             <span className={addLiquidity.poolExists ? 'text-[var(--neon-blue)]' : 'text-[var(--neon-orange)]'}>
@@ -317,11 +301,11 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
       )}
 
       {/* Action Button */}
-      <div className="mt-6">
+      <div className="mt-4">
         <button
           onClick={addLiquidity.executeAddLiquidity}
           disabled={addLiquidity.buttonState.disabled}
-          className={`w-full py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-xl transition-all duration-300 relative ${
+          className={`w-full py-2.5 sm:py-3 text-sm sm:text-base font-semibold rounded-xl transition-all duration-300 relative ${
             addLiquidity.buttonState.disabled
               ? 'bg-[var(--silver-dark)] text-[var(--charcoal)] cursor-not-allowed'
               : 'bg-gradient-to-r from-[var(--neon-blue)] to-[var(--neon-orange)] text-[var(--deep-black)] hover:from-[var(--neon-orange)] hover:to-[var(--neon-blue)] shadow-[0_0_20px_var(--neon-blue)]'
@@ -329,7 +313,7 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
         >
           {addLiquidity.buttonState.loading && (
             <div className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2">
-              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-current border-t-transparent rounded-full animate-spin opacity-70" />
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin opacity-70" />
             </div>
           )}
           <span className={addLiquidity.buttonState.loading ? 'ml-4 sm:ml-6' : ''}>{addLiquidity.buttonState.text}</span>
@@ -338,7 +322,7 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
 
       {/* Step Progress Indicator */}
       {addLiquidity.state.isProcessing && (
-        <div className="mt-4 p-3 rounded-lg bg-[var(--charcoal)] border border-[var(--silver-dark)] border-opacity-30">
+        <div className="mt-3 p-2.5 rounded-lg bg-[var(--charcoal)] border border-[var(--silver-dark)] border-opacity-30">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
             {addLiquidity.approvalA.needsApproval && (
               <>
@@ -352,11 +336,11 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
                   }`}
                 >
                   {addLiquidity.state.currentStep === 'approving-a' ? (
-                    <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                    <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
                   ) : addLiquidity.state.currentStep === 'approving-b' || addLiquidity.state.currentStep === 'adding' ? (
-                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-current flex-shrink-0" />
+                    <div className="w-3 h-3 rounded-full bg-current flex-shrink-0" />
                   ) : (
-                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 border-current flex-shrink-0" />
+                    <div className="w-3 h-3 rounded-full border-2 border-current flex-shrink-0" />
                   )}
                   <SafeHtml 
                     content={safeTokenASymbol}
@@ -364,7 +348,7 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
                     className="font-medium whitespace-nowrap"
                   />
                 </div>
-                <svg className="w-3 h-3 sm:w-4 sm:h-4 text-[var(--silver-dark)] hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 text-[var(--silver-dark)] hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </>
@@ -382,11 +366,11 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
                   }`}
                 >
                   {addLiquidity.state.currentStep === 'approving-b' ? (
-                    <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                    <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
                   ) : addLiquidity.state.currentStep === 'adding' ? (
-                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-current flex-shrink-0" />
+                    <div className="w-3 h-3 rounded-full bg-current flex-shrink-0" />
                   ) : (
-                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 border-current flex-shrink-0" />
+                    <div className="w-3 h-3 rounded-full border-2 border-current flex-shrink-0" />
                   )}
                   <SafeHtml 
                     content={safeTokenBSymbol}
@@ -394,7 +378,7 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
                     className="font-medium whitespace-nowrap"
                   />
                 </div>
-                <svg className="w-3 h-3 sm:w-4 sm:h-4 text-[var(--silver-dark)] hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 text-[var(--silver-dark)] hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </>
@@ -406,9 +390,9 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
               }`}
             >
               {addLiquidity.state.currentStep === 'adding' ? (
-                <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
               ) : (
-                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 border-current flex-shrink-0" />
+                <div className="w-3 h-3 rounded-full border-2 border-current flex-shrink-0" />
               )}
               <span className="font-medium whitespace-nowrap">Add Liquidity</span>
             </div>
@@ -418,7 +402,7 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({ addLiquidity
 
       {/* Status Messages */}
       {addLiquidity.state.isProcessing && (
-        <div className="mt-3 text-center">
+        <div className="mt-2 text-center">
           <div className="text-xs sm:text-sm text-[var(--metallic-silver)]">
             {addLiquidity.state.currentStep === 'approving-a' && 'Please approve Token A spending in your wallet...'}
             {addLiquidity.state.currentStep === 'approving-b' && 'Please approve Token B spending in your wallet...'}

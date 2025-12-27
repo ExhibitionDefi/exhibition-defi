@@ -47,7 +47,7 @@ const NavigationItem = React.memo<{
       className={clsx(
         'flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
         isActive
-          ? 'bg-[var(--neon-blue)]/20 text-[var(--neon-blue)] border border-[var(--neon-blue)] shadow-[0_0_4px_var(--neon-blue)]/30'
+          ? 'bg-[var(--neon-blue-tone)] text-[var(--neon-blue)] shadow-[0_0_4px_var(--neon-blue)]/30'
           : 'text-[var(--metallic-silver)] hover:text-[var(--silver-light)] hover:bg-[var(--silver-dark)]/10'
       )}
     >

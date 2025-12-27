@@ -1,6 +1,6 @@
 // src/components/project/ProjectMetadata.tsx
 import React, { useState, useEffect } from 'react'
-import { Edit2, X, Save, Twitter, Globe, AlertCircle, Loader2 } from 'lucide-react'
+import { Edit2, X, Save, Globe, AlertCircle, Loader2 } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { sanitizeUrl } from '../../utils/sanitization'
 import { logger } from '../../utils/logger'
@@ -72,21 +72,36 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
    }
   }
 
+  const normalizeUrl = (url: string): string => {
+    const trimmed = url.trim()
+    if (!trimmed) return ''
+    
+    // If it doesn't start with http:// or https://, add https://
+    if (!trimmed.match(/^https?:\/\//i)) {
+      return `https://${trimmed}`
+    }
+    
+    return trimmed
+  }
+
   const validateUrl = (url: string, type: 'twitter' | 'website'): string | null => {
     if (!url.trim()) return null // Empty is valid (optional field)
 
+    // Normalize URL before validation
+    const normalizedUrl = normalizeUrl(url)
+
     // Basic URL format validation
     try {
-      const urlObj = new URL(url)
+      const urlObj = new URL(normalizedUrl)
       
-      // Twitter validation
+      // X validation
       if (type === 'twitter') {
         if (!urlObj.hostname.includes('twitter.com') && !urlObj.hostname.includes('x.com')) {
-          return 'Must be a valid Twitter/X URL (twitter.com or x.com)'
+          return 'Must be a valid X URL (x.com or twitter.com)'
         }
       }
       
-      // Website validation - just ensure it's http/https
+      // Website validation - just ensure it's https
       if (type === 'website') {
         if (!['http:', 'https:'].includes(urlObj.protocol)) {
           return 'Website must use http:// or https://'
@@ -114,16 +129,20 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
   }
 
   const handleSaveMetadata = async () => {
+    // Normalize URLs first
+    const normalizedTwitter = editForm.twitter ? normalizeUrl(editForm.twitter) : ''
+    const normalizedWebsite = editForm.website ? normalizeUrl(editForm.website) : ''
+    
     // Validate all fields
     const errors: { twitter?: string; website?: string } = {}
   
-    if (editForm.twitter) {
-      const twitterError = validateUrl(editForm.twitter, 'twitter')
+    if (normalizedTwitter) {
+      const twitterError = validateUrl(normalizedTwitter, 'twitter')
       if (twitterError) errors.twitter = twitterError
     }
   
-    if (editForm.website) {
-      const websiteError = validateUrl(editForm.website, 'website')
+    if (normalizedWebsite) {
+      const websiteError = validateUrl(normalizedWebsite, 'website')
       if (websiteError) errors.website = websiteError
     }
 
@@ -136,8 +155,8 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
     setError(null)
   
     try {
-      const sanitizedTwitter = editForm.twitter ? sanitizeUrl(editForm.twitter.trim()) : undefined
-      const sanitizedWebsite = editForm.website ? sanitizeUrl(editForm.website.trim()) : undefined
+      const sanitizedTwitter = normalizedTwitter ? sanitizeUrl(normalizedTwitter) : undefined
+      const sanitizedWebsite = normalizedWebsite ? sanitizeUrl(normalizedWebsite) : undefined
     
       const dataToSave = {
         twitter: sanitizedTwitter || undefined,
@@ -170,6 +189,7 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
       setIsSaving(false)
     }
   }
+  
   const hasMetadata = metadata.twitter || metadata.website || metadata.overview
 
   if (isLoading) {
@@ -188,7 +208,7 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
       {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <h3 className="text-lg font-semibold text-[var(--silver-light)]">
-          Social Links & Additional Info
+          Social Links & About your Launch
         </h3>
         {isProjectOwner && !isEditingMetadata && (
           <button
@@ -204,14 +224,14 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
       {/* Edit Mode */}
       {isEditingMetadata ? (
         <div className="space-y-5">
-          {/* Twitter Input */}
+          {/* X Input */}
           <div>
             <label className="block text-sm font-medium text-[var(--silver-light)] mb-2">
-              Twitter/X URL
+              X URL
             </label>
             <input
               type="text"
-              placeholder="https://twitter.com/yourproject"
+              placeholder="https://x.com/yourproject"
               value={editForm.twitter || ''}
               onChange={(e) => {
                 setEditForm({ ...editForm, twitter: e.target.value })
@@ -333,10 +353,9 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
                   href={metadata.twitter}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center space-x-2 px-4 py-2.5 bg-[#1da1f2]/10 hover:bg-[#1da1f2]/20 text-[#1da1f2] rounded-lg transition-all duration-200 border border-[#1da1f2]/30 hover:border-[#1da1f2]/50"
+                  className="flex items-center space-x-2 px-4 py-2.5 bg-[#000000]/10 hover:bg-[#000000]/20 text-[var(--silver-light)] rounded-lg transition-all duration-200 border border-[var(--metallic-silver)]/30 hover:border-[var(--metallic-silver)]/50"
                 >
-                  <Twitter className="h-4 w-4" />
-                  <span className="text-sm font-medium">Twitter</span>
+                  <span className="text-sm font-bold">𝕏.com</span>
                 </a>
               )}
               {metadata.website && (

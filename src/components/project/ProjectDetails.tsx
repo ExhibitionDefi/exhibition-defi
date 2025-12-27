@@ -330,6 +330,15 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
         </Card>
       )}
 
+      {/* Project Metadata */}
+      <div className="space-y-4">
+        <ProjectMetadata 
+          projectId={project.id.toString()}
+          isProjectOwner={isProjectOwner}
+          projectOwner={project.projectOwner}
+        />
+      </div>
+
       {/* Header + Progress Section - Combined */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Header Section - More Compact */}
@@ -651,15 +660,6 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
             )}
           </div>
         </Card>
-      </div>
-
-      {/* Project Metadata */}
-      <div className="flex justify-center">
-        <ProjectMetadata 
-          projectId={project.id.toString()}
-          isProjectOwner={isProjectOwner}
-          projectOwner={project.projectOwner}
-        />
       </div>
     </div>
   )

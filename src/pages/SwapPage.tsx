@@ -9,18 +9,14 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 export const SwapPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   
-  // Read token addresses from URL parameters
   const tokenAParam = searchParams.get('tokenA') as Address | null;
   const tokenBParam = searchParams.get('tokenB') as Address | null;
 
-  // Track selected tokens - initialize from URL params
   const [selectedTokenIn, setSelectedTokenIn] = useState<Address | null>(tokenAParam);
   const [selectedTokenOut, setSelectedTokenOut] = useState<Address | null>(tokenBParam);
   
-  // Toggle for mobile view
   const [showPoolDetails, setShowPoolDetails] = useState(false);
 
-  // Update tokens when URL params change
   useEffect(() => {
     if (tokenAParam) setSelectedTokenIn(tokenAParam);
     if (tokenBParam) setSelectedTokenOut(tokenBParam);
