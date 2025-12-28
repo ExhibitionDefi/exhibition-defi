@@ -5,7 +5,7 @@ import { Card } from '../ui/Card'
 import { SafeHtml, SafeLink } from '../SafeHtml'
 import { sanitizeUrl, sanitizeMultilineText } from '../../utils/sanitization'
 import { logger } from '../../utils/logger'
-import { updateProjectMetadata } from '../../utils/api'
+import { apiClient } from '../../utils/api'
 
 interface ProjectMetadata {
   twitter?: string
@@ -189,7 +189,13 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
     
       logger.info('Saving metadata:', dataToSave)
     
-      const result = await updateProjectMetadata(projectId, dataToSave)
+      const result = await apiClient(
+        `/api/projects/${projectId}/metadata`,
+        {
+          method: 'POST',
+          body: JSON.stringify(dataToSave),
+        }
+     )
     
       if (result.success) {
         setMetadata(result.data)
