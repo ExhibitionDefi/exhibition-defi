@@ -107,3 +107,20 @@ export async function getCurrentUser(): Promise<ApiResponse<{ address: string; e
 export async function getSigningMessage(): Promise<ApiResponse<{ message: string }>> {
   return apiClient('/api/auth/message')
 }
+
+/**
+ * Update project metadata
+ */
+export async function updateProjectMetadata(
+  projectId: string,
+  data: {
+    twitter?: string
+    website?: string
+    overview?: string
+  }
+): Promise<ApiResponse> {
+  return apiClient(`/api/projects/${projectId}/metadata`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
