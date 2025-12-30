@@ -5,7 +5,7 @@
  * Location: src/utils/api.ts
  */
 
-import { logger } from "./logger"
+import { logger } from './logger'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -17,11 +17,22 @@ interface ApiResponse<T = any> {
 }
 
 /**
- * Get CSRF token from cookie
+ * Helper: Get CSRF token from cookie or refresh it if missing
  */
-function getCsrfToken(): string | null {
-  const match = document.cookie.match(/csrf_token=([^;]+)/)
-  return match ? match[1] : null
+async function ensureCsrfToken(): Promise<string | null> {
+  let token = document.cookie.match(/csrf_token=([^;]+)/)?.[1] ?? null
+
+  if (!token) {
+    try {
+      // Trigger a GET request to backend to set CSRF cookie if missing
+      await fetch(`${API_URL}/`, { method: 'GET', credentials: 'include' })
+      token = document.cookie.match(/csrf_token=([^;]+)/)?.[1] ?? null
+    } catch (err) {
+      console.warn('Failed to refresh CSRF token:', err)
+    }
+  }
+
+  return token
 }
 
 /**
@@ -32,38 +43,33 @@ export async function apiClient<T = any>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   const url = `${API_URL}${endpoint}`
-  
-  // Add CSRF token for state-changing requests
-  const needsCsrf = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(
-    options.method || 'GET'
-  )
-  
+  const method = options.method?.toUpperCase() || 'GET'
+  const needsCsrf = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   }
-  
-  // Add CSRF token from cookie
+
+  // Add CSRF token automatically for state-changing requests
   if (needsCsrf) {
-    const csrfToken = getCsrfToken()
-    if (csrfToken) {
-      headers['X-CSRF-Token'] = csrfToken
-    }
+    const csrfToken = await ensureCsrfToken()
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken
   }
-  
+
   try {
     const response = await fetch(url, {
       ...options,
       headers,
-      credentials: 'include', // CRITICAL: Send httpOnly cookies
+      credentials: 'include', // Critical: send httpOnly cookies
     })
-    
+
     const data = await response.json()
-    
+
     if (!response.ok) {
       throw new Error(data.message || data.error || 'Request failed')
     }
-    
+
     return data
   } catch (error) {
     logger.error('API Error:', error)
@@ -89,9 +95,7 @@ export async function verifyWallet(
  * Logout and clear auth cookies
  */
 export async function logout(): Promise<ApiResponse> {
-  return apiClient('/api/auth/logout', {
-    method: 'POST',
-  })
+  return apiClient('/api/auth/logout', { method: 'POST' })
 }
 
 /**

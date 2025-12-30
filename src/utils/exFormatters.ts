@@ -9,12 +9,11 @@ import { logger } from './logger';
 export const ProjectStatus = {
   Upcoming: 0,
   Active: 1,
-  FundingEnded: 2,
-  Successful: 3,
-  Failed: 4,
-  Claimable: 5,
-  Refundable: 6,
-  Completed: 7
+  Successful: 2,
+  Failed: 3,
+  Claimable: 4,
+  Refundable: 5,
+  Completed: 6
 } as const;
 
 export type ProjectStatus = typeof ProjectStatus[keyof typeof ProjectStatus];
