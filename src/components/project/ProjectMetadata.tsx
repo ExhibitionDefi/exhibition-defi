@@ -22,7 +22,7 @@ interface ProjectMetadataProps {
 
 const MAX_OVERVIEW_LENGTH = 500
 const MAX_URL_LENGTH = 2048
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+//const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
   projectId,
@@ -47,30 +47,29 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
   const loadMetadata = async () => {
     setIsLoading(true)
     setError(null)
-  
+
     try {
-      const response = await fetch(`${API_URL}/api/projects/${projectId}/metadata`)
-    
-      if (response.status === 404) {
-        setIsLoading(false)
-        return
-      }
-    
-      if (!response.ok) {
-        throw new Error('Failed to fetch metadata')
-      }
-    
-      const result = await response.json()
+      // Use apiClient for CSRF-safe fetch
+      const result = await apiClient<ProjectMetadata>(`/api/projects/${projectId}/metadata`)
+
       if (result.success && result.data) {
         setMetadata(result.data)
         logger.info('Metadata loaded successfully', { projectId })
+      } else {
+        // No data found, clear state
+        setMetadata({})
+        logger.warn('No metadata found', { projectId })
       }
     } catch (err) {
-      logger.warn('Error loading metadata:', err)
+      setMetadata({})
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+      logger.warn('Error loading metadata:', errorMessage)
+      setError(`Failed to load metadata: ${errorMessage}`)
     } finally {
       setIsLoading(false)
-   }
+    }
   }
+
 
   const validateTwitterUrl = (url: string): string | null => {
     if (!url.trim()) return null

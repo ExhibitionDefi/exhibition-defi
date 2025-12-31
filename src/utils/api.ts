@@ -1,8 +1,7 @@
 /**
+ * src/utils/api.ts
  * Secure API Client for Exhibition Backend
  * Handles authentication, CSRF tokens, and sanitization
- * 
- * Location: src/utils/api.ts
  */
 
 import { logger } from './logger'
@@ -18,15 +17,17 @@ interface ApiResponse<T = any> {
 
 /**
  * Helper: Get CSRF token from cookie or refresh it if missing
+ * Works for both GET and state-changing requests
  */
 async function ensureCsrfToken(): Promise<string | null> {
   let token = document.cookie.match(/csrf_token=([^;]+)/)?.[1] ?? null
 
   if (!token) {
     try {
-      // Trigger a GET request to backend to set CSRF cookie if missing
+      // Ping backend to set CSRF cookie if missing
       await fetch(`${API_URL}/`, { method: 'GET', credentials: 'include' })
       token = document.cookie.match(/csrf_token=([^;]+)/)?.[1] ?? null
+      if (token) logger.info('CSRF token refreshed')
     } catch (err) {
       console.warn('Failed to refresh CSRF token:', err)
     }
@@ -51,10 +52,10 @@ export async function apiClient<T = any>(
     ...(options.headers as Record<string, string>),
   }
 
-  // Add CSRF token automatically for state-changing requests
-  if (needsCsrf) {
-    const csrfToken = await ensureCsrfToken()
-    if (csrfToken) headers['X-CSRF-Token'] = csrfToken
+  // Always ensure CSRF token exists
+  const csrfToken = await ensureCsrfToken()
+  if (csrfToken && needsCsrf) {
+    headers['X-CSRF-Token'] = csrfToken
   }
 
   try {
@@ -78,7 +79,7 @@ export async function apiClient<T = any>(
 }
 
 /**
- * Verify wallet signature and get JWT token
+ * Wallet verification
  */
 export async function verifyWallet(
   address: string,
@@ -92,21 +93,21 @@ export async function verifyWallet(
 }
 
 /**
- * Logout and clear auth cookies
+ * Logout
  */
 export async function logout(): Promise<ApiResponse> {
   return apiClient('/api/auth/logout', { method: 'POST' })
 }
 
 /**
- * Get current authenticated user
+ * Get current user
  */
 export async function getCurrentUser(): Promise<ApiResponse<{ address: string; expiresAt: number }>> {
   return apiClient('/api/auth/me')
 }
 
 /**
- * Get the message that should be signed
+ * Get signing message
  */
 export async function getSigningMessage(): Promise<ApiResponse<{ message: string }>> {
   return apiClient('/api/auth/message')
