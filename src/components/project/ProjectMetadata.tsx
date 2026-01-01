@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react'
 import { Edit2, X, Save, Globe, AlertCircle, Loader2 } from 'lucide-react'
 import { Card } from '../ui/Card'
-import { sanitizeUrl } from '../../utils/sanitization'
+import { SafeHtml, SafeLink } from '../SafeHtml'
+import { sanitizeUrl, sanitizeMultilineText } from '../../utils/sanitization'
 import { logger } from '../../utils/logger'
 import { apiClient } from '../../utils/api'
 
@@ -20,6 +21,7 @@ interface ProjectMetadataProps {
 }
 
 const MAX_OVERVIEW_LENGTH = 500
+const MAX_URL_LENGTH = 2048
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
@@ -38,7 +40,6 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
     website?: string
   }>({})
 
-  // Load metadata from storage on mount
   useEffect(() => {
     loadMetadata()
   }, [projectId])
@@ -51,7 +52,6 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
       const response = await fetch(`${API_URL}/api/projects/${projectId}/metadata`)
     
       if (response.status === 404) {
-        // No metadata yet - this is fine
         setIsLoading(false)
         return
       }
@@ -72,46 +72,30 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
    }
   }
 
-  const normalizeUrl = (url: string): string => {
-    const trimmed = url.trim()
-    if (!trimmed) return ''
+  const validateTwitterUrl = (url: string): string | null => {
+    if (!url.trim()) return null
     
-    // If it doesn't start with http:// or https://, add https://
-    if (!trimmed.match(/^https?:\/\//i)) {
-      return `https://${trimmed}`
+    const sanitized = sanitizeUrl(url)
+    if (!sanitized) return 'Invalid URL format'
+    
+    try {
+      const urlObj = new URL(sanitized)
+      if (!urlObj.hostname.includes('twitter.com') && !urlObj.hostname.includes('x.com')) {
+        return 'Must be a valid X/Twitter URL'
+      }
+      return null
+    } catch {
+      return 'Invalid URL format'
     }
-    
-    return trimmed
   }
 
-  const validateUrl = (url: string, type: 'twitter' | 'website'): string | null => {
-    if (!url.trim()) return null // Empty is valid (optional field)
-
-    // Normalize URL before validation
-    const normalizedUrl = normalizeUrl(url)
-
-    // Basic URL format validation
-    try {
-      const urlObj = new URL(normalizedUrl)
-      
-      // X validation
-      if (type === 'twitter') {
-        if (!urlObj.hostname.includes('twitter.com') && !urlObj.hostname.includes('x.com')) {
-          return 'Must be a valid X URL (x.com or twitter.com)'
-        }
-      }
-      
-      // Website validation - just ensure it's https
-      if (type === 'website') {
-        if (!['http:', 'https:'].includes(urlObj.protocol)) {
-          return 'Website must use http:// or https://'
-        }
-      }
-      
-      return null // Valid
-    } catch {
-      return 'Please enter a valid URL (e.g., https://example.com)'
-    }
+  const validateWebsiteUrl = (url: string): string | null => {
+    if (!url.trim()) return null
+    
+    const sanitized = sanitizeUrl(url)
+    if (!sanitized) return 'Invalid URL format'
+    
+    return null
   }
 
   const handleEditClick = () => {
@@ -128,21 +112,49 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
     setIsEditingMetadata(false)
   }
 
-  const handleSaveMetadata = async () => {
-    // Normalize URLs first
-    const normalizedTwitter = editForm.twitter ? normalizeUrl(editForm.twitter) : ''
-    const normalizedWebsite = editForm.website ? normalizeUrl(editForm.website) : ''
+  const handleTwitterChange = (value: string) => {
+    // Enforce length limit
+    const trimmed = value.slice(0, MAX_URL_LENGTH)
     
+    setEditForm({ ...editForm, twitter: trimmed })
+    
+    // Clear error on change
+    if (validationErrors.twitter) {
+      setValidationErrors({ ...validationErrors, twitter: undefined })
+    }
+  }
+
+  const handleWebsiteChange = (value: string) => {
+    // Enforce length limit
+    const trimmed = value.slice(0, MAX_URL_LENGTH)
+    
+    setEditForm({ ...editForm, website: trimmed })
+    
+    // Clear error on change
+    if (validationErrors.website) {
+      setValidationErrors({ ...validationErrors, website: undefined })
+    }
+  }
+
+  const handleOverviewChange = (value: string) => {
+    // Sanitize and enforce length on every keystroke
+    const sanitized = sanitizeMultilineText(value)
+    const limited = sanitized.slice(0, MAX_OVERVIEW_LENGTH)
+    
+    setEditForm({ ...editForm, overview: limited })
+  }
+
+  const handleSaveMetadata = async () => {
     // Validate all fields
     const errors: { twitter?: string; website?: string } = {}
   
-    if (normalizedTwitter) {
-      const twitterError = validateUrl(normalizedTwitter, 'twitter')
+    if (editForm.twitter?.trim()) {
+      const twitterError = validateTwitterUrl(editForm.twitter)
       if (twitterError) errors.twitter = twitterError
     }
   
-    if (normalizedWebsite) {
-      const websiteError = validateUrl(normalizedWebsite, 'website')
+    if (editForm.website?.trim()) {
+      const websiteError = validateWebsiteUrl(editForm.website)
       if (websiteError) errors.website = websiteError
     }
 
@@ -155,14 +167,24 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
     setError(null)
   
     try {
-      const sanitizedTwitter = normalizedTwitter ? sanitizeUrl(normalizedTwitter) : undefined
-      const sanitizedWebsite = normalizedWebsite ? sanitizeUrl(normalizedWebsite) : undefined
+      // Sanitize all inputs before sending
+      const sanitizedTwitter = editForm.twitter?.trim() 
+        ? sanitizeUrl(editForm.twitter) 
+        : undefined
+      
+      const sanitizedWebsite = editForm.website?.trim() 
+        ? sanitizeUrl(editForm.website) 
+        : undefined
+      
+      const sanitizedOverview = editForm.overview?.trim()
+        ? sanitizeMultilineText(editForm.overview).slice(0, MAX_OVERVIEW_LENGTH)
+        : undefined
     
       const dataToSave = {
         twitter: sanitizedTwitter || undefined,
         website: sanitizedWebsite || undefined,
-        overview: editForm.overview?.trim() || undefined,
-        ownerAddress: projectOwner, // Send owner address for verification
+        overview: sanitizedOverview || undefined,
+        ownerAddress: projectOwner,
       }
     
       logger.info('Saving metadata:', dataToSave)
@@ -233,10 +255,7 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
               type="text"
               placeholder="https://x.com/yourproject"
               value={editForm.twitter || ''}
-              onChange={(e) => {
-                setEditForm({ ...editForm, twitter: e.target.value })
-                setValidationErrors({ ...validationErrors, twitter: undefined })
-              }}
+              onChange={(e) => handleTwitterChange(e.target.value)}
               className={`w-full px-4 py-3 bg-[var(--charcoal)] border ${
                 validationErrors.twitter 
                   ? 'border-[var(--neon-orange)]' 
@@ -260,10 +279,7 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
               type="text"
               placeholder="https://yourproject.com"
               value={editForm.website || ''}
-              onChange={(e) => {
-                setEditForm({ ...editForm, website: e.target.value })
-                setValidationErrors({ ...validationErrors, website: undefined })
-              }}
+              onChange={(e) => handleWebsiteChange(e.target.value)}
               className={`w-full px-4 py-3 bg-[var(--charcoal)] border ${
                 validationErrors.website 
                   ? 'border-[var(--neon-orange)]' 
@@ -286,12 +302,7 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
             <textarea
               placeholder="Brief description of your project..."
               value={editForm.overview || ''}
-              onChange={(e) => 
-                setEditForm({ 
-                  ...editForm, 
-                  overview: e.target.value.slice(0, MAX_OVERVIEW_LENGTH) 
-                })
-              }
+              onChange={(e) => handleOverviewChange(e.target.value)}
               rows={5}
               className="w-full px-4 py-3 bg-[var(--charcoal)] border border-[var(--metallic-silver)]/20 rounded-lg text-[var(--silver-light)] placeholder-[var(--metallic-silver)]/50 focus:border-[var(--neon-blue)] focus:outline-none transition-colors resize-none"
             />
@@ -349,35 +360,34 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
           {(metadata.twitter || metadata.website) && (
             <div className="flex items-center space-x-3 pb-5 border-b border-[var(--metallic-silver)]/20">
               {metadata.twitter && (
-                <a
+                <SafeLink
                   href={metadata.twitter}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="flex items-center space-x-2 px-4 py-2.5 bg-[#000000]/10 hover:bg-[#000000]/20 text-[var(--silver-light)] rounded-lg transition-all duration-200 border border-[var(--metallic-silver)]/30 hover:border-[var(--metallic-silver)]/50"
                 >
                   <span className="text-sm font-bold">𝕏.com</span>
-                </a>
+                </SafeLink>
               )}
               {metadata.website && (
-                <a
+                <SafeLink
                   href={metadata.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="flex items-center space-x-2 px-4 py-2.5 bg-[var(--neon-blue)]/10 hover:bg-[var(--neon-blue)]/20 text-[var(--neon-blue)] rounded-lg transition-all duration-200 border border-[var(--neon-blue)]/30 hover:border-[var(--neon-blue)]/50"
                 >
                   <Globe className="h-4 w-4" />
                   <span className="text-sm font-medium">Website</span>
-                </a>
+                </SafeLink>
               )}
             </div>
           )}
 
-          {/* Overview Text */}
+          {/* Overview Text - NOW SAFE */}
           {metadata.overview ? (
             <div>
-              <p className="text-[var(--silver-light)] leading-relaxed whitespace-pre-wrap">
-                {metadata.overview}
-              </p>
+              <SafeHtml
+                content={metadata.overview}
+                preserveNewlines={true}
+                className="text-[var(--silver-light)] leading-relaxed"
+                as="div"
+              />
             </div>
           ) : !hasMetadata ? (
             <div className="text-center py-6">
