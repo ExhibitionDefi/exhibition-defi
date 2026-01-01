@@ -2,6 +2,8 @@
  * src/utils/api.ts
  * Secure API Client for Exhibition Backend
  * Handles authentication, CSRF tokens, and sanitization
+ * 
+ * FIX: Changed 'X-CSRF-Token' to 'x-csrf-token' to match backend expectation
  */
 
 import { logger } from './logger'
@@ -55,7 +57,8 @@ export async function apiClient<T = any>(
   // Always ensure CSRF token exists
   const csrfToken = await ensureCsrfToken()
   if (csrfToken && needsCsrf) {
-    headers['X-CSRF-Token'] = csrfToken
+    // ✅ FIXED: Use lowercase 'x-csrf-token' to match backend expectation
+    headers['x-csrf-token'] = csrfToken
   }
 
   try {
