@@ -15,7 +15,6 @@ import { Step4LiquidityLock } from './steps/Step4LiquidityLock'
 import { Step5VestingConfig } from './steps/Step5VestingConfig'
 import { Step6ReviewSubmit } from './steps/Step6ReviewSubmit'
 
-// 🔒 SECURITY: Import sanitization utilities
 import {
   sanitizeText,
   sanitizeUrl,
@@ -78,14 +77,11 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
-  // Get pricing data for USD displays
   const pricing = useProjectFormPricing(formData)
 
-  // Generic change handler
   const handleChange = (field: keyof CreateProjectFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     
-    // Clear validation error for this field
     if (validationErrors[field]) {
       setValidationErrors((prev) => {
         const updated = { ...prev }
@@ -95,7 +91,6 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
     }
   }
 
-  // Validation logic for each step
   const validateStep = (step: number): boolean => {
     const errors: Record<string, string> = {}
 
@@ -105,7 +100,6 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
         if (!formData.projectTokenSymbol) errors.projectTokenSymbol = 'Token symbol is required'
         if (!formData.initialTotalSupply) errors.initialTotalSupply = 'Total supply is required'
         
-        // 🔒 SECURITY: Additional validation
         if (formData.projectTokenName && formData.projectTokenName.length < 3) {
           errors.projectTokenName = 'Token name must be at least 3 characters'
         }
@@ -190,16 +184,13 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
     setCurrentStep((prev) => Math.max(prev - 1, 1))
   }
 
-  // 🔒 SECURITY: Final sanitization before submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // ✅ ONLY allow submission on step 6
     if (currentStep !== 6) {
       return
     }
 
-    // Create a sanitized copy of formData for submission
     const sanitizedData: CreateProjectFormData = {
       ...formData,
       projectTokenName: sanitizeText(formData.projectTokenName).slice(0, 100),
@@ -207,7 +198,6 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
       projectTokenLogoURI: sanitizeUrl(formData.projectTokenLogoURI) || '',
     }
 
-    // Final security check
     if (hasSuspiciousContent(sanitizedData.projectTokenName)) {
       setValidationErrors(prev => ({
         ...prev,
@@ -220,7 +210,6 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
     onSubmit(sanitizedData)
   }
 
-  // Render current step
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
@@ -285,7 +274,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
     <form
       onSubmit={handleSubmit}
       className="
-        space-y-8 
+        space-y-6 
         w-full 
         sm:max-w-lg 
         md:max-w-xl 
@@ -301,23 +290,23 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
         </Alert>
       )}
 
-      <div className="bg-[var(--charcoal)] rounded-2xl p-6 sm:p-8 md:p-10">
+      <div className="bg-[var(--charcoal)] rounded-2xl p-4 sm:p-6 md:p-8">
         {renderStepContent()}
       </div>
 
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
         <Button
           type="button"
           variant="secondary"
           onClick={handleBack}
           disabled={currentStep === 1 || isSubmitting}
-          className="w-full sm:w-auto px-6 py-3"
+          className="w-full sm:w-auto px-5 py-2.5"
         >
-          <ChevronLeft className="w-5 h-5 mr-2" />
+          <ChevronLeft className="w-4 h-4 mr-1.5" />
           Back
         </Button>
 
-        <div className="text-sm text-[var(--metallic-silver)] hidden md:block">
+        <div className="text-xs text-[var(--metallic-silver)] hidden md:block">
           Step {currentStep} of 6
         </div>
 
@@ -327,10 +316,10 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
             variant="primary"
             onClick={handleNext}
             disabled={isSubmitting}
-            className="w-full sm:w-auto px-6 py-3"
+            className="w-full sm:w-auto px-5 py-2.5"
           >
             Next
-            <ChevronRight className="w-5 h-5 ml-2" />
+            <ChevronRight className="w-4 h-4 ml-1.5" />
           </Button>
         ) : (
           <Button
@@ -338,7 +327,7 @@ export const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
             variant="primary"
             onClick={handleSubmit} 
             disabled={isSubmitting}
-            className="w-full sm:w-auto px-8 py-3 font-bold"
+            className="w-full sm:w-auto px-6 py-2.5 font-bold"
           >
             {isSubmitting ? (
               <>

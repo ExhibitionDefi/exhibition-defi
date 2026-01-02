@@ -230,7 +230,7 @@ export const ProjectMetadata: React.FC<ProjectMetadataProps> = ({
       {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <h3 className="text-lg font-semibold text-[var(--silver-light)]">
-          Social Links & About your Launch
+          About
         </h3>
         {isProjectOwner && !isEditingMetadata && (
           <button
