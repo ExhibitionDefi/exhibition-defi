@@ -146,7 +146,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({
   const getStatusVariant = (status: ProjectStatus) => {
     switch (status) {
       case ProjectStatus.Active:
-        return 'success'
+        return 'info'
       case ProjectStatus.Upcoming:
         return 'info'
       case ProjectStatus.Successful:

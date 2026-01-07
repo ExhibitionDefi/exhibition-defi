@@ -27,10 +27,10 @@ export const ProjectFilters: React.FC = () => {
     { value: ProjectStatus.Active, label: ProjectStatusLabels[ProjectStatus.Active] },
     { value: ProjectStatus.Upcoming, label: ProjectStatusLabels[ProjectStatus.Upcoming] },
     { value: ProjectStatus.Successful, label: ProjectStatusLabels[ProjectStatus.Successful] },
+    { value: ProjectStatus.Claimable, label: ProjectStatusLabels[ProjectStatus.Claimable] },
     { value: ProjectStatus.Completed, label: ProjectStatusLabels[ProjectStatus.Completed] },
     { value: ProjectStatus.Failed, label: ProjectStatusLabels[ProjectStatus.Failed] },
     { value: ProjectStatus.Refundable, label: ProjectStatusLabels[ProjectStatus.Refundable] },
-    { value: ProjectStatus.Claimable, label: ProjectStatusLabels[ProjectStatus.Claimable] },
   ]
 
   return (

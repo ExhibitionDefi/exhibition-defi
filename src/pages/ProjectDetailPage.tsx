@@ -214,7 +214,7 @@ export const ProjectDetailPage: React.FC = () => {
       {isProjectOwner && 
        (project.status === ProjectStatus.Successful || 
         project.status === ProjectStatus.Claimable) &&
-       project.depositedLiquidityTokens < project.requiredLiquidityTokens && (
+        project.depositedLiquidityTokens < project.requiredLiquidityTokens && (
         <DepositLiquidityCard
           projectId={project.id}
           tokenSymbol={project.tokenSymbol}

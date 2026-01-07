@@ -22,7 +22,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const getStatusVariant = (status: number) => {
     switch (status) {
       case ProjectStatus.Active:
-        return 'success'
+        return 'info'
       case ProjectStatus.Upcoming:
         return 'info'
       case ProjectStatus.Successful:

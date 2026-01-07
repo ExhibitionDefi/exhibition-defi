@@ -4,7 +4,7 @@ import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Badge } from '../ui/Badge'
 import { TokenApproval } from '../common/TokenApproval'
-import { type ProjectDisplayData, ProjectStatus, ProjectStatusLabels } from '../../types/project'
+import { type ProjectDisplayData} from '../../types/project'
 import { ExhibitionFormatters } from '../../utils/exFormatters'
 import { EXHIBITION_ADDRESS } from '../../config/contracts'
 import { Card } from '../ui/Card'
@@ -132,20 +132,9 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
     onContributionChange(validated !== null ? sanitized : '')
   }
 
+  // The owner/user message banners in ProjectDetails already inform users
   if (!canContribute) {
-    return (
-      <div className="border-[var(--charcoal)] bg-[var(--deep-black)] rounded-xl p-6 text-center">
-        <h3 className="text-lg font-semibold text-[var(--silver-light)] mb-2">
-          Contributions Not Available
-        </h3>
-        <p className="text-[var(--metallic-silver)]">
-          This project is upcoming or funding has not yet open/ended.
-        </p>
-        <Badge variant="info" className="mt-3">
-          {ProjectStatusLabels[project.status as ProjectStatus]}
-        </Badge>
-      </div>
-    )
+    return null
   }
 
   const setMax = () => {
