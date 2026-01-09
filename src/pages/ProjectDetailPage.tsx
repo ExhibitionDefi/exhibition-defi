@@ -254,7 +254,7 @@ export const ProjectDetailPage: React.FC = () => {
         {/* Left Column - Contribution/Refund Form */}
         <div className="lg:col-start-1">
           {/* REFUND REQUEST FORM - Show when project Failed/Refundable and when successful/claimable but liquidity finalization deadline has passed */}
-          {requestRefund.canRefund && (
+          {(requestRefund.canRefund || requestRefund.canEmergencyRefund) && (
             <RefundRequestForm
               project={project}
               userContribution={requestRefund.userContribution}
@@ -266,6 +266,9 @@ export const ProjectDetailPage: React.FC = () => {
               onRequestRefund={requestRefund.onRequestRefund}
               canEmergencyRefund={requestRefund.canEmergencyRefund}  
               isEmergencyRefund={requestRefund.isEmergencyRefund}
+              liquidityDeadline={requestRefund.liquidityDeadline}
+              currentTime={requestRefund.currentTime}
+              deadlinePassed={requestRefund.deadlinePassed}
               onRequestEmergencyRefund={requestRefund.onRequestEmergencyRefund}
             />
           )}

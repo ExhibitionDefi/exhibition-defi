@@ -1,7 +1,7 @@
 // src/hooks/projects/useRequestRefund.ts
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
-import { useWriteContract, useWaitForTransactionReceipt, useAccount, useReadContract, useBlockNumber } from 'wagmi'
+import { useWriteContract, useWaitForTransactionReceipt, useAccount, useReadContract } from 'wagmi'
 import { exhibitionAbi } from '@/generated/wagmi'
 import { EXHIBITION_ADDRESS, EXPLORER_URL } from '@/config/contracts'
 import type { Hash } from 'viem'
@@ -35,8 +35,6 @@ interface UseRequestRefundOptions {
   showToast?: boolean
 }
 
-const LIQUIDITY_FINALIZATION_DEADLINE = 7n * 24n * 60n * 60n // 7 days in seconds
-
 export function useRequestRefund(options: UseRequestRefundOptions = {}) {
   const { 
     project,
@@ -49,9 +47,38 @@ export function useRequestRefund(options: UseRequestRefundOptions = {}) {
 
   const { isConnected } = useAccount()
 
-  // Get current block timestamp for deadline calculations
-  const { data: blockNumber } = useBlockNumber({ watch: true })
-  const { data: currentBlock } = useReadContract({
+  // Get emergency refund availability from contract
+  const { data: emergencyRefundData } = useReadContract({
+    address: EXHIBITION_ADDRESS,
+    abi: exhibitionAbi,
+    functionName: 'isEmergencyRefundAvailable',
+    args: project?.id ? [project.id] : undefined,
+    query: {
+      enabled: !!project?.id && (project.status === 2 || project.status === 4),
+    },
+  })
+
+  // Parse emergency refund data: [available, deadline, timeRemaining]
+  const emergencyRefundInfo = useMemo(() => {
+    if (!emergencyRefundData || !Array.isArray(emergencyRefundData)) {
+      return { 
+        available: false, 
+        deadline: undefined, 
+        deadlinePassed: false
+      }
+    }
+
+    const [available, deadline] = emergencyRefundData as [boolean, bigint, bigint]
+    
+    return {
+      available,
+      deadline,
+      deadlinePassed: available, // If available is true, deadline has passed
+    }
+  }, [emergencyRefundData])
+
+  // Get current timestamp for display purposes
+  const { data: currentTime } = useReadContract({
     address: EXHIBITION_ADDRESS,
     abi: [{
       inputs: [],
@@ -62,46 +89,6 @@ export function useRequestRefund(options: UseRequestRefundOptions = {}) {
     }] as const,
     functionName: 'getCurrentTimestamp',
   })
-
-  // Get success timestamp for the project
-  const { data: successTimestamp } = useReadContract({
-    address: EXHIBITION_ADDRESS,
-    abi: exhibitionAbi,
-    functionName: 'successTimestamp',
-    args: project?.id ? [project.id] : undefined,
-    query: {
-      enabled: !!project?.id && (project.status === 3 || project.status === 5),
-    },
-  })
-
-  const currentTime = currentBlock as bigint | undefined
-
-  // Calculate if emergency refund is available
-  const emergencyRefundInfo = useMemo(() => {
-    if (!project || !successTimestamp || !currentTime) {
-      return { available: false, deadline: undefined, timeRemaining: undefined }
-    }
-
-    // Emergency refund only for Successful (3) or Claimable (5) status
-    const isSuccessfulOrClaimable = project.status === 3 || project.status === 5
-    
-    // Liquidity must NOT have been added
-    const liquidityNotAdded = project.depositedLiquidityTokens < project.requiredLiquidityTokens
-
-    // Calculate deadline
-    const deadline = successTimestamp + LIQUIDITY_FINALIZATION_DEADLINE
-    const deadlinePassed = currentTime >= deadline
-
-    const available = isSuccessfulOrClaimable && liquidityNotAdded && deadlinePassed
-    const timeRemaining = deadline - currentTime
-
-    return {
-      available,
-      deadline,
-      timeRemaining,
-      deadlinePassed,
-    }
-  }, [project, successTimestamp, currentTime])
 
   // Regular refund availability
   const canRefund = useMemo(() => {
@@ -380,7 +367,8 @@ export function useRequestRefund(options: UseRequestRefundOptions = {}) {
     contributionTokenDecimals: project?.contributionTokenDecimals ?? 18,
     // Emergency refund info
     liquidityDeadline: emergencyRefundInfo.deadline,
-    currentTime,
+    currentTime: currentTime as bigint | undefined,
     liquidityNotAdded: emergencyRefundInfo.available,
+    deadlinePassed: emergencyRefundInfo.deadlinePassed,
   }
 }

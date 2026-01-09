@@ -20,6 +20,7 @@ interface RefundRequestFormProps {
   isEmergencyRefund: boolean
   liquidityDeadline?: bigint
   currentTime?: bigint
+  deadlinePassed?: boolean
   isLoading?: boolean
   onRequestRefund: () => void
   onRequestEmergencyRefund: () => void
@@ -52,20 +53,6 @@ export const RefundRequestForm: React.FC<RefundRequestFormProps> = ({
     return sanitizeText(ProjectStatusLabels[status] || 'Unknown')
   }, [project.status])
 
-  // Calculate time remaining until liquidity deadline
-  const timeRemaining = useMemo(() => {
-    if (!liquidityDeadline || !currentTime) return null
-    const remaining = Number(liquidityDeadline - currentTime)
-    if (remaining <= 0) return 'Deadline passed'
-    
-    const days = Math.floor(remaining / 86400)
-    const hours = Math.floor((remaining % 86400) / 3600)
-    const minutes = Math.floor((remaining % 3600) / 60)
-    
-    if (days > 0) return `${days}d ${hours}h remaining`
-    if (hours > 0) return `${hours}h ${minutes}m remaining`
-    return `${minutes}m remaining`
-  }, [liquidityDeadline, currentTime])
 
   if (!canRefund && !canEmergencyRefund) {
     return (
@@ -84,12 +71,6 @@ export const RefundRequestForm: React.FC<RefundRequestFormProps> = ({
             as="span"
           />
         </Badge>
-        {timeRemaining && (
-          <div className="mt-3 flex items-center justify-center gap-2 text-sm text-[var(--metallic-silver)]">
-            <Clock className="h-4 w-4" />
-            <span>{timeRemaining}</span>
-          </div>
-        )}
       </div>
     )
   }
