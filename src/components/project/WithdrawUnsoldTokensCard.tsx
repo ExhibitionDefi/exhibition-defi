@@ -32,7 +32,6 @@ interface WithdrawUnsoldTokensCardProps {
 }
 
 export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> = ({
-  projectId,
   tokenSymbol = 'TOKEN',
   tokenDecimals = 18,
   projectTokenLogoURI,
@@ -93,15 +92,6 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
       return 'Invalid date'
     }
   }, [withdrawalUnlocksAt])
-
-  // ✅ Safe project ID display
-  const safeProjectId = useMemo(() => {
-    try {
-      return projectId.toString()
-    } catch {
-      return 'Unknown'
-    }
-  }, [projectId])
   
   return (
     <Card className="border-[var(--charcoal)] bg-[var(--deep-black)]">
@@ -280,14 +270,6 @@ export const WithdrawUnsoldTokensCard: React.FC<WithdrawUnsoldTokensCardProps> =
             </p>
           </div>
         )}
-
-        {/* Additional Info */}
-        <div className="text-xs text-[var(--silver-dark)] text-center">
-          <SafeHtml 
-            content={`Project ID: #${safeProjectId}`}
-            as="span"
-          />
-        </div>
       </div>
     </Card>
   )
