@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useReadContract } from 'wagmi'
 import { type Address } from 'viem'
 import ExhibitionAMMABI from '../types/abis/ExhibitionAMM.json'
-import { CONTRACT_ADDRESSES } from '../config/contracts'
+import { CONTRACT_ADDRESSES } from '@/config/contracts'
 
 export interface TokenInfo {
   address: Address

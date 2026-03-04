@@ -1,6 +1,6 @@
 // src/hooks/useTokenomicsValidation.ts
 import { useMemo } from 'react'
-import type { CreateProjectFormData } from '@/hooks/pad/useCreateProject'
+import type { CreateProjectFormData } from '@/hooks/launchpad/useCreateProject'
 import { logger } from '@/utils/logger'
 
 /* -------------------- Types -------------------- */
